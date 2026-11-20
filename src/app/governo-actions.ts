@@ -26,8 +26,8 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
     return { error: "Conflito de interesses: o Tesoureiro não se pode subsidiar a si próprio." };
   }
   await sql`
-    INSERT INTO ledger (user_id, amount, reason, created_by)
-    SELECT id, ${kind === "multa" ? -amount : amount}, ${reason}, ${user.id} FROM users WHERE id = ${target}
+    INSERT INTO ledger (user_id, amount, reason, created_by, simulated)
+    SELECT id, ${kind === "multa" ? -amount : amount}, ${reason}, ${user.id}, false FROM users WHERE id = ${target}
   `;
   revalidatePath("/cofre");
   return { ok: kind === "multa" ? "Multa aplicada. A justiça foi feita." : "Subsídio atribuído." };

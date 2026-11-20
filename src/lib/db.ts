@@ -16,5 +16,8 @@ class Db {
 
 export const sql = Object.assign(
   (strings: TemplateStringsArray, ...params: unknown[]) => Db.sql(strings, ...params),
-  { query: (text: string, params?: unknown[]) => Db.sql.query(text, params) },
+  {
+    query: (text: string, params?: unknown[]) => Db.sql.query(text, params),
+    transaction: (queries: Parameters<NeonQueryFunction<false, false>["transaction"]>[0]) => Db.sql.transaction(queries),
+  },
 );
