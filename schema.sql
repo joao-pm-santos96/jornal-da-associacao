@@ -35,3 +35,6 @@ CREATE INDEX IF NOT EXISTS comments_post_id_idx ON comments (post_id, created_at
 
 CREATE OR REPLACE VIEW visible_posts AS
   SELECT * FROM posts WHERE status <> 'draft' AND publish_at <= now();
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS seen_before timestamptz;

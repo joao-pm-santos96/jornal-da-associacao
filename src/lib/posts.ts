@@ -10,7 +10,11 @@ export type PostSummary = {
   publish_at: Date;
   author_name: string;
   comment_count: number;
+  is_new: boolean;
+  new_comment_count: number;
 };
+
+export type Activity = { id: number; title: string; is_new: boolean; new_comment_count: number };
 
 export type Post = {
   id: number;
@@ -43,15 +47,40 @@ export async function listEditions() {
   `) as { edition: string; post_count: number }[];
 }
 
-export async function listEditionPosts(edition: string) {
+function since(user: User): string | null {
+  return user.seen_before?.toISOString() ?? null;
+}
+
+export async function listEditionPosts(edition: string, user: User) {
   return (await sql`
     SELECT p.id, p.title, p.edition, p.body_md, p.publish_at, u.name AS author_name,
-      (SELECT count(*) FROM comments c WHERE c.post_id = p.id)::int AS comment_count
+      (SELECT count(*) FROM comments c WHERE c.post_id = p.id)::int AS comment_count,
+      COALESCE(p.publish_at > ${since(user)}::timestamptz AND p.author_id <> ${user.id}, false) AS is_new,
+      (SELECT count(*) FROM comments c
+        WHERE c.post_id = p.id AND c.created_at > ${since(user)}::timestamptz AND c.author_id <> ${user.id})::int
+        AS new_comment_count
     FROM visible_posts p
     JOIN users u ON u.id = p.author_id
     WHERE p.edition = ${edition}
     ORDER BY p.publish_at DESC
   `) as PostSummary[];
+}
+
+export async function listActivity(user: User) {
+  if (!user.seen_before) return [];
+  return (await sql`
+    SELECT * FROM (
+      SELECT p.id, p.title, p.publish_at,
+        (p.publish_at > ${since(user)}::timestamptz AND p.author_id <> ${user.id}) AS is_new,
+        (SELECT count(*) FROM comments c
+          WHERE c.post_id = p.id AND c.created_at > ${since(user)}::timestamptz AND c.author_id <> ${user.id})::int
+          AS new_comment_count
+      FROM visible_posts p
+    ) a
+    WHERE a.is_new OR a.new_comment_count > 0
+    ORDER BY a.publish_at DESC
+    LIMIT 20
+  `) as Activity[];
 }
 
 export async function getPost(id: number) {

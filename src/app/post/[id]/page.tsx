@@ -5,6 +5,7 @@ import { getPost, listComments } from "@/lib/posts";
 import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dates";
 import { Markdown } from "@/components/Markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { NewBadge } from "@/components/PostCard";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -68,6 +69,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               {comments.map((c) => (
                 <li key={c.id} className="border-l-4 border-rule pl-3">
                   <p className="text-xs text-muted">
+                    {user.seen_before && c.author_id !== user.id && c.created_at > user.seen_before && <NewBadge />}
                     <strong className="text-ink">{c.author_name}</strong> ·{" "}
                     <time dateTime={c.created_at.toISOString()} title={formatDateTime(c.created_at)}>
                       {timeAgo(c.created_at)}

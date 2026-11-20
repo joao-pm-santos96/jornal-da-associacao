@@ -5,10 +5,10 @@ import { EDITION_RE, editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 
 export default async function EditionPage({ params }: { params: Promise<{ edicao: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { edicao } = await params;
   if (!EDITION_RE.test(edicao)) notFound();
-  const [headline, ...rest] = await listEditionPosts(edicao);
+  const [headline, ...rest] = await listEditionPosts(edicao, user);
   if (!headline) notFound();
 
   return (

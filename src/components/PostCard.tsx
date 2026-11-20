@@ -6,11 +6,24 @@ function commentLabel(n: number): string {
   return n === 1 ? "1 comentário" : `${n} comentários`;
 }
 
+export function NewBadge() {
+  return (
+    <span className="mr-2 inline-block bg-scoop px-1.5 py-0.5 align-middle font-sans text-[10px] font-black uppercase tracking-widest text-white">
+      Novo
+    </span>
+  );
+}
+
 export function PostMeta({ post }: { post: PostSummary }) {
   return (
     <p className="text-xs uppercase tracking-wider text-muted">
       Por <span className="font-semibold text-ink">{post.author_name}</span> · {formatDateTime(post.publish_at)} ·{" "}
       <span className="text-scoop">{commentLabel(post.comment_count)}</span>
+      {post.new_comment_count > 0 && (
+        <span className="ml-1 bg-flash px-1 font-bold text-ink">
+          +{post.new_comment_count} {post.new_comment_count === 1 ? "novo" : "novos"}
+        </span>
+      )}
     </p>
   );
 }
@@ -23,6 +36,7 @@ export function Headline({ post }: { post: PostSummary }) {
       </span>
       <Link href={`/post/${post.id}`} className="group block">
         <h2 className="mt-2 font-display text-4xl font-black leading-[1.05] group-hover:text-scoop sm:text-6xl">
+          {post.is_new && <NewBadge />}
           {post.title}
         </h2>
         <p className="mt-3 text-lg text-muted">{excerpt(post.body_md, 260)}</p>
@@ -38,7 +52,10 @@ export function PostCard({ post }: { post: PostSummary }) {
   return (
     <article className="border-b border-rule py-4">
       <Link href={`/post/${post.id}`} className="group block">
-        <h3 className="font-display text-2xl font-extrabold leading-tight group-hover:text-scoop">{post.title}</h3>
+        <h3 className="font-display text-2xl font-extrabold leading-tight group-hover:text-scoop">
+          {post.is_new && <NewBadge />}
+          {post.title}
+        </h3>
         <p className="mt-1 text-muted">{excerpt(post.body_md)}</p>
       </Link>
       <div className="mt-2">

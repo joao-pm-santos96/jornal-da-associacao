@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { listEditionPosts, listEditions } from "@/lib/posts";
+import { listActivity, listEditionPosts, listEditions } from "@/lib/posts";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
+import { ActivityBox } from "@/components/ActivityBox";
 
 export default async function Home() {
-  await requireUser();
-  const editions = await listEditions();
+  const user = await requireUser();
+  const [editions, activity] = await Promise.all([listEditions(), listActivity(user)]);
   if (editions.length === 0) {
     return (
       <div className="py-16 text-center">
@@ -20,10 +21,11 @@ export default async function Home() {
   }
 
   const [current, ...previous] = editions;
-  const [headline, ...rest] = await listEditionPosts(current.edition);
+  const [headline, ...rest] = await listEditionPosts(current.edition, user);
 
   return (
     <div className="space-y-10">
+      <ActivityBox activity={activity} />
       <section>
         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-scoop">
           Edição de {editionLabel(current.edition)}
