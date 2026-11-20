@@ -41,7 +41,7 @@ function setIlhavo(on: boolean): void {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-export function Masthead() {
+export function Masthead({ tag, carnival = false }: { tag?: string; carnival?: boolean }) {
   const ilhavo = useSyncExternalStore(subscribe, isIlhavo, () => false);
   const clicks = useRef({ count: 0, last: 0 });
 
@@ -67,8 +67,11 @@ export function Masthead() {
         onClick={onClick}
         className="select-none font-display text-3xl font-black uppercase leading-none tracking-tight sm:text-6xl"
       >
-        {ilhavo ? "Jornal de Ílhavo ⚓" : "Jornal da Associação"}
+        {ilhavo ? "Jornal de Ílhavo ⚓" : carnival ? "Jornal da Mascarada 🎭" : "Jornal da Associação"}
       </Link>
+      {tag && !ilhavo && (
+        <p className="mt-2 text-xs font-black uppercase tracking-widest text-flash">{tag}</p>
+      )}
       {ilhavo && (
         <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-flash">
           Por decreto da direção, o bacalhau é declarado património da Associação

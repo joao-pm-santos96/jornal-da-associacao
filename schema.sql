@@ -106,15 +106,92 @@ CREATE TABLE IF NOT EXISTS decrees (
 
 ALTER TABLE rota_slots ADD COLUMN IF NOT EXISTS pardoned boolean NOT NULL DEFAULT false;
 
+ALTER TABLE decrees ADD COLUMN IF NOT EXISTS revoked_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS settings (
+  key text PRIMARY KEY,
+  value text NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION jornal_now()
+RETURNS timestamptz
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce((SELECT value::timestamptz FROM settings WHERE key = 'fake_now'), now())
+$$;
+
+CREATE TABLE IF NOT EXISTS secret_santa (
+  year integer NOT NULL,
+  giver_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (year, giver_id),
+  UNIQUE (year, receiver_id),
+  CHECK (giver_id <> receiver_id)
+);
+
+CREATE TABLE IF NOT EXISTS santa_cards (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  year integer NOT NULL,
+  from_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS advent_doors (
+  year integer NOT NULL,
+  door integer NOT NULL CHECK (door BETWEEN 1 AND 24),
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind text NOT NULL,
+  payload text NOT NULL,
+  opened_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (year, door, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS resolutions (
+  year integer NOT NULL,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (year, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS resolution_votes (
+  year integer NOT NULL,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  voter_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kept boolean NOT NULL,
+  PRIMARY KEY (year, user_id, voter_id),
+  CHECK (user_id <> voter_id)
+);
+
+CREATE TABLE IF NOT EXISTS carnival_masks (
+  day date NOT NULL,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mask_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (day, user_id),
+  UNIQUE (day, mask_id)
+);
+
+CREATE TABLE IF NOT EXISTS easter_eggs (
+  year integer NOT NULL,
+  egg integer NOT NULL,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  found_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (year, egg, user_id)
+);
+
 CREATE OR REPLACE FUNCTION member_label(uid integer)
 RETURNS text
 LANGUAGE sql STABLE AS $$
-  SELECT u.name || coalesce((
-    SELECT CASE o.office WHEN 'presidente' THEN ' 👑' WHEN 'tesoureiro' THEN ' 💰' END
-    FROM offices o WHERE o.user_id = u.id
-    ORDER BY o.office LIMIT 1
-  ), '')
-  FROM users u WHERE u.id = uid
+  SELECT coalesce(
+    (SELECT '🎭 ' || mu.name
+      FROM carnival_masks m JOIN users mu ON mu.id = m.mask_id
+      WHERE m.user_id = uid AND m.day = (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date),
+    (SELECT u.name || coalesce((
+        SELECT CASE o.office WHEN 'presidente' THEN ' 👑' WHEN 'tesoureiro' THEN ' 💰' END
+        FROM offices o WHERE o.user_id = u.id
+        ORDER BY o.office LIMIT 1
+      ), '')
+      FROM users u WHERE u.id = uid)
+  )
 $$;
-
-ALTER TABLE decrees ADD COLUMN IF NOT EXISTS revoked_at timestamptz;

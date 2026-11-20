@@ -62,3 +62,9 @@ npx vercel --prod
 ```
 
 ou `npx vercel redeploy <url-do-último-deploy>`.
+
+## Épocas festivas
+
+O jornal muda sozinho no Natal (1–26 dez.), Ano Novo (27 dez.–6 jan.), Carnaval (sábado gordo a terça) e Páscoa (Sexta-feira Santa a Segunda-feira de Páscoa), em hora de Lisboa. A Páscoa é calculada (algoritmo de Meeus/Butcher) e o Carnaval é 47 dias antes.
+
+Para testar uma época fora de data, o admin tem uma **máquina do tempo** em `/admin`: define uma data simulada que só afeta as funcionalidades das épocas e mostra um aviso no topo do site a todos. Em produção deve ficar sempre desligada.

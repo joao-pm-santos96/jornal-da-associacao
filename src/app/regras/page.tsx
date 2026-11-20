@@ -97,7 +97,26 @@ export default async function RulesPage() {
         <p>O <Link href="/quadro" className="underline hover:text-scoop">Quadro de Honra</Link> e o Mural da Vergonha são atualizados automaticamente. Não há júri, não há recurso e não há misericórdia.</p>
       </Article>
 
-      <Article n={6} title="Disposições finais">
+      <Article id="festas" n={6} title="As Épocas Festivas">
+        <p>O jornal muda sozinho nas épocas festivas. Tudo começa e acaba automaticamente, em hora de Ílhavo.</p>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>
+            <strong>🎄 Natal (1 a 26 de dezembro):</strong> sorteio do <Link href="/natal" className="underline hover:text-scoop">Amigo Secreto</Link>, com postais anónimos e revelação na consoada (24 de dezembro, 20h00). Calendário do Advento com uma porta por dia (algumas dão +{t.adventPrize} 🫘). A 15 de dezembro, subsídio de Natal de +{t.xmasBonus} 🫘 para todos, pago pelo Cofre.
+          </li>
+          <li>
+            <strong>🥂 Ano Novo (27 de dezembro a 6 de janeiro):</strong> o ano em revista e as <Link href="/resolucoes" className="underline hover:text-scoop">resoluções</Link>, seladas até 1 de dezembro do ano seguinte, quando os outros votam se as cumpriste.
+          </li>
+          <li>
+            <strong>🎭 Carnaval (sábado gordo a terça de Carnaval):</strong> toda a gente aparece no jornal com o nome de outro sócio, e os disfarces mudam todos os dias. Na Quarta-feira de Cinzas caem as <Link href="/carnaval" className="underline hover:text-scoop">máscaras</Link>.
+          </li>
+          <li>
+            <strong>🐰 Páscoa (Sexta-feira Santa a Segunda-feira de Páscoa):</strong> caça aos <Link href="/pascoa" className="underline hover:text-scoop">ovos</Link> escondidos pelo jornal (+{t.egg} 🫘 cada) e folar de +{t.folar} 🫘 no Domingo de Páscoa, entregue por um padrinho sorteado e pago pelo Cofre. Quem apanhar mais ovos é o Coelho do Ano.
+          </li>
+          <li>Cada época traz uma reação própria (🎄, 🥂, 🎭 🥳, 🐣), que só se pode usar durante a festa.</li>
+        </ul>
+      </Article>
+
+      <Article n={7} title="Disposições finais">
         <ul className="list-disc space-y-1 pl-6">
           <li>Tudo isto é para rir. Quem levar a mal paga a próxima rodada.</li>
           <li>Os conflitos institucionais resolvem-se no jantar seguinte.</li>

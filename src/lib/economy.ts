@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "./db";
+import { easterSunday, getNow, lisbon } from "./seasons";
 
 export const ECONOMY_START = "2026-11-01";
 
@@ -11,6 +12,10 @@ export const TREMOCOS = {
   monthlyFee: 10,
   rotaMissedFine: 20,
   manualMax: 100,
+  xmasBonus: 10,
+  folar: 5,
+  adventPrize: 2,
+  egg: 1,
   freezeBelow: -50,
 } as const;
 
@@ -24,6 +29,8 @@ export type Balance = {
   rota_missed: number;
   months: number;
   manual: number;
+  created_at: Date;
+  bonuses: number;
   earned: number;
   fees: number;
   fines: number;
@@ -31,9 +38,26 @@ export type Balance = {
   frozen: boolean;
 };
 
-type Counts = Omit<Balance, "earned" | "fees" | "fines" | "balance" | "frozen">;
+type Counts = Omit<Balance, "bonuses" | "earned" | "fees" | "fines" | "balance" | "frozen">;
 
-function settle(c: Counts): Balance {
+function festiveDates(now: Date): string[] {
+  const start = Number(ECONOMY_START.slice(0, 4));
+  const today = lisbon(now).date;
+  const dates: string[] = [];
+  for (let y = start; y <= lisbon(now).year; y++) {
+    dates.push(`${y}-12-15`, easterSunday(y));
+  }
+  return dates.filter((d) => d >= ECONOMY_START && d <= today);
+}
+
+function bonusFor(createdAt: Date, now: Date): number {
+  const joined = lisbon(createdAt).date;
+  return festiveDates(now)
+    .filter((d) => d >= joined)
+    .reduce((sum, d) => sum + (d.endsWith("-12-15") ? TREMOCOS.xmasBonus : TREMOCOS.folar), 0);
+}
+
+function settle(c: Counts, now: Date): Balance {
   const earned =
     c.posts * TREMOCOS.post +
     c.comments * TREMOCOS.comment +
@@ -41,11 +65,13 @@ function settle(c: Counts): Balance {
     c.rota_done * TREMOCOS.rotaDone;
   const fees = c.months * TREMOCOS.monthlyFee;
   const fines = c.rota_missed * TREMOCOS.rotaMissedFine;
-  const balance = earned - fees - fines + c.manual;
-  return { ...c, earned, fees, fines, balance, frozen: balance < TREMOCOS.freezeBelow };
+  const bonuses = bonusFor(c.created_at, now);
+  const balance = earned - fees - fines + bonuses + c.manual;
+  return { ...c, bonuses, earned, fees, fines, balance, frozen: balance < TREMOCOS.freezeBelow };
 }
 
 export async function getBalances(): Promise<Balance[]> {
+  const now = await getNow();
   const rows = (await sql`
     WITH slots AS (
       SELECT r.user_id, r.pardoned,
@@ -69,17 +95,18 @@ export async function getBalances(): Promise<Balance[]> {
         AS rota_missed,
       (SELECT count(*) FROM generate_series(
           greatest(${ECONOMY_START}::date, date_trunc('month', u.created_at AT TIME ZONE 'Europe/Lisbon')::date),
-          (now() AT TIME ZONE 'Europe/Lisbon')::date,
+          (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date,
           interval '1 month'))::int AS months,
-      coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::int AS manual
+      coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::int AS manual,
+      u.created_at
     FROM users u
     ORDER BY u.id
   `) as Counts[];
-  return rows.map(settle).sort((a, b) => b.balance - a.balance);
+  return rows.map((r) => settle(r, now)).sort((a, b) => b.balance - a.balance);
 }
 
 export function treasury(balances: Balance[]): number {
-  return balances.reduce((total, b) => total + b.fees + b.fines - b.manual, 0);
+  return balances.reduce((total, b) => total + b.fees + b.fines - b.bonuses - b.manual, 0);
 }
 
 export type Movement = { id: number; name: string; amount: number; reason: string; by: string | null; created_at: Date };

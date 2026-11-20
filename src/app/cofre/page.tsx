@@ -28,7 +28,7 @@ export default async function TreasuryPage() {
       <section className="border-2 border-ink bg-flash p-6 text-center">
         <p className="text-xs font-black uppercase tracking-widest">Saldo do Cofre</p>
         <p className="font-display text-6xl font-black">{cofre} 🫘</p>
-        <p className="text-sm">cotas + multas − subsídios</p>
+        <p className="text-sm">cotas + multas − subsídios − prémios e bónus das festas</p>
       </section>
 
       <section>
@@ -41,7 +41,8 @@ export default async function TreasuryPage() {
                 <th className="py-2 pr-2 text-right">Ganhos</th>
                 <th className="py-2 pr-2 text-right">Cotas</th>
                 <th className="py-2 pr-2 text-right">Faltas</th>
-                <th className="py-2 pr-2 text-right">Multas/subs.</th>
+                <th className="py-2 pr-2 text-right">Bónus</th>
+                <th className="py-2 pr-2 text-right">Livro</th>
                 <th className="py-2 text-right">Saldo</th>
               </tr>
             </thead>
@@ -59,6 +60,7 @@ export default async function TreasuryPage() {
                   <td className="py-2 pr-2 text-right">{signed(b.earned)}</td>
                   <td className="py-2 pr-2 text-right">{signed(-b.fees)}</td>
                   <td className="py-2 pr-2 text-right">{b.fines ? signed(-b.fines) : "—"}</td>
+                  <td className="py-2 pr-2 text-right">{b.bonuses ? signed(b.bonuses) : "—"}</td>
                   <td className="py-2 pr-2 text-right">{b.manual ? signed(b.manual) : "—"}</td>
                   <td className={`py-2 text-right font-display text-lg font-black ${b.balance < 0 ? "text-scoop" : ""}`}>
                     {b.balance} 🫘
@@ -81,7 +83,7 @@ export default async function TreasuryPage() {
       )}
 
       <section>
-        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Livro de multas e subsídios</h2>
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Livro do Cofre</h2>
         {movements.length === 0 ? (
           <p className="mt-2 text-muted">Ainda nenhum movimento. O Tesoureiro anda distraído.</p>
         ) : (
@@ -91,7 +93,7 @@ export default async function TreasuryPage() {
                 <span>
                   <strong>{m.name}</strong> · {m.reason}
                   <span className="block text-xs text-muted">
-                    {formatDateTime(m.created_at)}{m.by ? ` · por ${m.by}` : ""}
+                    {formatDateTime(m.created_at)} · {m.by ? `por ${m.by}` : "automático"}
                   </span>
                 </span>
                 <span className={`font-display text-lg font-black ${m.amount < 0 ? "text-scoop" : ""}`}>

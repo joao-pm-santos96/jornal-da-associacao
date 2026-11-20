@@ -9,7 +9,8 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { NewBadge } from "@/components/PostCard";
 import { ReactionBar } from "@/components/ReactionBar";
 import { ViewTracker } from "@/components/ViewTracker";
-import { getPostReactions } from "@/lib/reactions";
+import { getPostReactions, reactionOptions } from "@/lib/reactions";
+import { getSeason } from "@/lib/seasons";
 import { getBalances } from "@/lib/economy";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
@@ -29,6 +30,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         getBalances(),
       ])
     : [[], null, null, null, []];
+  const options = reactionOptions(await getSeason());
   const frozen = balances.find((b) => b.user_id === user.id)?.frozen ?? false;
 
   return (
@@ -74,7 +76,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
       {reactions && (
         <div className="mt-8">
-          <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} frozen={frozen} />
+          <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} frozen={frozen} options={options} />
         </div>
       )}
 
@@ -123,7 +125,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   </div>
                   {reactions && (
                     <div className="mt-1 origin-left scale-90">
-                      <ReactionBar kind="comment" targetId={c.id} reactions={reactions.comments.get(c.id) ?? []} frozen={frozen} />
+                      <ReactionBar kind="comment" targetId={c.id} reactions={reactions.comments.get(c.id) ?? []} frozen={frozen} options={options} />
                     </div>
                   )}
                   <div className="mt-1 flex gap-3 text-xs">

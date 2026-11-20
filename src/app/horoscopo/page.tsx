@@ -5,7 +5,7 @@ import { horoscopeFor } from "@/lib/horoscope";
 
 export default async function HoroscopePage() {
   const user = await requireUser();
-  const people = (await sql`SELECT id, name FROM users ORDER BY id`) as { id: number; name: string }[];
+  const people = (await sql`SELECT id, member_label(id) AS name FROM users ORDER BY id`) as { id: number; name: string }[];
   const month = currentEdition();
   const ordered = [...people.filter((p) => p.id === user.id), ...people.filter((p) => p.id !== user.id)];
 
