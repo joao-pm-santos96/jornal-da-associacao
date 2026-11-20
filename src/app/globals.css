@@ -66,3 +66,17 @@ body {
 .comentario ol { list-style: decimal; padding-left: 1.4em; }
 .comentario blockquote { border-left: 3px solid var(--color-rule); padding-left: 0.75em; color: var(--color-muted); }
 .comentario code { background: #efe8d8; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+
+:root[data-modo="ilhavo"] {
+  --color-scoop: #0b3d91;
+  --color-paper: #eef5fb;
+  --color-flash: #ffcf33;
+  --color-rule: #b9cde4;
+}
+:root[data-modo="ilhavo"] body {
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0 38px,
+    rgba(11, 61, 145, 0.05) 38px 40px
+  );
+}

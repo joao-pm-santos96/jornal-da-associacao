@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import { getUser } from "@/lib/auth";
 import { countUnread } from "@/lib/posts";
 import { UnreadBadge } from "@/components/UnreadBadge";
+import { Masthead } from "@/components/Masthead";
 import { logout } from "./actions";
 import "./globals.css";
 
@@ -33,9 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="border-b-4 border-ink">
           <div className="bg-scoop text-white">
             <div className="mx-auto max-w-4xl px-4 py-3 text-center">
-              <Link href="/" className="font-display text-3xl font-black uppercase leading-none tracking-tight sm:text-6xl">
-                Jornal da Associação
-              </Link>
+              <Masthead />
             </div>
           </div>
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs uppercase tracking-wider">
