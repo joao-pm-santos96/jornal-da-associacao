@@ -107,6 +107,8 @@ export async function listPending(user: User) {
 
 export function excerpt(md: string, length = 180): string {
   const text = md
+    .replace(/<[^>]*>/g, "")
+    .replace(/^\s*\|?[\s:|-]+\|[\s:|-]*$/gm, "")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[#>*_`~|-]/g, "")
