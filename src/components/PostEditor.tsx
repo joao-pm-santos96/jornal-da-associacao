@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { FormState } from "@/app/actions";
+import type { FormState } from "@/lib/form";
 import { Markdown } from "./Markdown";
 
 type Initial = { title: string; body: string; edition: string; publishAt: string };

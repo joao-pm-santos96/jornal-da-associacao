@@ -43,6 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/novo" className="hover:text-scoop">Escrever</Link>
                 <Link href="/meus" className="hover:text-scoop">Os meus</Link>
                 <Link href="/conta" className="hover:text-scoop">Conta</Link>
+                {user.is_admin && <Link href="/admin" className="hover:text-scoop">Admin</Link>}
                 <form action={logout}>
                   <button className="uppercase hover:text-scoop">Sair</button>
                 </form>

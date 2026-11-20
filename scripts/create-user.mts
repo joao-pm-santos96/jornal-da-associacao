@@ -15,7 +15,7 @@ async function askHidden(prompt: string): Promise<string> {
   return typeof value === "string" ? value : "";
 }
 
-const USERNAME_RE = /^[a-z0-9._-]{2,32}$/;
+import { USERNAME_RE } from "../src/lib/form.js";
 
 const { values } = parseArgs({
   options: {

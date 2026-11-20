@@ -6,16 +6,10 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { endSession, requireUser, startSession } from "@/lib/auth";
 import { EDITION_RE } from "@/lib/dates";
-
-export type FormState = { error?: string; ok?: string };
+import { field, type FormState } from "@/lib/form";
 
 const DUMMY_HASH = "$2b$12$WBGkbrX6t1WgfJf4VEnO7O9cK.zOonkD1jusOwwfScTp1cGR3ToLO";
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
-
-function field(form: FormData, name: string): string {
-  const value = form.get(name);
-  return typeof value === "string" ? value.trim() : "";
-}
 
 export async function login(_prev: FormState, form: FormData): Promise<FormState> {
   const username = field(form, "username").toLowerCase();
@@ -36,6 +30,15 @@ export async function login(_prev: FormState, form: FormData): Promise<FormState
 export async function logout(): Promise<void> {
   await endSession();
   redirect("/login");
+}
+
+export async function changeName(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const name = field(form, "name");
+  if (!name || name.length > 60) return { error: "O nome é obrigatório (máx. 60 caracteres)." };
+  await sql`UPDATE users SET name = ${name} WHERE id = ${user.id}`;
+  revalidatePath("/", "layout");
+  return { ok: "Nome alterado." };
 }
 
 export async function changePassword(_prev: FormState, form: FormData): Promise<FormState> {
