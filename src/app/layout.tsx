@@ -53,7 +53,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </header>
         <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-4xl border-t border-rule px-4 py-6 text-center text-xs text-muted">
-          Jornal da Associação · edição privada · não distribuir à concorrência
+          <p>Jornal da Associação · edição privada · não distribuir à concorrência</p>
+          {user && (
+            <a
+              href="https://github.com/joao-pm-santos96/jornal-da-associacao/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block border border-ink px-3 py-1 font-semibold uppercase tracking-wider text-ink hover:bg-ink hover:text-white"
+            >
+              Reportar erro / sugestão
+            </a>
+          )}
         </footer>
       </body>
     </html>
