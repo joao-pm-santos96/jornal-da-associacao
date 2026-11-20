@@ -12,7 +12,7 @@ Blog privado com edições mensais para um grupo de amigos. Só entra quem tem c
 
 - Primeira página com a edição atual em destaque e as edições anteriores
 - Posts por edição (`/edicao/AAAA-MM`), página do post com comentários
-- Editor Markdown com pré-visualização: guardar rascunho, publicar agora ou agendar (hora de Lisboa)
+- Editor Markdown com pré-visualização: guardar rascunho, publicar agora ou agendar (hora de Ílhavo, que por acaso é a mesma de Lisboa)
 - Um post agendado só fica visível quando chega a hora; até lá só o autor e os admins o veem (em `/meus`)
 - Cada pessoa edita e apaga os seus posts e comentários; um admin pode apagar tudo
 - `/conta` para mudar a password

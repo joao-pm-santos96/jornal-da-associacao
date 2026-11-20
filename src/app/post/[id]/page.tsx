@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getPost, getViews, listComments } from "@/lib/posts";
 import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dates";
 import { Markdown } from "@/components/Markdown";
+import { commentToMarkdown } from "@/lib/comment-markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NewBadge } from "@/components/PostCard";
 import { ViewTracker } from "@/components/ViewTracker";
@@ -101,7 +102,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       {timeAgo(c.created_at)}
                     </time>
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap break-words">{c.body}</p>
+                  <div className="mt-1">
+                    <Markdown className="comentario">{commentToMarkdown(c.body)}</Markdown>
+                  </div>
                   <div className="mt-1 flex gap-3 text-xs">
                     {c.author_id === user.id && (
                       <details>
@@ -140,6 +143,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 required
                 maxLength={2000}
                 rows={3}
+                placeholder="Podes usar Markdown. Para um GIF, cola o link numa linha sozinha."
                 className="w-full border-2 border-ink bg-white p-2"
               />
               <button className="bg-ink px-4 py-2 text-sm font-bold uppercase text-white hover:bg-scoop">Comentar</button>
