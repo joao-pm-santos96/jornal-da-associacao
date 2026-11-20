@@ -58,7 +58,7 @@ export function PostEditor({
           className="bg-scoop px-4 py-2 font-bold uppercase text-white disabled:opacity-50">Publicar agora</button>
         <div className="flex items-end gap-2">
           <div>
-            <label htmlFor="publish_at" className="block text-xs font-semibold">Data e hora (Lisboa)</label>
+            <label htmlFor="publish_at" className="block text-xs font-semibold">Data e hora (Ílhavo)</label>
             <input id="publish_at" type="datetime-local" name="publish_at" defaultValue={initial.publishAt}
               className="border-2 border-ink bg-white p-1.5" />
           </div>
