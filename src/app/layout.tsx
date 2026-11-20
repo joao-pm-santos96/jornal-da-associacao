@@ -9,8 +9,8 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Jornal do Grupo",
-  description: "O jornal mensal cá do grupo.",
+  title: "Jornal da Associação",
+  description: "O jornal mensal cá da associação.",
   robots: { index: false, follow: false },
 };
 
@@ -30,8 +30,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="border-b-4 border-ink">
           <div className="bg-scoop text-white">
             <div className="mx-auto max-w-4xl px-4 py-3 text-center">
-              <Link href="/" className="font-display text-4xl font-black uppercase tracking-tight sm:text-6xl">
-                Jornal do Grupo
+              <Link href="/" className="font-display text-3xl font-black uppercase leading-none tracking-tight sm:text-6xl">
+                Jornal da Associação
               </Link>
             </div>
           </div>
@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </header>
         <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-4xl border-t border-rule px-4 py-6 text-center text-xs text-muted">
-          Jornal do Grupo · edição privada · não distribuir à concorrência
+          Jornal da Associação · edição privada · não distribuir à concorrência
         </footer>
       </body>
     </html>
