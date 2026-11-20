@@ -5,7 +5,6 @@ export async function proxy(request: NextRequest) {
   const loggedIn = (await verifySession(request.cookies.get(SESSION_COOKIE)?.value)) !== null;
   const onLogin = request.nextUrl.pathname === "/login";
   if (!loggedIn && !onLogin) return NextResponse.redirect(new URL("/login", request.url));
-  if (loggedIn && onLogin) return NextResponse.redirect(new URL("/", request.url));
   return NextResponse.next();
 }
 

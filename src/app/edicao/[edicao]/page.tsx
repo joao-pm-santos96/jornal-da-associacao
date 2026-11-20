@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
 import { listEditionPosts } from "@/lib/posts";
 import { EDITION_RE, editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 
 export default async function EditionPage({ params }: { params: Promise<{ edicao: string }> }) {
+  await requireUser();
   const { edicao } = await params;
   if (!EDITION_RE.test(edicao)) notFound();
   const [headline, ...rest] = await listEditionPosts(edicao);

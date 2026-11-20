@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { requireUser } from "@/lib/auth";
 import { listEditionPosts, listEditions } from "@/lib/posts";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 
 export default async function Home() {
+  await requireUser();
   const editions = await listEditions();
   if (editions.length === 0) {
     return (
