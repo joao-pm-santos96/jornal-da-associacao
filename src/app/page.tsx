@@ -9,6 +9,9 @@ import { getRota } from "@/lib/rota";
 import { latestDecree } from "@/lib/decrees";
 import { getOffices } from "@/lib/offices";
 import { DecreeBanner, PresidentShortcut } from "@/components/DecreeBanner";
+import { SeasonBanner } from "@/components/SeasonBanner";
+import { getNow, seasonFor } from "@/lib/seasons";
+import { reviewYear } from "@/lib/festas/anonovo";
 
 export default async function Home() {
   const user = await requireUser();
@@ -20,9 +23,13 @@ export default async function Home() {
     getOffices(),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
+  const now = await getNow();
+  const season = seasonFor(now);
+  const seasonExtra = season === "anonovo" ? [{ href: `/retrospetiva/${reviewYear(now)}`, label: `O ano de ${reviewYear(now)} em revista` }] : undefined;
   if (editions.length === 0) {
     return (
       <div className="space-y-10">
+        <SeasonBanner season={season} extra={seasonExtra} />
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
@@ -42,7 +49,8 @@ export default async function Home() {
 
   return (
     <div className="space-y-10">
-      {isPresident && <PresidentShortcut />}
+      <SeasonBanner season={season} extra={seasonExtra} />
+        {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
       <ActivityBox activity={activity} />

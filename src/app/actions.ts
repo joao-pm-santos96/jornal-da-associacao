@@ -7,7 +7,8 @@ import { sql } from "@/lib/db";
 import { endSession, requireUser, startSession } from "@/lib/auth";
 import { EDITION_RE } from "@/lib/dates";
 import { field, type FormState } from "@/lib/form";
-import { isEmoji } from "@/lib/reactions";
+import { isKnownEmoji, reactionOptions } from "@/lib/reactions";
+import { getSeason } from "@/lib/seasons";
 import { getBalances } from "@/lib/economy";
 
 const DUMMY_HASH = "$2b$12$WBGkbrX6t1WgfJf4VEnO7O9cK.zOonkD1jusOwwfScTp1cGR3ToLO";
@@ -159,13 +160,14 @@ export async function deleteComment(commentId: number): Promise<void> {
 
 export async function toggleReaction(kind: "post" | "comment", targetId: number, emoji: string): Promise<void> {
   const user = await requireUser();
-  if (!isEmoji(emoji)) return;
+  if (!isKnownEmoji(emoji)) return;
   if (emoji !== "🧂" && (await getBalances()).find((b) => b.user_id === user.id)?.frozen) return;
+  const canAdd = reactionOptions(await getSeason()).includes(emoji);
   if (kind === "post") {
     const deleted = await sql`
       DELETE FROM post_reactions WHERE post_id = ${targetId} AND user_id = ${user.id} AND emoji = ${emoji} RETURNING post_id
     `;
-    if (deleted.length === 0) {
+    if (deleted.length === 0 && canAdd) {
       await sql`
         INSERT INTO post_reactions (post_id, user_id, emoji)
         SELECT ${targetId}, ${user.id}, ${emoji}
@@ -180,7 +182,7 @@ export async function toggleReaction(kind: "post" | "comment", targetId: number,
     RETURNING (SELECT post_id FROM comments WHERE id = ${targetId}) AS post_id
   `) as { post_id: number }[];
   let postId = deleted[0]?.post_id;
-  if (postId === undefined) {
+  if (postId === undefined && canAdd) {
     const inserted = (await sql`
       INSERT INTO comment_reactions (comment_id, user_id, emoji)
       SELECT c.id, ${user.id}, ${emoji}

@@ -14,6 +14,7 @@ class Db {
   }
 }
 
-export function sql(strings: TemplateStringsArray, ...params: unknown[]) {
-  return Db.sql(strings, ...params);
-}
+export const sql = Object.assign(
+  (strings: TemplateStringsArray, ...params: unknown[]) => Db.sql(strings, ...params),
+  { query: (text: string, params?: unknown[]) => Db.sql.query(text, params) },
+);

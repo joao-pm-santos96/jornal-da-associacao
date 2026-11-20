@@ -67,6 +67,22 @@ body {
 .comentario blockquote { border-left: 3px solid var(--color-rule); padding-left: 0.75em; color: var(--color-muted); }
 .comentario code { background: #efe8d8; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
 
+
+@keyframes jornal-fall {
+  from { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  to { transform: translateY(110vh) rotate(360deg); opacity: 0.6; }
+}
+.jornal-fall { animation-name: jornal-fall; animation-timing-function: linear; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .jornal-falling { display: none; }
+}
+
+:root[data-tema="natal"] { --color-scoop: #b3001b; --color-flash: #ffd166; }
+:root[data-tema="anonovo"] { --color-scoop: #8a6d1f; --color-flash: #ffe066; --color-paper: #fbf8ef; }
+:root[data-tema="carnaval"], :root[data-tema="cinzas"] { --color-scoop: #7b2cbf; --color-flash: #ffb3ff; }
+:root[data-tema="pascoa"] { --color-scoop: #d6457a; --color-flash: #fff3a0; --color-paper: #fdfaf2; }
+
 :root[data-modo="ilhavo"] {
   --color-scoop: #0b3d91;
   --color-paper: #eef5fb;

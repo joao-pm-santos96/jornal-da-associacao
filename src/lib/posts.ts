@@ -121,18 +121,18 @@ export async function getLastRead(postId: number, userId: number): Promise<Date 
 export async function getViews(postId: number, authorId: number) {
   const [seen, unseen] = await Promise.all([
     sql`
-      SELECT v.user_id, u.name, v.first_seen_at
+      SELECT v.user_id, member_label(u.id) AS name, v.first_seen_at
       FROM post_views v
       JOIN users u ON u.id = v.user_id
       WHERE v.post_id = ${postId} AND v.user_id <> ${authorId}
       ORDER BY v.first_seen_at
     `,
     sql`
-      SELECT u.name
+      SELECT member_label(u.id) AS name
       FROM users u
       WHERE u.id <> ${authorId}
         AND NOT EXISTS (SELECT 1 FROM post_views v WHERE v.post_id = ${postId} AND v.user_id = u.id)
-      ORDER BY u.name
+      ORDER BY 1
     `,
   ]);
   return { seen: seen as Viewer[], unseen: (unseen as { name: string }[]).map((u) => u.name) };

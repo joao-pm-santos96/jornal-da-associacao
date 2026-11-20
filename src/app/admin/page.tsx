@@ -6,6 +6,8 @@ import { CreateUserForm } from "./CreateUserForm";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 import { RotaForm } from "./RotaForm";
 import { OfficeForm } from "./OfficeForm";
+import { TimeMachineForm } from "./TimeMachineForm";
+import { getFakeNow } from "@/lib/seasons";
 import { getOffices } from "@/lib/offices";
 import { removeRotaSlot } from "./actions";
 import { getRota } from "@/lib/rota";
@@ -16,12 +18,16 @@ type Row = { id: number; username: string; name: string; is_admin: boolean; crea
 export default async function AdminPage() {
   const user = await requireUser();
   if (!user.is_admin) notFound();
-  const [userRows, rota, mondayRows, offices] = await Promise.all([
+  const [userRows, rota, mondayRows, offices, fakeNow] = await Promise.all([
     sql`SELECT id, username, name, is_admin, created_at FROM users ORDER BY created_at`,
     getRota(),
     sql`SELECT to_char(date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + interval '7 days', 'YYYY-MM-DD') AS next_monday`,
     getOffices(),
+    getFakeNow(),
   ]);
+  const fakeLocal = fakeNow
+    ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Lisbon", dateStyle: "short", timeStyle: "short" }).format(fakeNow).replace(" ", "T")
+    : "";
   const users = userRows as Row[];
   const [{ next_monday }] = mondayRows as { next_monday: string }[];
 
@@ -30,6 +36,10 @@ export default async function AdminPage() {
       <section className="max-w-sm">
         <h1 className="mb-4 font-display text-3xl font-black">Nova conta</h1>
         <CreateUserForm />
+      </section>
+      <section className="space-y-3">
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">⏰ Máquina do tempo</h2>
+        <TimeMachineForm current={fakeLocal} />
       </section>
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Cargos</h2>

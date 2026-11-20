@@ -1,12 +1,14 @@
 import "server-only";
 import { sql } from "./db";
+import { SEASON_REACTIONS, type Season } from "./seasons";
 
 export const REACTIONS = ["😂", "🔥", "💀", "🤡", "🧂"] as const;
-export type Emoji = (typeof REACTIONS)[number];
 
-export type ReactionSummary = { emoji: Emoji; names: string[]; mine: boolean };
+const ALL_REACTIONS = new Set<string>([...REACTIONS, ...Object.values(SEASON_REACTIONS).flat()]);
 
-type Row = { target_id: number; emoji: Emoji; names: string[]; mine: boolean };
+export type ReactionSummary = { emoji: string; names: string[]; mine: boolean };
+
+type Row = { target_id: number; emoji: string; names: string[]; mine: boolean };
 
 function group(rows: Row[]): Map<number, ReactionSummary[]> {
   const byTarget = new Map<number, ReactionSummary[]>();
@@ -19,19 +21,17 @@ function group(rows: Row[]): Map<number, ReactionSummary[]> {
 export async function getPostReactions(postId: number, userId: number) {
   const [postRows, commentRows] = await Promise.all([
     sql`
-      SELECT r.post_id AS target_id, r.emoji, array_agg(u.name ORDER BY r.created_at) AS names,
+      SELECT r.post_id AS target_id, r.emoji, array_agg(member_label(r.user_id) ORDER BY r.created_at) AS names,
         bool_or(r.user_id = ${userId}) AS mine
       FROM post_reactions r
-      JOIN users u ON u.id = r.user_id
       WHERE r.post_id = ${postId}
       GROUP BY r.post_id, r.emoji
     `,
     sql`
-      SELECT r.comment_id AS target_id, r.emoji, array_agg(u.name ORDER BY r.created_at) AS names,
+      SELECT r.comment_id AS target_id, r.emoji, array_agg(member_label(r.user_id) ORDER BY r.created_at) AS names,
         bool_or(r.user_id = ${userId}) AS mine
       FROM comment_reactions r
       JOIN comments c ON c.id = r.comment_id
-      JOIN users u ON u.id = r.user_id
       WHERE c.post_id = ${postId}
       GROUP BY r.comment_id, r.emoji
     `,
@@ -42,6 +42,10 @@ export async function getPostReactions(postId: number, userId: number) {
   };
 }
 
-export function isEmoji(value: string): value is Emoji {
-  return (REACTIONS as readonly string[]).includes(value);
+export function reactionOptions(season: Season | null): string[] {
+  return [...REACTIONS, ...(season ? SEASON_REACTIONS[season] : [])];
+}
+
+export function isKnownEmoji(value: string): boolean {
+  return ALL_REACTIONS.has(value);
 }

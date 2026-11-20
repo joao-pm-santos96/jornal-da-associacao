@@ -1,21 +1,24 @@
-import { REACTIONS, type ReactionSummary } from "@/lib/reactions";
+import type { ReactionSummary } from "@/lib/reactions";
 import { toggleReaction } from "@/app/actions";
 
 export function ReactionBar({
   kind,
   targetId,
   reactions,
+  options,
   frozen = false,
 }: {
   kind: "post" | "comment";
   targetId: number;
   reactions: ReactionSummary[];
+  options: string[];
   frozen?: boolean;
 }) {
   const byEmoji = new Map(reactions.map((r) => [r.emoji, r]));
+  const shown = [...options, ...reactions.map((r) => r.emoji).filter((e) => !options.includes(e))];
   return (
     <div className="flex flex-wrap gap-1">
-      {REACTIONS.map((emoji) => {
+      {shown.map((emoji) => {
         const r = byEmoji.get(emoji);
         const blocked = frozen && emoji !== "🧂";
         return (

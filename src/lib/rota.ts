@@ -14,7 +14,7 @@ export type RotaSlot = {
 
 export async function getRota() {
   return (await sql`
-    SELECT to_char(r.week_start, 'YYYY-MM-DD') AS week_start, r.user_id, u.name,
+    SELECT to_char(r.week_start, 'YYYY-MM-DD') AS week_start, r.user_id, member_label(u.id) AS name,
       CASE
         WHEN p.id IS NOT NULL THEN 'done'
         WHEN r.pardoned THEN 'pardoned'
