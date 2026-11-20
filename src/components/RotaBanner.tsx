@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { RotaSlot } from "@/lib/rota";
 import { timeAgo } from "@/lib/dates";
+import { pardonSlot } from "@/app/governo-actions";
+import { ConfirmButton } from "@/components/ConfirmButton";
 
 const weekLabel = new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", day: "numeric", month: "short" });
 
@@ -14,10 +16,11 @@ const STATE = {
   done: { icon: "✅", label: "Cumpriu" },
   current: { icon: "📝", label: "A escrever" },
   missed: { icon: "❌", label: "EM FALTA" },
+  pardoned: { icon: "🕊️", label: "Indultado" },
   upcoming: { icon: "🔜", label: "Próximo" },
 };
 
-export function RotaBanner({ rota, userId }: { rota: RotaSlot[]; userId: number }) {
+export function RotaBanner({ rota, userId, isPresident }: { rota: RotaSlot[]; userId: number; isPresident: boolean }) {
   if (rota.length === 0) return null;
   const thisWeek = rota.find((s) => s.this_week);
   const next = rota.find((s) => s.state === "upcoming");
@@ -68,7 +71,14 @@ export function RotaBanner({ rota, userId }: { rota: RotaSlot[]; userId: number 
                   <td className="py-1 pr-2 font-semibold">{s.name}</td>
                   <td className="py-1 whitespace-nowrap">
                     {STATE[s.state].icon}{" "}
-                    {s.state === "done" && s.post_id ? (
+                    {s.state === "missed" && isPresident ? (
+                      <form action={pardonSlot.bind(null, s.week_start)} className="inline">
+                        <span className="font-black text-scoop">{STATE.missed.label}</span>{" "}
+                        <ConfirmButton message={`Indultar ${s.name}? A multa da escala é perdoada.`} className="text-xs underline">
+                          Indultar
+                        </ConfirmButton>
+                      </form>
+                    ) : s.state === "done" && s.post_id ? (
                       <Link href={`/post/${s.post_id}`} className="underline">{STATE.done.label}</Link>
                     ) : (
                       <span className={s.state === "missed" ? "font-black text-scoop" : ""}>{STATE[s.state].label}</span>

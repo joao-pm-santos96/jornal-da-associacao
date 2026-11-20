@@ -6,14 +6,26 @@ import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
 import { RotaBanner } from "@/components/RotaBanner";
 import { getRota } from "@/lib/rota";
+import { latestDecree } from "@/lib/decrees";
+import { getOffices } from "@/lib/offices";
+import { DecreeBanner, PresidentShortcut } from "@/components/DecreeBanner";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota] = await Promise.all([listEditions(), listUnread(user.id), getRota()]);
+  const [editions, activity, rota, decree, offices] = await Promise.all([
+    listEditions(),
+    listUnread(user.id),
+    getRota(),
+    latestDecree(),
+    getOffices(),
+  ]);
+  const isPresident = offices.presidente?.user_id === user.id;
   if (editions.length === 0) {
     return (
       <div className="space-y-10">
-        <RotaBanner rota={rota} userId={user.id} />
+        {isPresident && <PresidentShortcut />}
+        <DecreeBanner decree={decree} />
+        <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <div className="py-16 text-center">
           <h2 className="font-display text-4xl font-black">Ainda não há notícias!</h2>
           <p className="mt-2 text-muted">A redação está vazia. Sê o primeiro a dar o furo.</p>
@@ -30,7 +42,9 @@ export default async function Home() {
 
   return (
     <div className="space-y-10">
-      <RotaBanner rota={rota} userId={user.id} />
+      {isPresident && <PresidentShortcut />}
+        <DecreeBanner decree={decree} />
+        <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
       <ActivityBox activity={activity} />
       <section>
         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-scoop">

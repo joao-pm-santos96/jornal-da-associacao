@@ -50,7 +50,7 @@ export async function listEditions() {
 
 export async function listEditionPosts(edition: string, userId: number) {
   return (await sql`
-    SELECT p.id, p.title, p.edition, p.body_md, p.publish_at, u.name AS author_name,
+    SELECT p.id, p.title, p.edition, p.body_md, p.publish_at, member_label(u.id) AS author_name,
       (SELECT count(*) FROM comments c WHERE c.post_id = p.id)::int AS comment_count,
       (SELECT count(*) FROM post_views pv WHERE pv.post_id = p.id AND pv.user_id <> p.author_id)::int AS view_count,
       n.is_new, n.new_comment_count
@@ -81,7 +81,7 @@ export async function countUnread(userId: number): Promise<number> {
 
 export async function getPost(id: number) {
   const rows = (await sql`
-    SELECT p.id, p.author_id, u.name AS author_name, p.edition, p.title, p.body_md, p.status, p.publish_at,
+    SELECT p.id, p.author_id, member_label(u.id) AS author_name, p.edition, p.title, p.body_md, p.status, p.publish_at,
       (p.status <> 'draft' AND p.publish_at <= now()) AS visible
     FROM posts p
     JOIN users u ON u.id = p.author_id
@@ -140,7 +140,7 @@ export async function getViews(postId: number, authorId: number) {
 
 export async function listComments(postId: number) {
   return (await sql`
-    SELECT c.id, c.author_id, u.name AS author_name, c.body, c.created_at
+    SELECT c.id, c.author_id, member_label(u.id) AS author_name, c.body, c.created_at
     FROM comments c
     JOIN users u ON u.id = c.author_id
     WHERE c.post_id = ${postId}
@@ -150,7 +150,7 @@ export async function listComments(postId: number) {
 
 export async function listPending(user: User) {
   return (await sql`
-    SELECT p.id, p.title, p.edition, p.status, p.publish_at, u.name AS author_name
+    SELECT p.id, p.title, p.edition, p.status, p.publish_at, member_label(u.id) AS author_name
     FROM posts p
     JOIN users u ON u.id = p.author_id
     WHERE NOT (p.status <> 'draft' AND p.publish_at <= now())

@@ -79,3 +79,42 @@ LANGUAGE sql STABLE AS $$
   FROM visible_posts p
   LEFT JOIN post_views v ON v.post_id = p.id AND v.user_id = me
 $$;
+
+CREATE TABLE IF NOT EXISTS offices (
+  office text PRIMARY KEY CHECK (office IN ('presidente', 'tesoureiro')),
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ledger (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount integer NOT NULL CHECK (amount <> 0 AND abs(amount) <= 100),
+  reason text NOT NULL,
+  created_by integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ledger_user_id_idx ON ledger (user_id);
+
+CREATE TABLE IF NOT EXISTS decrees (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  author_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE rota_slots ADD COLUMN IF NOT EXISTS pardoned boolean NOT NULL DEFAULT false;
+
+CREATE OR REPLACE FUNCTION member_label(uid integer)
+RETURNS text
+LANGUAGE sql STABLE AS $$
+  SELECT u.name || coalesce((
+    SELECT CASE o.office WHEN 'presidente' THEN ' 👑' WHEN 'tesoureiro' THEN ' 💰' END
+    FROM offices o WHERE o.user_id = u.id
+    ORDER BY o.office LIMIT 1
+  ), '')
+  FROM users u WHERE u.id = uid
+$$;
+
+ALTER TABLE decrees ADD COLUMN IF NOT EXISTS revoked_at timestamptz;

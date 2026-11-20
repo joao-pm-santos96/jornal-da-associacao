@@ -5,6 +5,7 @@ import { getUser } from "@/lib/auth";
 import { countUnread } from "@/lib/posts";
 import { UnreadBadge } from "@/components/UnreadBadge";
 import { Masthead } from "@/components/Masthead";
+import { getBalances } from "@/lib/economy";
 import { logout } from "./actions";
 import "./globals.css";
 
@@ -26,7 +27,8 @@ const today = new Intl.DateTimeFormat("pt-PT", {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
-  const unread = user ? await countUnread(user.id) : 0;
+  const [unread, balances] = user ? await Promise.all([countUnread(user.id), getBalances()]) : [0, []];
+  const myBalance = user ? balances.find((b) => b.user_id === user.id)?.balance ?? 0 : 0;
   return (
     <html lang="pt-PT" className={`${playfair.variable} ${inter.variable} antialiased`}>
       <body className="min-h-screen">
@@ -47,6 +49,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/meus" className="hover:text-scoop">Os meus</Link>
                 <Link href="/quadro" className="hover:text-scoop">Quadro</Link>
                 <Link href="/horoscopo" className="hover:text-scoop">Horóscopo</Link>
+                <Link href="/regras" className="hover:text-scoop">Constituição</Link>
+                <Link href="/decretos" className="hover:text-scoop">Decretos</Link>
+                <Link href="/cofre" className="hover:text-scoop" title="O teu saldo no Cofre">🫘 {myBalance}</Link>
                 <Link href="/conta" className="hover:text-scoop">Conta</Link>
                 {user.is_admin && <Link href="/admin" className="hover:text-scoop">Admin</Link>}
                 <form action={logout}>

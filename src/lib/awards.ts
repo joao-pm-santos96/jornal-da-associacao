@@ -83,6 +83,7 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
       SELECT u.name, count(*)::int AS value
       FROM rota_slots r JOIN users u ON u.id = r.user_id
       WHERE now() >= (r.week_start + 7)::timestamp AT TIME ZONE 'Europe/Lisbon'
+        AND NOT r.pardoned
         AND NOT EXISTS (
           SELECT 1 FROM visible_posts p WHERE p.author_id = r.user_id
             AND p.publish_at >= r.week_start::timestamp AT TIME ZONE 'Europe/Lisbon'

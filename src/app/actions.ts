@@ -8,6 +8,7 @@ import { endSession, requireUser, startSession } from "@/lib/auth";
 import { EDITION_RE } from "@/lib/dates";
 import { field, type FormState } from "@/lib/form";
 import { isEmoji } from "@/lib/reactions";
+import { getBalances } from "@/lib/economy";
 
 const DUMMY_HASH = "$2b$12$WBGkbrX6t1WgfJf4VEnO7O9cK.zOonkD1jusOwwfScTp1cGR3ToLO";
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -159,6 +160,7 @@ export async function deleteComment(commentId: number): Promise<void> {
 export async function toggleReaction(kind: "post" | "comment", targetId: number, emoji: string): Promise<void> {
   const user = await requireUser();
   if (!isEmoji(emoji)) return;
+  if (emoji !== "🧂" && (await getBalances()).find((b) => b.user_id === user.id)?.frozen) return;
   if (kind === "post") {
     const deleted = await sql`
       DELETE FROM post_reactions WHERE post_id = ${targetId} AND user_id = ${user.id} AND emoji = ${emoji} RETURNING post_id

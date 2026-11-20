@@ -10,6 +10,7 @@ import { NewBadge } from "@/components/PostCard";
 import { ReactionBar } from "@/components/ReactionBar";
 import { ViewTracker } from "@/components/ViewTracker";
 import { getPostReactions } from "@/lib/reactions";
+import { getBalances } from "@/lib/economy";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,14 +20,16 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const isAuthor = post?.author_id === user.id;
   if (!post || (!post.visible && !isAuthor && !user.is_admin)) notFound();
 
-  const [comments, views, reactions, lastRead] = post.visible
+  const [comments, views, reactions, lastRead, balances] = post.visible
     ? await Promise.all([
         listComments(post.id),
         getViews(post.id, post.author_id),
         getPostReactions(post.id, user.id),
         getLastRead(post.id, user.id),
+        getBalances(),
       ])
-    : [[], null, null, null];
+    : [[], null, null, null, []];
+  const frozen = balances.find((b) => b.user_id === user.id)?.frozen ?? false;
 
   return (
     <article>
@@ -71,7 +74,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
       {reactions && (
         <div className="mt-8">
-          <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} />
+          <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} frozen={frozen} />
         </div>
       )}
 
@@ -120,7 +123,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   </div>
                   {reactions && (
                     <div className="mt-1 origin-left scale-90">
-                      <ReactionBar kind="comment" targetId={c.id} reactions={reactions.comments.get(c.id) ?? []} />
+                      <ReactionBar kind="comment" targetId={c.id} reactions={reactions.comments.get(c.id) ?? []} frozen={frozen} />
                     </div>
                   )}
                   <div className="mt-1 flex gap-3 text-xs">
