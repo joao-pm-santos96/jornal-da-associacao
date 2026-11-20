@@ -195,3 +195,18 @@ LANGUAGE sql STABLE AS $$
       FROM users u WHERE u.id = uid)
   )
 $$;
+
+CREATE OR REPLACE FUNCTION jornal_simulating()
+RETURNS boolean
+LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (SELECT 1 FROM settings WHERE key = 'fake_now')
+$$;
+
+ALTER TABLE ledger ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE secret_santa ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE santa_cards ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE advent_doors ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE resolutions ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE resolution_votes ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE carnival_masks ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+ALTER TABLE easter_eggs ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();

@@ -63,6 +63,7 @@ export async function saveResolutions(_prev: FormState, form: FormData): Promise
   await sql`
     INSERT INTO resolutions (year, user_id, body) VALUES (${year}, ${user.id}, ${lines.join("\n")})
     ON CONFLICT (year, user_id) DO UPDATE SET body = EXCLUDED.body, updated_at = now()
+    WHERE resolutions.simulated = EXCLUDED.simulated
   `;
   revalidatePath("/resolucoes");
   return { ok: `Resoluções seladas até dezembro de ${year}. 🔒` };
@@ -76,6 +77,7 @@ export async function voteResolution(year: number, targetId: number, kept: boole
     SELECT ${year}, ${targetId}, ${user.id}, ${kept}
     WHERE EXISTS (SELECT 1 FROM resolutions WHERE year = ${year} AND user_id = ${targetId})
     ON CONFLICT (year, user_id, voter_id) DO UPDATE SET kept = EXCLUDED.kept
+    WHERE resolution_votes.simulated = EXCLUDED.simulated
   `;
   revalidatePath("/resolucoes");
 }
@@ -101,9 +103,24 @@ export async function setFakeNow(_prev: FormState, form: FormData): Promise<Form
   if (!user.is_admin) return { error: "Sem permissões." };
   const local = field(form, "fake_now");
   if (local === "") {
-    await sql`DELETE FROM settings WHERE key = 'fake_now'`;
+    const purged = await sql.transaction([
+      sql`DELETE FROM ledger WHERE simulated RETURNING id`,
+      sql`DELETE FROM easter_eggs WHERE simulated RETURNING egg`,
+      sql`DELETE FROM advent_doors WHERE simulated RETURNING door`,
+      sql`DELETE FROM santa_cards WHERE simulated RETURNING id`,
+      sql`DELETE FROM secret_santa WHERE simulated RETURNING year`,
+      sql`DELETE FROM resolution_votes WHERE simulated RETURNING year`,
+      sql`DELETE FROM resolutions WHERE simulated RETURNING year`,
+      sql`DELETE FROM carnival_masks WHERE simulated RETURNING day`,
+      sql`DELETE FROM settings WHERE key = 'fake_now'`,
+    ]);
+    const removed = (purged as unknown[][]).slice(0, -1).reduce((n, rows) => n + rows.length, 0);
     revalidatePath("/", "layout");
-    return { ok: "Máquina do tempo desligada. Bem-vindo ao presente." };
+    return {
+      ok: removed
+        ? `Máquina do tempo desligada. Apagados ${removed} registos da simulação. Bem-vindo ao presente.`
+        : "Máquina do tempo desligada. Bem-vindo ao presente.",
+    };
   }
   if (!LOCAL_DATETIME_RE.test(local)) return { error: "Escolhe uma data e hora." };
   await sql`

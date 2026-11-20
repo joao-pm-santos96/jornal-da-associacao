@@ -45,7 +45,7 @@ export function TimeMachineForm({ current }: { current: string }) {
         </form>
       </div>
       <p className="text-xs text-muted">
-        Afeta só as épocas festivas (temas, Amigo Secreto, Advento, resoluções, disfarces, ovos e bónus), mas afeta-as para toda a gente. Em produção, deixa sempre desligada.
+        Afeta só as épocas festivas (temas, Amigo Secreto, Advento, resoluções, disfarces, ovos e bónus), mas afeta-as para toda a gente. Ao voltar ao presente, tudo o que foi ganho ou criado nas épocas durante a simulação é apagado; posts, comentários e movimentos do Tesoureiro mantêm-se. Em produção, deixa sempre desligada.
       </p>
     </div>
   );
