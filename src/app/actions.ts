@@ -190,3 +190,13 @@ export async function toggleReaction(kind: "post" | "comment", targetId: number,
   }
   if (postId !== undefined) revalidatePath(`/post/${postId}`);
 }
+
+export async function markPostViewed(postId: number): Promise<void> {
+  const user = await requireUser();
+  await sql`
+    INSERT INTO post_views (post_id, user_id)
+    SELECT ${postId}, ${user.id}
+    WHERE EXISTS (SELECT 1 FROM visible_posts WHERE id = ${postId})
+    ON CONFLICT (post_id, user_id) DO UPDATE SET last_seen_at = now()
+  `;
+}

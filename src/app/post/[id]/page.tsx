@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getPost, getViews, listComments, recordView } from "@/lib/posts";
+import { getLastRead, getPost, getViews, listComments } from "@/lib/posts";
 import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dates";
 import { Markdown } from "@/components/Markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NewBadge } from "@/components/PostCard";
 import { ReactionBar } from "@/components/ReactionBar";
+import { ViewTracker } from "@/components/ViewTracker";
 import { getPostReactions } from "@/lib/reactions";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
@@ -17,17 +18,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const isAuthor = post?.author_id === user.id;
   if (!post || (!post.visible && !isAuthor && !user.is_admin)) notFound();
 
-  if (post.visible && !isAuthor) await recordView(post.id, user.id);
-  const [comments, views, reactions] = post.visible
+  const [comments, views, reactions, lastRead] = post.visible
     ? await Promise.all([
         listComments(post.id),
         getViews(post.id, post.author_id),
         getPostReactions(post.id, user.id),
+        getLastRead(post.id, user.id),
       ])
-    : [[], null, null];
+    : [[], null, null, null];
 
   return (
     <article>
+      {post.visible && <ViewTracker postId={post.id} />}
       <Link href={`/edicao/${post.edition}`} className="text-sm font-bold uppercase tracking-widest text-scoop">
         Edição de {editionLabel(post.edition)}
       </Link>
@@ -106,7 +108,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               {comments.map((c) => (
                 <li key={c.id} className="border-l-4 border-rule pl-3">
                   <p className="text-xs text-muted">
-                    {user.seen_before && c.author_id !== user.id && c.created_at > user.seen_before && <NewBadge />}
+                    {c.author_id !== user.id && (!lastRead || c.created_at > lastRead) && <NewBadge />}
                     <strong className="text-ink">{c.author_name}</strong> ·{" "}
                     <time dateTime={c.created_at.toISOString()} title={formatDateTime(c.created_at)}>
                       {timeAgo(c.created_at)}

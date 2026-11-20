@@ -8,7 +8,7 @@ export default async function EditionPage({ params }: { params: Promise<{ edicao
   const user = await requireUser();
   const { edicao } = await params;
   if (!EDITION_RE.test(edicao)) notFound();
-  const [headline, ...rest] = await listEditionPosts(edicao, user);
+  const [headline, ...rest] = await listEditionPosts(edicao, user.id);
   if (!headline) notFound();
 
   return (

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Inter, Playfair_Display } from "next/font/google";
 import { getUser } from "@/lib/auth";
+import { countUnread } from "@/lib/posts";
+import { UnreadBadge } from "@/components/UnreadBadge";
 import { logout } from "./actions";
 import "./globals.css";
 
@@ -9,7 +11,6 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Jornal da Associação",
   description: "O jornal mensal cá da associação.",
   robots: { index: false, follow: false },
 };
@@ -24,9 +25,11 @@ const today = new Intl.DateTimeFormat("pt-PT", {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
+  const unread = user ? await countUnread(user.id) : 0;
   return (
     <html lang="pt-PT" className={`${playfair.variable} ${inter.variable} antialiased`}>
       <body className="min-h-screen">
+        {!user && <title>Jornal da Associação</title>}
         <header className="border-b-4 border-ink">
           <div className="bg-scoop text-white">
             <div className="mx-auto max-w-4xl px-4 py-3 text-center">
@@ -39,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="text-muted first-letter:uppercase">{today.format(new Date())}</span>
             {user && (
               <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold">
+                <UnreadBadge initial={unread} />
                 <Link href="/" className="hover:text-scoop">Início</Link>
                 <Link href="/novo" className="hover:text-scoop">Escrever</Link>
                 <Link href="/meus" className="hover:text-scoop">Os meus</Link>

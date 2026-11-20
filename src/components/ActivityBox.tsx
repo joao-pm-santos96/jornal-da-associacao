@@ -12,8 +12,8 @@ function describe(a: Activity): string {
 export function ActivityBox({ activity }: { activity: Activity[] }) {
   if (activity.length === 0) return null;
   return (
-    <aside className="border-2 border-ink bg-flash p-4">
-      <h2 className="font-display text-xl font-black">Desde a tua última visita</h2>
+    <aside id="por-ler" className="scroll-mt-4 border-2 border-ink bg-flash p-4">
+      <h2 className="font-display text-xl font-black">Por ler</h2>
       <ul className="mt-2 space-y-1">
         {activity.map((a) => (
           <li key={a.id}>

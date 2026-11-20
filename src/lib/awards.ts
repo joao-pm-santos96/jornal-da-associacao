@@ -59,7 +59,7 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
     top(sql`
       SELECT u.name, avg(extract(epoch FROM v.first_seen_at - p.publish_at))::float AS value
       FROM post_views v JOIN visible_posts p ON p.id = v.post_id JOIN users u ON u.id = v.user_id
-      WHERE v.first_seen_at >= p.publish_at
+      WHERE v.first_seen_at >= p.publish_at AND v.user_id <> p.author_id
       GROUP BY u.name HAVING count(*) >= 1 ORDER BY value ASC LIMIT 1
     `),
     top(sql`
@@ -71,7 +71,7 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
     top(sql`
       SELECT u.name, avg(extract(epoch FROM v.first_seen_at - p.publish_at))::float AS value
       FROM post_views v JOIN visible_posts p ON p.id = v.post_id JOIN users u ON u.id = v.user_id
-      WHERE v.first_seen_at >= p.publish_at
+      WHERE v.first_seen_at >= p.publish_at AND v.user_id <> p.author_id
       GROUP BY u.name HAVING count(*) >= 1 ORDER BY value DESC LIMIT 1
     `),
     top(sql`

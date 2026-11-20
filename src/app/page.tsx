@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { listActivity, listEditionPosts, listEditions } from "@/lib/posts";
+import { listEditionPosts, listEditions, listUnread } from "@/lib/posts";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
@@ -9,7 +9,7 @@ import { getRota } from "@/lib/rota";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota] = await Promise.all([listEditions(), listActivity(user), getRota()]);
+  const [editions, activity, rota] = await Promise.all([listEditions(), listUnread(user.id), getRota()]);
   if (editions.length === 0) {
     return (
       <div className="space-y-10">
@@ -26,7 +26,7 @@ export default async function Home() {
   }
 
   const [current, ...previous] = editions;
-  const [headline, ...rest] = await listEditionPosts(current.edition, user);
+  const [headline, ...rest] = await listEditionPosts(current.edition, user.id);
 
   return (
     <div className="space-y-10">

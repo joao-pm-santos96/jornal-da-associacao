@@ -48,41 +48,35 @@ export async function listEditions() {
   `) as { edition: string; post_count: number }[];
 }
 
-function since(user: User): string | null {
-  return user.seen_before?.toISOString() ?? null;
-}
-
-export async function listEditionPosts(edition: string, user: User) {
+export async function listEditionPosts(edition: string, userId: number) {
   return (await sql`
     SELECT p.id, p.title, p.edition, p.body_md, p.publish_at, u.name AS author_name,
       (SELECT count(*) FROM comments c WHERE c.post_id = p.id)::int AS comment_count,
-      (SELECT count(*) FROM post_views v WHERE v.post_id = p.id)::int AS view_count,
-      COALESCE(p.publish_at > ${since(user)}::timestamptz AND p.author_id <> ${user.id}, false) AS is_new,
-      (SELECT count(*) FROM comments c
-        WHERE c.post_id = p.id AND c.created_at > ${since(user)}::timestamptz AND c.author_id <> ${user.id})::int
-        AS new_comment_count
+      (SELECT count(*) FROM post_views pv WHERE pv.post_id = p.id AND pv.user_id <> p.author_id)::int AS view_count,
+      n.is_new, n.new_comment_count
     FROM visible_posts p
     JOIN users u ON u.id = p.author_id
+    JOIN unread_for(${userId}) n ON n.post_id = p.id
     WHERE p.edition = ${edition}
     ORDER BY p.publish_at DESC
   `) as PostSummary[];
 }
 
-export async function listActivity(user: User) {
-  if (!user.seen_before) return [];
+export async function listUnread(userId: number) {
   return (await sql`
-    SELECT * FROM (
-      SELECT p.id, p.title, p.publish_at,
-        (p.publish_at > ${since(user)}::timestamptz AND p.author_id <> ${user.id}) AS is_new,
-        (SELECT count(*) FROM comments c
-          WHERE c.post_id = p.id AND c.created_at > ${since(user)}::timestamptz AND c.author_id <> ${user.id})::int
-          AS new_comment_count
-      FROM visible_posts p
-    ) a
-    WHERE a.is_new OR a.new_comment_count > 0
-    ORDER BY a.publish_at DESC
-    LIMIT 20
+    SELECT p.id, p.title, n.is_new, n.new_comment_count
+    FROM unread_for(${userId}) n
+    JOIN visible_posts p ON p.id = n.post_id
+    WHERE n.is_new OR n.new_comment_count > 0
+    ORDER BY p.publish_at DESC
   `) as Activity[];
+}
+
+export async function countUnread(userId: number): Promise<number> {
+  const [row] = (await sql`
+    SELECT coalesce(sum(n.is_new::int + n.new_comment_count), 0)::int AS total FROM unread_for(${userId}) n
+  `) as { total: number }[];
+  return row.total;
 }
 
 export async function getPost(id: number) {
@@ -117,8 +111,11 @@ export async function getEditablePost(id: number, userId: number) {
 
 export type Viewer = { user_id: number; name: string; first_seen_at: Date };
 
-export async function recordView(postId: number, userId: number): Promise<void> {
-  await sql`INSERT INTO post_views (post_id, user_id) VALUES (${postId}, ${userId}) ON CONFLICT DO NOTHING`;
+export async function getLastRead(postId: number, userId: number): Promise<Date | null> {
+  const rows = (await sql`
+    SELECT last_seen_at FROM post_views WHERE post_id = ${postId} AND user_id = ${userId}
+  `) as { last_seen_at: Date }[];
+  return rows[0]?.last_seen_at ?? null;
 }
 
 export async function getViews(postId: number, authorId: number) {
