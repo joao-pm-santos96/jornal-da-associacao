@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getPost, getViews, listComments, recordView } from "@/lib/posts";
+import { getPost, getViews, listComments } from "@/lib/posts";
 import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dates";
 import { Markdown } from "@/components/Markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NewBadge } from "@/components/PostCard";
+import { ViewTracker } from "@/components/ViewTracker";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,13 +16,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const isAuthor = post?.author_id === user.id;
   if (!post || (!post.visible && !isAuthor && !user.is_admin)) notFound();
 
-  if (post.visible && !isAuthor) await recordView(post.id, user.id);
   const [comments, views] = post.visible
     ? await Promise.all([listComments(post.id), getViews(post.id, post.author_id)])
     : [[], null];
 
   return (
     <article>
+      {post.visible && <ViewTracker postId={post.id} />}
       <Link href={`/edicao/${post.edition}`} className="text-sm font-bold uppercase tracking-widest text-scoop">
         Edição de {editionLabel(post.edition)}
       </Link>

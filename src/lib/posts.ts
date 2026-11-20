@@ -117,10 +117,6 @@ export async function getEditablePost(id: number, userId: number) {
 
 export type Viewer = { user_id: number; name: string; first_seen_at: Date };
 
-export async function recordView(postId: number, userId: number): Promise<void> {
-  await sql`INSERT INTO post_views (post_id, user_id) VALUES (${postId}, ${userId}) ON CONFLICT DO NOTHING`;
-}
-
 export async function getViews(postId: number, authorId: number) {
   const [seen, unseen] = await Promise.all([
     sql`

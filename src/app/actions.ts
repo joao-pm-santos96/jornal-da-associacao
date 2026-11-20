@@ -154,3 +154,12 @@ export async function deleteComment(commentId: number): Promise<void> {
   `) as { post_id: number }[];
   if (rows[0]) revalidatePath(`/post/${rows[0].post_id}`);
 }
+
+export async function markPostViewed(postId: number): Promise<void> {
+  const user = await requireUser();
+  await sql`
+    INSERT INTO post_views (post_id, user_id)
+    SELECT p.id, ${user.id} FROM visible_posts p WHERE p.id = ${postId} AND p.author_id <> ${user.id}
+    ON CONFLICT DO NOTHING
+  `;
+}
