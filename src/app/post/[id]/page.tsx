@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getPost, listComments } from "@/lib/posts";
+import { getPost, getViews, listComments, recordView } from "@/lib/posts";
 import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dates";
 import { Markdown } from "@/components/Markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -15,7 +15,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const isAuthor = post?.author_id === user.id;
   if (!post || (!post.visible && !isAuthor && !user.is_admin)) notFound();
 
-  const comments = post.visible ? await listComments(post.id) : [];
+  if (post.visible && !isAuthor) await recordView(post.id, user.id);
+  const [comments, views] = post.visible
+    ? await Promise.all([listComments(post.id), getViews(post.id, post.author_id)])
+    : [[], null];
 
   return (
     <article>
@@ -56,6 +59,28 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       <div className="mt-6">
         <Markdown>{post.body_md}</Markdown>
       </div>
+
+      {views && (
+        <div className="mt-10 space-y-1 border-t border-rule pt-3 text-sm">
+          <p>
+            <span aria-hidden="true">👁 </span>
+            <strong>Visto por:</strong>{" "}
+            {views.seen.length === 0
+              ? "ninguém, por enquanto"
+              : views.seen.map((v, i) => (
+                  <span key={v.user_id} title={`Viu a ${formatDateTime(v.first_seen_at)}`}>
+                    {v.name}
+                    {i < views.seen.length - 1 && ", "}
+                  </span>
+                ))}
+          </p>
+          {views.unseen.length > 0 && (
+            <p className="text-muted">
+              <strong className="text-scoop">Ainda não leram:</strong> {views.unseen.join(", ")}
+            </p>
+          )}
+        </div>
+      )}
 
       <section className="mt-12 border-t-4 border-ink pt-4">
         <h2 className="font-display text-2xl font-black">

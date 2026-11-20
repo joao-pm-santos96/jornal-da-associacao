@@ -24,6 +24,8 @@ export function PostMeta({ post }: { post: PostSummary }) {
           +{post.new_comment_count} {post.new_comment_count === 1 ? "novo" : "novos"}
         </span>
       )}
+      {" · "}
+      <span title="Visto por" aria-label={`Visto por ${post.view_count}`}>👁 {post.view_count}</span>
     </p>
   );
 }

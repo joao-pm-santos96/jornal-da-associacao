@@ -12,6 +12,7 @@ export type PostSummary = {
   comment_count: number;
   is_new: boolean;
   new_comment_count: number;
+  view_count: number;
 };
 
 export type Activity = { id: number; title: string; is_new: boolean; new_comment_count: number };
@@ -55,6 +56,7 @@ export async function listEditionPosts(edition: string, user: User) {
   return (await sql`
     SELECT p.id, p.title, p.edition, p.body_md, p.publish_at, u.name AS author_name,
       (SELECT count(*) FROM comments c WHERE c.post_id = p.id)::int AS comment_count,
+      (SELECT count(*) FROM post_views v WHERE v.post_id = p.id)::int AS view_count,
       COALESCE(p.publish_at > ${since(user)}::timestamptz AND p.author_id <> ${user.id}, false) AS is_new,
       (SELECT count(*) FROM comments c
         WHERE c.post_id = p.id AND c.created_at > ${since(user)}::timestamptz AND c.author_id <> ${user.id})::int
@@ -111,6 +113,32 @@ export async function getEditablePost(id: number, userId: number) {
     visible: boolean;
   }[];
   return rows[0] ?? null;
+}
+
+export type Viewer = { user_id: number; name: string; first_seen_at: Date };
+
+export async function recordView(postId: number, userId: number): Promise<void> {
+  await sql`INSERT INTO post_views (post_id, user_id) VALUES (${postId}, ${userId}) ON CONFLICT DO NOTHING`;
+}
+
+export async function getViews(postId: number, authorId: number) {
+  const [seen, unseen] = await Promise.all([
+    sql`
+      SELECT v.user_id, u.name, v.first_seen_at
+      FROM post_views v
+      JOIN users u ON u.id = v.user_id
+      WHERE v.post_id = ${postId} AND v.user_id <> ${authorId}
+      ORDER BY v.first_seen_at
+    `,
+    sql`
+      SELECT u.name
+      FROM users u
+      WHERE u.id <> ${authorId}
+        AND NOT EXISTS (SELECT 1 FROM post_views v WHERE v.post_id = ${postId} AND v.user_id = u.id)
+      ORDER BY u.name
+    `,
+  ]);
+  return { seen: seen as Viewer[], unseen: (unseen as { name: string }[]).map((u) => u.name) };
 }
 
 export async function listComments(postId: number) {

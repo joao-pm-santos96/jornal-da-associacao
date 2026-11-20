@@ -28,6 +28,13 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS post_views (
+  post_id integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  first_seen_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (post_id, user_id)
+);
+
 CREATE INDEX IF NOT EXISTS posts_edition_publish_at_idx ON posts (edition, publish_at);
 CREATE INDEX IF NOT EXISTS posts_publish_at_idx ON posts (publish_at);
 CREATE INDEX IF NOT EXISTS posts_author_id_idx ON posts (author_id);
