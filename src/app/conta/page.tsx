@@ -7,7 +7,7 @@ export default async function AccountPage() {
     <div className="mx-auto max-w-sm">
       <h1 className="font-display text-3xl font-black">A minha conta</h1>
       <p className="mb-6 mt-1 text-muted">
-        {user.name} · {user.email}
+        {user.name} · @{user.username}
         {user.is_admin && " · admin"}
       </p>
       <PasswordForm />

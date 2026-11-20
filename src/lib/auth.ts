@@ -5,13 +5,13 @@ import { redirect } from "next/navigation";
 import { sql } from "./db";
 import { SESSION_COOKIE, SESSION_MAX_AGE, signSession, verifySession } from "./session-token";
 
-export type User = { id: number; name: string; email: string; is_admin: boolean };
+export type User = { id: number; name: string; username: string; is_admin: boolean };
 
 export const getUser = cache(async (): Promise<User | null> => {
   const store = await cookies();
   const id = await verifySession(store.get(SESSION_COOKIE)?.value);
   if (id === null) return null;
-  const rows = (await sql`SELECT id, name, email, is_admin FROM users WHERE id = ${id}`) as User[];
+  const rows = (await sql`SELECT id, name, username, is_admin FROM users WHERE id = ${id}`) as User[];
   return rows[0] ?? null;
 });
 

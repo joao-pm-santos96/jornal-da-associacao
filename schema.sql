@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  email text NOT NULL UNIQUE,
+  username text NOT NULL UNIQUE CHECK (username ~ '^[a-z0-9._-]{2,32}$'),
   name text NOT NULL,
   password_hash text NOT NULL,
   is_admin boolean NOT NULL DEFAULT false,

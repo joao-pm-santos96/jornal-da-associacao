@@ -25,7 +25,7 @@ Requer Node.js 20+ e uma base de dados Postgres na Neon (recomendado: um branch 
 npm install
 cp .env.example .env.local   # preenche DATABASE_URL e SESSION_SECRET
 npm run db:init              # cria tabelas, índices e a view
-npm run create-user -- --email eu@exemplo.pt --name "O Meu Nome" --admin
+npm run create-user -- --username eu --name "O Meu Nome" --admin
 npm run dev
 ```
 
@@ -45,10 +45,10 @@ DATABASE_URL="<connection string do branch main>" npm run db:init
 
 ### Criar utilizadores
 
-O script pede a password no terminal (não fica no histórico). Se o email já existir, atualiza o nome, a password e o papel de admin — serve também para repor passwords.
+O script pede a password no terminal (não fica no histórico). Se o username já existir, atualiza o nome, a password e o papel de admin — serve também para repor passwords.
 
 ```bash
-DATABASE_URL="<connection string do branch main>" npm run create-user -- --email alguem@exemplo.pt --name "Nome" [--admin]
+DATABASE_URL="<connection string do branch main>" npm run create-user -- --username alguem --name "Nome" [--admin]
 ```
 
 A connection string obtém-se no painel da Neon ou com `npx neonctl connection-string main --project-id <id> --pooled`.

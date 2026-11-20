@@ -15,18 +15,20 @@ async function askHidden(prompt: string): Promise<string> {
   return typeof value === "string" ? value : "";
 }
 
+const USERNAME_RE = /^[a-z0-9._-]{2,32}$/;
+
 const { values } = parseArgs({
   options: {
-    email: { type: "string" },
+    username: { type: "string" },
     name: { type: "string" },
     admin: { type: "boolean", default: false },
   },
 });
 
-const email = values.email?.trim().toLowerCase();
+const username = values.username?.trim().toLowerCase();
 const name = values.name?.trim();
-if (!email || !email.includes("@") || !name) {
-  console.error('Uso: npm run create-user -- --email x@y.pt --name "Nome" [--admin]');
+if (!username || !USERNAME_RE.test(username) || !name) {
+  console.error('Uso: npm run create-user -- --username joao --name "Nome" [--admin]  (username: 2-32 caracteres a-z 0-9 . _ -)');
   process.exit(1);
 }
 
@@ -44,9 +46,9 @@ rl.close();
 const sql = neon(requireDatabaseUrl());
 const hash = await bcrypt.hash(password, 12);
 const [row] = await sql`
-  INSERT INTO users (email, name, password_hash, is_admin)
-  VALUES (${email}, ${name}, ${hash}, ${values.admin})
-  ON CONFLICT (email) DO UPDATE
+  INSERT INTO users (username, name, password_hash, is_admin)
+  VALUES (${username}, ${name}, ${hash}, ${values.admin})
+  ON CONFLICT (username) DO UPDATE
     SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, is_admin = EXCLUDED.is_admin
   RETURNING id, (xmax = 0) AS created
 `;

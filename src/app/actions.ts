@@ -18,16 +18,16 @@ function field(form: FormData, name: string): string {
 }
 
 export async function login(_prev: FormState, form: FormData): Promise<FormState> {
-  const email = field(form, "email").toLowerCase();
+  const username = field(form, "username").toLowerCase();
   const password = String(form.get("password") ?? "");
-  const rows = (await sql`SELECT id, password_hash FROM users WHERE email = ${email}`) as {
+  const rows = (await sql`SELECT id, password_hash FROM users WHERE username = ${username}`) as {
     id: number;
     password_hash: string;
   }[];
   const ok = await bcrypt.compare(password, rows[0]?.password_hash ?? DUMMY_HASH);
   if (!rows[0] || !ok) {
     await new Promise((r) => setTimeout(r, 500));
-    return { error: "Email ou password incorretos." };
+    return { error: "Utilizador ou password incorretos." };
   }
   await startSession(rows[0].id);
   redirect("/");

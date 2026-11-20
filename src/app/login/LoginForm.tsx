@@ -10,8 +10,8 @@ export function LoginForm() {
     <form action={action} className="space-y-4">
       {state.error && <p className="border-2 border-scoop bg-white p-3 font-semibold text-scoop">{state.error}</p>}
       <div>
-        <label htmlFor="email" className="text-sm font-semibold">Email</label>
-        <input id="email" name="email" type="email" autoComplete="username" required className={input} />
+        <label htmlFor="username" className="text-sm font-semibold">Utilizador</label>
+        <input id="username" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required className={input} />
       </div>
       <div>
         <label htmlFor="password" className="text-sm font-semibold">Password</label>
