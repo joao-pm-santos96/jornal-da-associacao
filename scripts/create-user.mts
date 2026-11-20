@@ -4,20 +4,15 @@ import bcrypt from "bcryptjs";
 import { neon } from "@neondatabase/serverless";
 import { requireDatabaseUrl } from "./env.mjs";
 
-function askHidden(prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    const output = rl as unknown as { _writeToOutput: (s: string) => void };
-    const write = output._writeToOutput.bind(rl);
-    output._writeToOutput = (s: string) => {
-      if (s === prompt) write(s);
-    };
-    rl.question(prompt, (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer);
-    });
-  });
+const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: Boolean(process.stdin.isTTY) });
+(rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput = () => {};
+const lines = rl[Symbol.asyncIterator]();
+
+async function askHidden(prompt: string): Promise<string> {
+  process.stdout.write(prompt);
+  const { value } = await lines.next();
+  process.stdout.write("\n");
+  return typeof value === "string" ? value : "";
 }
 
 const { values } = parseArgs({
@@ -44,6 +39,7 @@ if ((await askHidden("Repete a password: ")) !== password) {
   console.error("As passwords não coincidem.");
   process.exit(1);
 }
+rl.close();
 
 const sql = neon(requireDatabaseUrl());
 const hash = await bcrypt.hash(password, 12);
