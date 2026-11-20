@@ -6,6 +6,8 @@ import { editionLabel, formatDateTime, formatSchedule, timeAgo } from "@/lib/dat
 import { Markdown } from "@/components/Markdown";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NewBadge } from "@/components/PostCard";
+import { ReactionBar } from "@/components/ReactionBar";
+import { getPostReactions } from "@/lib/reactions";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +18,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   if (!post || (!post.visible && !isAuthor && !user.is_admin)) notFound();
 
   if (post.visible && !isAuthor) await recordView(post.id, user.id);
-  const [comments, views] = post.visible
-    ? await Promise.all([listComments(post.id), getViews(post.id, post.author_id)])
-    : [[], null];
+  const [comments, views, reactions] = post.visible
+    ? await Promise.all([
+        listComments(post.id),
+        getViews(post.id, post.author_id),
+        getPostReactions(post.id, user.id),
+      ])
+    : [[], null, null];
 
   return (
     <article>
@@ -59,6 +65,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       <div className="mt-6">
         <Markdown>{post.body_md}</Markdown>
       </div>
+
+      {reactions && (
+        <div className="mt-8">
+          <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} />
+        </div>
+      )}
 
       {views && (
         <div className="mt-10 space-y-1 border-t border-rule pt-3 text-sm">
@@ -101,6 +113,11 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     </time>
                   </p>
                   <p className="mt-1 whitespace-pre-wrap break-words">{c.body}</p>
+                  {reactions && (
+                    <div className="mt-1 origin-left scale-90">
+                      <ReactionBar kind="comment" targetId={c.id} reactions={reactions.comments.get(c.id) ?? []} />
+                    </div>
+                  )}
                   <div className="mt-1 flex gap-3 text-xs">
                     {c.author_id === user.id && (
                       <details>

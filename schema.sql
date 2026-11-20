@@ -45,3 +45,24 @@ CREATE OR REPLACE VIEW visible_posts AS
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS seen_before timestamptz;
+
+CREATE TABLE IF NOT EXISTS post_reactions (
+  post_id integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (post_id, user_id, emoji)
+);
+
+CREATE TABLE IF NOT EXISTS comment_reactions (
+  comment_id integer NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (comment_id, user_id, emoji)
+);
+
+CREATE TABLE IF NOT EXISTS rota_slots (
+  week_start date PRIMARY KEY CHECK (extract(isodow FROM week_start) = 1),
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);

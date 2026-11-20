@@ -4,19 +4,49 @@ import { sql } from "@/lib/db";
 import { formatDateTime } from "@/lib/dates";
 import { CreateUserForm } from "./CreateUserForm";
 import { ResetPasswordButton } from "./ResetPasswordButton";
+import { RotaForm } from "./RotaForm";
+import { removeRotaSlot } from "./actions";
+import { getRota } from "@/lib/rota";
+import { ConfirmButton } from "@/components/ConfirmButton";
 
 type Row = { id: number; username: string; name: string; is_admin: boolean; created_at: Date };
 
 export default async function AdminPage() {
   const user = await requireUser();
   if (!user.is_admin) notFound();
-  const users = (await sql`SELECT id, username, name, is_admin, created_at FROM users ORDER BY created_at`) as Row[];
+  const [userRows, rota, mondayRows] = await Promise.all([
+    sql`SELECT id, username, name, is_admin, created_at FROM users ORDER BY created_at`,
+    getRota(),
+    sql`SELECT to_char(date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + interval '7 days', 'YYYY-MM-DD') AS next_monday`,
+  ]);
+  const users = userRows as Row[];
+  const [{ next_monday }] = mondayRows as { next_monday: string }[];
 
   return (
     <div className="space-y-10">
       <section className="max-w-sm">
         <h1 className="mb-4 font-display text-3xl font-black">Nova conta</h1>
         <CreateUserForm />
+      </section>
+      <section className="space-y-3">
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Escala de escrita</h2>
+        <RotaForm users={users.map((u) => ({ id: u.id, name: u.name }))} nextMonday={next_monday} />
+        {rota.length > 0 && (
+          <ul className="divide-y divide-rule">
+            {rota.map((s) => (
+              <li key={s.week_start} className="flex items-center justify-between gap-2 py-2 text-sm">
+                <span>
+                  <span className="text-muted">{s.week_start}</span> · <strong>{s.name}</strong>
+                </span>
+                <form action={removeRotaSlot.bind(null, s.week_start)}>
+                  <ConfirmButton message={`Tirar a semana de ${s.week_start} da escala?`} className="text-xs text-scoop underline">
+                    Remover
+                  </ConfirmButton>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
       <section>
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Contas ({users.length})</h2>

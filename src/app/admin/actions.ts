@@ -52,3 +52,28 @@ export async function resetPassword(userId: number): Promise<CredentialsState> {
   if (!rows[0]) return { error: "Utilizador não encontrado." };
   return { ok: `Nova password temporária para @${rows[0].username}.`, username: rows[0].username, password };
 }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function setRotaSlot(_prev: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const weekStart = field(form, "week_start");
+  const userId = Number(field(form, "user_id"));
+  if (!DATE_RE.test(weekStart)) return { error: "Escolhe a data de início da semana." };
+  if (!Number.isInteger(userId) || userId <= 0) return { error: "Escolhe quem escreve." };
+  const [check] = (await sql`SELECT extract(isodow FROM ${weekStart}::date) = 1 AS monday`) as { monday: boolean }[];
+  if (!check.monday) return { error: "A semana tem de começar a uma segunda-feira." };
+  await sql`
+    INSERT INTO rota_slots (week_start, user_id) VALUES (${weekStart}, ${userId})
+    ON CONFLICT (week_start) DO UPDATE SET user_id = EXCLUDED.user_id
+  `;
+  revalidatePath("/admin");
+  return { ok: "Escala atualizada." };
+}
+
+export async function removeRotaSlot(weekStart: string): Promise<void> {
+  await requireAdmin();
+  if (!DATE_RE.test(weekStart)) return;
+  await sql`DELETE FROM rota_slots WHERE week_start = ${weekStart}`;
+  revalidatePath("/admin");
+}

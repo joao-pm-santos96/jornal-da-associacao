@@ -4,18 +4,23 @@ import { listActivity, listEditionPosts, listEditions } from "@/lib/posts";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
+import { RotaBanner } from "@/components/RotaBanner";
+import { getRota } from "@/lib/rota";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity] = await Promise.all([listEditions(), listActivity(user)]);
+  const [editions, activity, rota] = await Promise.all([listEditions(), listActivity(user), getRota()]);
   if (editions.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <h2 className="font-display text-4xl font-black">Ainda não há notícias!</h2>
-        <p className="mt-2 text-muted">A redação está vazia. Sê o primeiro a dar o furo.</p>
-        <Link href="/novo" className="mt-6 inline-block bg-ink px-5 py-2 font-bold uppercase text-white hover:bg-scoop">
-          Escrever um post
-        </Link>
+      <div className="space-y-10">
+        <RotaBanner rota={rota} userId={user.id} />
+        <div className="py-16 text-center">
+          <h2 className="font-display text-4xl font-black">Ainda não há notícias!</h2>
+          <p className="mt-2 text-muted">A redação está vazia. Sê o primeiro a dar o furo.</p>
+          <Link href="/novo" className="mt-6 inline-block bg-ink px-5 py-2 font-bold uppercase text-white hover:bg-scoop">
+            Escrever um post
+          </Link>
+        </div>
       </div>
     );
   }
@@ -25,6 +30,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-10">
+      <RotaBanner rota={rota} userId={user.id} />
       <ActivityBox activity={activity} />
       <section>
         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-scoop">

@@ -7,6 +7,7 @@ import { sql } from "@/lib/db";
 import { endSession, requireUser, startSession } from "@/lib/auth";
 import { EDITION_RE } from "@/lib/dates";
 import { field, type FormState } from "@/lib/form";
+import { isEmoji } from "@/lib/reactions";
 
 const DUMMY_HASH = "$2b$12$WBGkbrX6t1WgfJf4VEnO7O9cK.zOonkD1jusOwwfScTp1cGR3ToLO";
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -153,4 +154,39 @@ export async function deleteComment(commentId: number): Promise<void> {
     RETURNING post_id
   `) as { post_id: number }[];
   if (rows[0]) revalidatePath(`/post/${rows[0].post_id}`);
+}
+
+export async function toggleReaction(kind: "post" | "comment", targetId: number, emoji: string): Promise<void> {
+  const user = await requireUser();
+  if (!isEmoji(emoji)) return;
+  if (kind === "post") {
+    const deleted = await sql`
+      DELETE FROM post_reactions WHERE post_id = ${targetId} AND user_id = ${user.id} AND emoji = ${emoji} RETURNING post_id
+    `;
+    if (deleted.length === 0) {
+      await sql`
+        INSERT INTO post_reactions (post_id, user_id, emoji)
+        SELECT ${targetId}, ${user.id}, ${emoji}
+        WHERE EXISTS (SELECT 1 FROM visible_posts WHERE id = ${targetId})
+      `;
+    }
+    revalidatePath(`/post/${targetId}`);
+    return;
+  }
+  const deleted = (await sql`
+    DELETE FROM comment_reactions WHERE comment_id = ${targetId} AND user_id = ${user.id} AND emoji = ${emoji}
+    RETURNING (SELECT post_id FROM comments WHERE id = ${targetId}) AS post_id
+  `) as { post_id: number }[];
+  let postId = deleted[0]?.post_id;
+  if (postId === undefined) {
+    const inserted = (await sql`
+      INSERT INTO comment_reactions (comment_id, user_id, emoji)
+      SELECT c.id, ${user.id}, ${emoji}
+      FROM comments c
+      WHERE c.id = ${targetId} AND EXISTS (SELECT 1 FROM visible_posts p WHERE p.id = c.post_id)
+      RETURNING (SELECT post_id FROM comments WHERE id = ${targetId}) AS post_id
+    `) as { post_id: number }[];
+    postId = inserted[0]?.post_id;
+  }
+  if (postId !== undefined) revalidatePath(`/post/${postId}`);
 }
