@@ -13,7 +13,8 @@ import { Falling } from "@/components/Falling";
 import { EggLayer } from "@/components/EggLayer";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { formatDateTime } from "@/lib/dates";
-import { logout } from "./actions";
+import { AccountMenu } from "@/components/AccountMenu";
+import { BottomNav } from "@/components/BottomNav";
 import "./globals.css";
 
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["700", "800", "900"] });
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Jornal", statusBarStyle: "default" },
 };
 
-export const viewport: Viewport = { themeColor: "#e10600" };
+export const viewport: Viewport = { themeColor: "#e10600", viewportFit: "cover" };
 
 const today = new Intl.DateTimeFormat("pt-PT", {
   timeZone: "Europe/Lisbon",
@@ -45,7 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const myBalance = user ? balances.find((b) => b.user_id === user.id)?.balance ?? 0 : 0;
   return (
     <html lang="pt-PT" data-tema={season ?? undefined} className={`${playfair.variable} ${inter.variable} antialiased`}>
-      <body className="min-h-screen">
+      <body className={`min-h-screen ${user ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""}`}>
         {!user && <title>Jornal da Associação</title>}
         {fakeNow && (
           <p className="bg-ink px-4 py-1 text-center text-xs font-bold text-flash">
@@ -63,25 +64,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs uppercase tracking-wider">
             <span className="text-muted first-letter:uppercase">{today.format(now)}</span>
             {user && (
-              <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold">
+              <div className="flex items-center gap-4 font-semibold">
                 <UnreadBadge initial={unread} />
+                <Link href="/cofre" className="hidden hover:text-scoop md:inline" title="O teu saldo no Cofre">☕ {myBalance}</Link>
+                <span className="hidden md:inline"><AccountMenu isAdmin={user.is_admin} /></span>
+              </div>
+            )}
+          </div>
+          {user && (
+            <nav className="hidden border-t border-rule md:block" aria-label="Secções">
+              <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2 text-xs font-bold uppercase tracking-wider">
                 <Link href="/" className="hover:text-scoop">Início</Link>
                 <Link href="/novo" className="hover:text-scoop">Escrever</Link>
                 <Link href="/meus" className="hover:text-scoop">Os meus</Link>
                 <Link href="/quadro" className="hover:text-scoop">Quadro</Link>
                 <Link href="/horoscopo" className="hover:text-scoop">Horóscopo</Link>
-                <Link href="/regras" className="hover:text-scoop">Constituição</Link>
-                <Link href="/decretos" className="hover:text-scoop">Decretos</Link>
                 <Link href="/apostas" className="hover:text-scoop">Apostas</Link>
-                <Link href="/cofre" className="hover:text-scoop" title="O teu saldo no Cofre">☕ {myBalance}</Link>
-                <Link href="/conta" className="hover:text-scoop">Conta</Link>
-                {user.is_admin && <Link href="/admin" className="hover:text-scoop">Admin</Link>}
-                <form action={logout}>
-                  <button className="uppercase hover:text-scoop">Sair</button>
-                </form>
-              </nav>
-            )}
-          </div>
+                <Link href="/decretos" className="hover:text-scoop">Decretos</Link>
+                <Link href="/regras" className="hover:text-scoop">Constituição</Link>
+              </div>
+            </nav>
+          )}
         </header>
         <main className="relative mx-auto max-w-4xl px-4 py-6">
           {children}
@@ -101,6 +104,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </a>
           )}
         </footer>
+        {user && <BottomNav balance={myBalance} isAdmin={user.is_admin} />}
       </body>
     </html>
   );
