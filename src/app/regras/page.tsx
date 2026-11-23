@@ -130,6 +130,9 @@ export default async function RulesPage() {
           <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
           <li>Em caso de batota flagrante, o admin pode fechar, resolver ou anular qualquer aposta.</li>
           <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de 1, 2 ou 5 ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>
+          <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa 2 ☕ por bilhete; três símbolos iguais ganham. Também devolve, em média, menos do que custa.</li>
+          <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é todos os domingos às 21h. As apostas são mútuas, a casa fica com 10% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
+          <li>Nos <Link href="/casino/duelos" className="underline hover:text-scoop">Duelos</Link> desafia-se outro sócio para pedra, papel ou tesoura. Quem ganha leva o pote menos 10%; em caso de empate, cada um fica com o seu. Um desafio sem resposta em 48h expira e os grãos voltam.</li>
         </ul>
       </Article>
 
