@@ -45,7 +45,11 @@ export default async function AdminPage() {
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Cargos</h2>
         <OfficeForm
           users={users.map((u) => ({ id: u.id, name: u.name }))}
-          current={{ presidente: offices.presidente?.user_id, tesoureiro: offices.tesoureiro?.user_id }}
+          current={{
+            presidente: offices.presidente?.user_id,
+            tesoureiro: offices.tesoureiro?.user_id,
+            apostas: offices.apostas?.user_id,
+          }}
         />
       </section>
       <section className="space-y-3">

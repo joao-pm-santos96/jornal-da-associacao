@@ -16,6 +16,10 @@ export const GRAOS = {
   adventPrize: 2,
   egg: 1,
   freezeBelow: -50,
+  betHouseCutPct: 10,
+  betManagerFee: 2,
+  betManagerMinBettors: 3,
+  betClosingWarningHours: 2,
 } as const;
 
 export type Balance = {

@@ -231,3 +231,59 @@ CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON push_subscriptions 
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'notified_at') THEN ALTER TABLE posts ADD COLUMN notified_at timestamptz; UPDATE posts SET notified_at = now() WHERE status <> 'draft' AND publish_at <= now(); END IF; END $$;
 
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rota_slots' AND column_name = 'notified_at') THEN ALTER TABLE rota_slots ADD COLUMN notified_at timestamptz; UPDATE rota_slots SET notified_at = now() WHERE week_start <= (now() AT TIME ZONE 'Europe/Lisbon')::date; END IF; END $$;
+
+ALTER TABLE offices DROP CONSTRAINT IF EXISTS offices_office_check;
+ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presidente', 'tesoureiro', 'apostas'));
+
+CREATE OR REPLACE FUNCTION member_label(uid integer)
+RETURNS text
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(
+    (SELECT '🎭 ' || mu.name
+      FROM carnival_masks m JOIN users mu ON mu.id = m.mask_id
+      WHERE m.user_id = uid AND m.day = (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date),
+    (SELECT u.name || coalesce((
+        SELECT ' ' || string_agg(CASE o.office WHEN 'presidente' THEN '👑' WHEN 'tesoureiro' THEN '💰' WHEN 'apostas' THEN '🎲' END, '' ORDER BY array_position(ARRAY['presidente', 'tesoureiro', 'apostas'], o.office))
+        FROM offices o WHERE o.user_id = u.id
+      ), '')
+      FROM users u WHERE u.id = uid)
+  )
+$$;
+
+CREATE TABLE IF NOT EXISTS bets (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_by integer REFERENCES users(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  description text NOT NULL DEFAULT '',
+  closes_at timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'void')),
+  winning_option integer,
+  resolved_at timestamptz,
+  closing_notified_at timestamptz,
+  closed_notified_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS bet_options (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  bet_id integer NOT NULL REFERENCES bets(id) ON DELETE CASCADE,
+  position integer NOT NULL,
+  label text NOT NULL,
+  UNIQUE (bet_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS bet_wagers (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  bet_id integer NOT NULL REFERENCES bets(id) ON DELETE CASCADE,
+  option_id integer NOT NULL REFERENCES bet_options(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount integer NOT NULL CHECK (amount > 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE INDEX IF NOT EXISTS bet_wagers_bet_id_idx ON bet_wagers (bet_id);
+CREATE INDEX IF NOT EXISTS bet_options_bet_id_idx ON bet_options (bet_id);
+
+ALTER TABLE ledger ADD COLUMN IF NOT EXISTS bet_id integer REFERENCES bets(id) ON DELETE CASCADE;

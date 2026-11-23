@@ -82,6 +82,22 @@ export default async function RetrospectivePage({ params }: { params: Promise<{ 
         )}
       </section>
 
+      <section>
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🎲 O casino</h2>
+        {r.casino.length === 0 ? (
+          <p className="mt-2 text-muted">Ninguém apostou um grão. Um ano de gente ajuizada.</p>
+        ) : (
+          <ul className="divide-y divide-rule">
+            {r.casino.map((c) => (
+              <li key={c.name} className="flex justify-between py-1.5">
+                <span>{c.name}</span>
+                <span className={`font-bold ${c.value < 0 ? "text-scoop" : ""}`}>{c.value > 0 ? "+" : c.value < 0 ? "−" : ""}{Math.abs(c.value)} ☕</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <p className="text-center text-sm">
         <Link href="/resolucoes" className="font-semibold underline hover:text-scoop">E agora, as resoluções para o ano novo →</Link>
       </p>

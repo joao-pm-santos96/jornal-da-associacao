@@ -38,6 +38,7 @@ export type Retrospective = {
   fastestReader: Named | null;
   rotaDone: number;
   rotaTotal: number;
+  casino: Named[];
 };
 
 async function first<T>(query: Promise<Record<string, unknown>[]>): Promise<T | null> {
@@ -49,7 +50,7 @@ export async function getRetrospective(year: number): Promise<Retrospective> {
   const to = `${year + 1}-01-01`;
   const inYear = (column: string) =>
     `${column} >= '${from}'::timestamp AT TIME ZONE 'Europe/Lisbon' AND ${column} < '${to}'::timestamp AT TIME ZONE 'Europe/Lisbon'`;
-  const [totals, decrees, topPost, topWriter, topCommenter, funniest, laugher, fastestReader, rota] = await Promise.all([
+  const [totals, decrees, topPost, topWriter, topCommenter, funniest, laugher, fastestReader, rota, casino] = await Promise.all([
     first<{ posts: number; comments: number; reactions: number; fines: number }>(
       sql.query(`
         SELECT
@@ -57,7 +58,7 @@ export async function getRetrospective(year: number): Promise<Retrospective> {
           (SELECT count(*) FROM comments c WHERE ${inYear("c.created_at")})::int AS comments,
           ((SELECT count(*) FROM post_reactions r WHERE ${inYear("r.created_at")})
             + (SELECT count(*) FROM comment_reactions r WHERE ${inYear("r.created_at")}))::int AS reactions,
-          coalesce((SELECT -sum(l.amount) FROM ledger l WHERE l.amount < 0 AND ${inYear("l.created_at")}), 0)::int AS fines
+          coalesce((SELECT -sum(l.amount) FROM ledger l WHERE l.amount < 0 AND l.bet_id IS NULL AND ${inYear("l.created_at")}), 0)::int AS fines
       `),
     ),
     sql.query(`SELECT title FROM decrees d WHERE revoked_at IS NULL AND ${inYear("d.created_at")} ORDER BY created_at`),
@@ -102,6 +103,10 @@ export async function getRetrospective(year: number): Promise<Retrospective> {
       FROM rota_slots r
       WHERE r.week_start >= '${from}' AND r.week_start < '${to}'
         AND now() >= (r.week_start + 7)::timestamp AT TIME ZONE 'Europe/Lisbon'`)),
+    sql.query(`
+      SELECT member_label(l.user_id) AS name, sum(l.amount)::int AS value FROM ledger l
+      WHERE l.bet_id IS NOT NULL AND ${inYear("l.created_at")}
+      GROUP BY l.user_id ORDER BY value DESC`),
   ]);
   return {
     year,
@@ -118,6 +123,7 @@ export async function getRetrospective(year: number): Promise<Retrospective> {
     fastestReader,
     rotaDone: rota?.done ?? 0,
     rotaTotal: rota?.total ?? 0,
+    casino: casino as Named[],
   };
 }
 

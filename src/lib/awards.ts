@@ -32,7 +32,7 @@ async function top(query: Promise<Record<string, unknown>[]>): Promise<Row | nul
 
 export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
   const year = lisbon(await getNow()).year;
-  const [scoop, laughs, prolific, commenter, lightning, ghost, snail, missing, skipper, bunny] = await Promise.all([
+  const [scoop, laughs, prolific, commenter, lightning, ghost, snail, missing, skipper, bunny, shark, wizard, broke] = await Promise.all([
     top(sql`
       SELECT member_label(u.id) AS name, p.id AS post_id, p.title, count(c.id)::int AS value
       FROM visible_posts p JOIN users u ON u.id = p.author_id
@@ -98,6 +98,23 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
       FROM easter_eggs e WHERE e.year = ${year}
       GROUP BY e.user_id ORDER BY value DESC, max(e.found_at) ASC LIMIT 1
     `),
+    top(sql`
+      SELECT member_label(l.user_id) AS name, sum(l.amount)::int AS value
+      FROM ledger l WHERE l.bet_id IS NOT NULL
+      GROUP BY l.user_id HAVING sum(l.amount) > 0 ORDER BY value DESC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(w.user_id) AS name, count(DISTINCT w.bet_id)::int AS value
+      FROM bet_wagers w JOIN bets b ON b.id = w.bet_id AND b.winning_option = w.option_id
+      GROUP BY w.user_id ORDER BY value DESC, min(w.created_at) ASC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(l.user_id) AS name, -sum(l.amount)::int AS value
+      FROM ledger l
+      WHERE l.bet_id IS NOT NULL
+        AND date_trunc('month', l.created_at AT TIME ZONE 'Europe/Lisbon') = date_trunc('month', now() AT TIME ZONE 'Europe/Lisbon')
+      GROUP BY l.user_id HAVING sum(l.amount) < 0 ORDER BY value DESC LIMIT 1
+    `),
   ]);
 
   return {
@@ -123,6 +140,14 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
         emoji: "⚡", title: "Leitor Relâmpago", description: "Lê mais depressa depois de um post sair",
         winner: lightning?.name ?? null, stat: lightning ? `em média ${duration(lightning.value)}` : null,
       },
+      {
+        emoji: "🦈", title: "Tubarão", description: "Maior lucro nas apostas",
+        winner: shark?.name ?? null, stat: shark ? `+${shark.value} ☕ de lucro` : null, href: "/apostas",
+      },
+      {
+        emoji: "🔮", title: "Bruxo", description: "Mais apostas acertadas",
+        winner: wizard?.name ?? null, stat: wizard ? plural(wizard.value, "aposta certa", "apostas certas") : null, href: "/apostas",
+      },
       ...(bunny
         ? [{ emoji: "🐰", title: `Coelho do Ano ${year}`, description: "Mais ovos da Páscoa encontrados", winner: bunny.name, stat: plural(bunny.value, "ovo", "ovos") }]
         : []),
@@ -140,6 +165,10 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
         emoji: "🕵️", title: "Desaparecido em Combate", description: "Há mais tempo sem escrever",
         winner: missing?.name ?? null,
         stat: missing ? (missing.value < 0 ? "nunca escreveu nada" : `último post há ${duration(missing.value)}`) : null,
+      },
+      {
+        emoji: "💸", title: "Falido do Mês", description: "Mais grãos perdidos nas apostas este mês",
+        winner: broke?.name ?? null, stat: broke ? `−${broke.value} ☕` : null, href: "/apostas",
       },
       {
         emoji: "🚨", title: "Baldas da Escala", description: "Mais semanas da escala falhadas",
