@@ -1,4 +1,7 @@
 {
   "regions": ["fra1"],
-  "crons": [{ "path": "/api/cron/notificacoes", "schedule": "0 8 * * *" }]
+  "crons": [{ "path": "/api/cron/notificacoes", "schedule": "0 8 * * *" }],
+  "git": {
+    "deploymentEnabled": { "**": false, "main": true }
+  }
 }
