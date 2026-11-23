@@ -64,8 +64,8 @@ export default async function RulesPage() {
           <p className="font-display text-xl font-black">💰 Tesoureiro: {treasurer}</p>
           <ul className="mt-1 list-disc space-y-1 pl-6 text-sm">
             <li>Gere o <Link href="/cofre" className="underline hover:text-scoop">Cofre</Link>.</li>
-            <li>Aplica <strong>multas</strong> e atribui <strong>subsídios</strong> de 1 a {t.manualMax} 🫘, sempre com motivo, que fica público no livro.</li>
-            <li>Por conflito de interesses, não se pode subsidiar a si próprio. Multar-se a si próprio é permitido e muito bem visto.</li>
+            <li>Aplica <strong>multas</strong> e atribui <strong>subsídios</strong> no valor que entender, sempre com motivo, que fica público no livro.</li>
+            <li>Pode movimentar o Cofre a seu favor. Conflitos de interesses não existem; existe confiança institucional. Os sócios lesados podem queixar-se no jantar seguinte.</li>
           </ul>
         </div>
         <p className="text-sm text-muted">
@@ -83,7 +83,7 @@ export default async function RulesPage() {
             <tr><td className="p-2">Cumprir a semana da escala</td><td className="p-2 text-right font-bold">+{t.rotaDone}</td></tr>
             <tr><td className="p-2">Cota mensal (desde {editionLabel(ECONOMY_START.slice(0, 7)).toLowerCase()})</td><td className="p-2 text-right font-bold text-scoop">−{t.monthlyFee}</td></tr>
             <tr><td className="p-2">Falhar a semana da escala</td><td className="p-2 text-right font-bold text-scoop">−{t.rotaMissedFine}</td></tr>
-            <tr><td className="p-2">Multas e subsídios do Tesoureiro</td><td className="p-2 text-right font-bold">±1 a {t.manualMax}</td></tr>
+            <tr><td className="p-2">Multas e subsídios do Tesoureiro</td><td className="p-2 text-right font-bold">± à discrição</td></tr>
           </tbody>
         </table>
         <ul className="list-disc space-y-1 pl-6">

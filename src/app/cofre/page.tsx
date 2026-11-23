@@ -78,7 +78,7 @@ export default async function TreasuryPage() {
       {isTreasurer && (
         <section className="max-w-lg border-2 border-ink bg-white p-4">
           <h2 className="mb-3 font-display text-2xl font-black">💰 Gabinete do Tesoureiro</h2>
-          <MovementForm members={balances.map((b) => ({ id: b.user_id, name: b.name }))} max={TREMOCOS.manualMax} />
+          <MovementForm members={balances.map((b) => ({ id: b.user_id, name: b.name }))} />
         </section>
       )}
 
