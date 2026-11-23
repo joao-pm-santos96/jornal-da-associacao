@@ -30,8 +30,57 @@ async function top(query: Promise<Record<string, unknown>[]>): Promise<Row | nul
   return rows[0] ?? null;
 }
 
-export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
+function duelCount(status: "declined" | "expired" | "cancelled", side: "challenger_id" | "opponent_id") {
+  return top(sql`
+    SELECT member_label(user_id) AS name, count(*)::int AS value FROM (
+      SELECT CASE WHEN ${side}::text = 'challenger_id' THEN challenger_id ELSE opponent_id END AS user_id, resolved_at
+      FROM duels WHERE status = ${status}
+    ) d
+    GROUP BY user_id ORDER BY value DESC, max(resolved_at) DESC LIMIT 1
+  `);
+}
+
+export async function getAwards(): Promise<{ honor: Award[]; shame: Award[]; coward: Award[] }> {
   const year = lisbon(await getNow()).year;
+  const casino = Promise.all([
+    top(sql`
+      SELECT member_label(user_id) AS name, payout AS value FROM slot_spins
+      WHERE payout > 0 ORDER BY payout DESC, created_at ASC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(user_id) AS name, prize AS value FROM scratch_tickets
+      WHERE prize > 0 AND scratched_at IS NOT NULL ORDER BY prize DESC, scratched_at ASC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(b.user_id) AS name, count(DISTINCT b.race_id)::int AS value
+      FROM duck_bets b JOIN duck_races r ON r.id = b.race_id AND r.status = 'finished' AND r.winner = b.duck
+      GROUP BY b.user_id ORDER BY value DESC, min(r.finished_at) ASC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(winner_id) AS name, count(*)::int AS value FROM duels
+      WHERE status = 'done' AND winner_id IS NOT NULL
+      GROUP BY winner_id ORDER BY value DESC, min(resolved_at) ASC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(user_id) AS name, count(*)::int AS value FROM slot_spins
+      GROUP BY user_id ORDER BY value DESC, max(created_at) DESC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(user_id) AS name, count(*)::int AS value FROM scratch_tickets
+      WHERE prize = 0 AND scratched_at IS NOT NULL
+      GROUP BY user_id ORDER BY value DESC, max(scratched_at) DESC LIMIT 1
+    `),
+    top(sql`
+      SELECT member_label(loser) AS name, count(*)::int AS value FROM (
+        SELECT CASE WHEN winner_id = challenger_id THEN opponent_id ELSE challenger_id END AS loser, resolved_at
+        FROM duels WHERE status = 'done' AND winner_id IS NOT NULL
+      ) d
+      GROUP BY loser ORDER BY value DESC, max(resolved_at) DESC LIMIT 1
+    `),
+    duelCount("declined", "opponent_id"),
+    duelCount("expired", "opponent_id"),
+    duelCount("cancelled", "challenger_id"),
+  ]);
   const [scoop, laughs, prolific, commenter, lightning, ghost, snail, missing, skipper, bunny, shark, wizard, broke] = await Promise.all([
     top(sql`
       SELECT member_label(u.id) AS name, p.id AS post_id, p.title, count(c.id)::int AS value
@@ -116,6 +165,8 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
       GROUP BY l.user_id HAVING sum(l.amount) < 0 ORDER BY value DESC LIMIT 1
     `),
   ]);
+  const [jackpot, scratchWin, duckMaster, gunslinger, slotAddict, scratchLoser, punchbag, chicken, ostrich, whiteFlag] =
+    await casino;
 
   return {
     honor: [
@@ -148,6 +199,24 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
         emoji: "🔮", title: "Bruxo", description: "Mais apostas acertadas",
         winner: wizard?.name ?? null, stat: wizard ? plural(wizard.value, "aposta certa", "apostas certas") : null, href: "/casino",
       },
+      {
+        emoji: "🎰", title: "Jackpot", description: "Maior prémio numa só jogada da slot",
+        winner: jackpot?.name ?? null, stat: jackpot ? `+${jackpot.value} ☕ de uma vez` : null, href: "/casino/slot",
+      },
+      {
+        emoji: "🍀", title: "Sorte Grande", description: "Maior prémio na raspadinha",
+        winner: scratchWin?.name ?? null, stat: scratchWin ? `+${scratchWin.value} ☕ num bilhete` : null, href: "/casino/raspadinha",
+      },
+      {
+        emoji: "🦆", title: "Mestre dos Patos", description: "Mais corridas de patos acertadas",
+        winner: duckMaster?.name ?? null, stat: duckMaster ? plural(duckMaster.value, "corrida certa", "corridas certas") : null,
+        href: "/casino/patos",
+      },
+      {
+        emoji: "🤠", title: "Pistoleiro", description: "Mais duelos ganhos",
+        winner: gunslinger?.name ?? null, stat: gunslinger ? plural(gunslinger.value, "duelo ganho", "duelos ganhos") : null,
+        href: "/casino/duelos",
+      },
       ...(bunny
         ? [{ emoji: "🐰", title: `Coelho do Ano ${year}`, description: "Mais ovos da Páscoa encontrados", winner: bunny.name, stat: plural(bunny.value, "ovo", "ovos") }]
         : []),
@@ -171,8 +240,38 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
         winner: broke?.name ?? null, stat: broke ? `−${broke.value} ☕` : null, href: "/casino",
       },
       {
+        emoji: "🕹️", title: "Agarrado à Slot", description: "Mais jogadas na slot machine",
+        winner: slotAddict?.name ?? null, stat: slotAddict ? plural(slotAddict.value, "jogada", "jogadas") : null, href: "/casino/slot",
+      },
+      {
+        emoji: "🎟️", title: "Raspa e Chora", description: "Mais raspadinhas sem prémio",
+        winner: scratchLoser?.name ?? null, stat: scratchLoser ? plural(scratchLoser.value, "bilhete em branco", "bilhetes em branco") : null,
+        href: "/casino/raspadinha",
+      },
+      {
+        emoji: "🥊", title: "Saco de Pancada", description: "Mais duelos perdidos",
+        winner: punchbag?.name ?? null, stat: punchbag ? plural(punchbag.value, "duelo perdido", "duelos perdidos") : null,
+        href: "/casino/duelos",
+      },
+      {
         emoji: "🚨", title: "Baldas da Escala", description: "Mais semanas da escala falhadas",
         winner: skipper?.name ?? null, stat: skipper ? plural(skipper.value, "semana em falta", "semanas em falta") : null,
+      },
+    ],
+    coward: [
+      {
+        emoji: "🐔", title: "Galinha", description: "Mais desafios para duelo recusados",
+        winner: chicken?.name ?? null, stat: chicken ? plural(chicken.value, "recusa", "recusas") : null, href: "/casino/duelos",
+      },
+      {
+        emoji: "🙈", title: "Avestruz", description: "Mais desafios deixados a expirar sem resposta",
+        winner: ostrich?.name ?? null, stat: ostrich ? plural(ostrich.value, "desafio ignorado", "desafios ignorados") : null,
+        href: "/casino/duelos",
+      },
+      {
+        emoji: "🏳️", title: "Bandeira Branca", description: "Mais desafios retirados antes de o outro responder",
+        winner: whiteFlag?.name ?? null, stat: whiteFlag ? plural(whiteFlag.value, "desafio retirado", "desafios retirados") : null,
+        href: "/casino/duelos",
       },
     ],
   };
