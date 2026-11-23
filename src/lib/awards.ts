@@ -142,11 +142,11 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
       },
       {
         emoji: "🦈", title: "Tubarão", description: "Maior lucro nas apostas",
-        winner: shark?.name ?? null, stat: shark ? `+${shark.value} ☕ de lucro` : null, href: "/apostas",
+        winner: shark?.name ?? null, stat: shark ? `+${shark.value} ☕ de lucro` : null, href: "/casino",
       },
       {
         emoji: "🔮", title: "Bruxo", description: "Mais apostas acertadas",
-        winner: wizard?.name ?? null, stat: wizard ? plural(wizard.value, "aposta certa", "apostas certas") : null, href: "/apostas",
+        winner: wizard?.name ?? null, stat: wizard ? plural(wizard.value, "aposta certa", "apostas certas") : null, href: "/casino",
       },
       ...(bunny
         ? [{ emoji: "🐰", title: `Coelho do Ano ${year}`, description: "Mais ovos da Páscoa encontrados", winner: bunny.name, stat: plural(bunny.value, "ovo", "ovos") }]
@@ -168,7 +168,7 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[] }> {
       },
       {
         emoji: "💸", title: "Falido do Mês", description: "Mais grãos perdidos nas apostas este mês",
-        winner: broke?.name ?? null, stat: broke ? `−${broke.value} ☕` : null, href: "/apostas",
+        winner: broke?.name ?? null, stat: broke ? `−${broke.value} ☕` : null, href: "/casino",
       },
       {
         emoji: "🚨", title: "Baldas da Escala", description: "Mais semanas da escala falhadas",

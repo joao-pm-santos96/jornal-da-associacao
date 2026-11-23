@@ -6,7 +6,6 @@ import { setOffice } from "@/app/governo-actions";
 const OFFICES = [
   { office: "presidente", label: "👑 Presidente" },
   { office: "tesoureiro", label: "💰 Tesoureiro" },
-  { office: "apostas", label: "🎲 Gestor de Apostas" },
 ] as const;
 
 type Office = (typeof OFFICES)[number]["office"];
