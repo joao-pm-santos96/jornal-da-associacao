@@ -114,6 +114,7 @@ export async function setFakeNow(_prev: FormState, form: FormData): Promise<Form
       sql`DELETE FROM carnival_masks WHERE simulated RETURNING day`,
       sql`DELETE FROM bet_wagers WHERE simulated RETURNING id`,
       sql`DELETE FROM bets WHERE simulated RETURNING id`,
+      sql`DELETE FROM slot_spins WHERE simulated RETURNING id`,
       sql`DELETE FROM settings WHERE key = 'fake_now'`,
     ]);
     const removed = (purged as unknown[][]).slice(0, -1).reduce((n, rows) => n + rows.length, 0);

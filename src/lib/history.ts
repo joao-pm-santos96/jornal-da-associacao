@@ -3,7 +3,7 @@ import { sql } from "./db";
 import { ECONOMY_START, GRAOS, bonusEvents } from "./economy";
 import { getNow } from "./seasons";
 
-export type MovementKind = "post" | "comment" | "laugh" | "rota" | "rota_fine" | "fee" | "bonus" | "ledger";
+export type MovementKind = "post" | "comment" | "laugh" | "rota" | "rota_fine" | "fee" | "bonus" | "ledger" | "slots";
 
 export type HistoryEntry = {
   user_id: number;
@@ -17,7 +17,7 @@ export type HistoryEntry = {
 
 export type StatementLine = HistoryEntry & { balance: number };
 
-const COFRE_KINDS: ReadonlySet<MovementKind> = new Set(["fee", "rota_fine", "bonus", "ledger"]);
+const COFRE_KINDS: ReadonlySet<MovementKind> = new Set(["fee", "rota_fine", "bonus", "ledger", "slots"]);
 
 async function activity(userId: number | null): Promise<HistoryEntry[]> {
   const rows = (await sql`
@@ -71,6 +71,11 @@ async function activity(userId: number | null): Promise<HistoryEntry[]> {
       SELECT l.user_id, l.created_at, 'ledger', l.amount, l.reason,
         CASE WHEN l.bet_id IS NOT NULL THEN '/casino/' || l.bet_id END
       FROM ledger l WHERE l.user_id IN (SELECT id FROM me)
+      UNION ALL
+      SELECT s.user_id, max(s.created_at), 'slots', sum(s.payout - s.bet)::int,
+        'Slot machine: ' || count(*) || CASE WHEN count(*) = 1 THEN ' jogada' ELSE ' jogadas' END, '/casino/slot'
+      FROM slot_spins s WHERE s.user_id IN (SELECT id FROM me)
+      GROUP BY s.user_id, (s.created_at AT TIME ZONE 'Europe/Lisbon')::date
     ) e JOIN me ON me.id = e.user_id
   `) as HistoryEntry[];
 
@@ -129,7 +134,7 @@ export async function treasuryStatement(): Promise<StatementLine[]> {
     return { ...first, user_id: 0, name: "", amount: -total, label };
   });
   const individual: HistoryEntry[] = flows
-    .filter((e) => e.kind === "rota_fine" || e.kind === "ledger")
+    .filter((e) => e.kind === "rota_fine" || e.kind === "ledger" || e.kind === "slots")
     .map((e) => ({ ...e, amount: -e.amount, label: `${e.name}: ${e.label}` }));
   return withRunningBalance([...collective, ...individual]);
 }

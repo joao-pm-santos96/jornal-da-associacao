@@ -129,6 +129,7 @@ export default async function RulesPage() {
           <li>Com {t.betBankerMinBettors} ou mais apostadores, a banca recebe uma comissão de +{t.betBankerFee} ☕, paga pelo Cofre.</li>
           <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
           <li>Em caso de batota flagrante, o admin pode fechar, resolver ou anular qualquer aposta.</li>
+          <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de 1, 2 ou 5 ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>
         </ul>
       </Article>
 

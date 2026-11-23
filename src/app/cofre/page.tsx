@@ -66,7 +66,7 @@ export default async function TreasuryPage() {
                   <td className="py-2 pr-2 text-right">{signed(-b.fees)}</td>
                   <td className="py-2 pr-2 text-right">{b.fines ? signed(-b.fines) : "—"}</td>
                   <td className="py-2 pr-2 text-right">{b.bonuses ? signed(b.bonuses) : "—"}</td>
-                  <td className="py-2 pr-2 text-right">{b.manual ? signed(b.manual) : "—"}</td>
+                  <td className="py-2 pr-2 text-right">{b.manual + b.slots ? signed(b.manual + b.slots) : "—"}</td>
                   <td className={`py-2 text-right font-display text-lg font-black ${b.balance < 0 ? "text-scoop" : ""}`}>
                     {b.balance} ☕
                   </td>
