@@ -10,6 +10,7 @@ const ICON: Record<MovementKind, string> = {
   fee: "🧾",
   bonus: "🎁",
   ledger: "📒",
+  slots: "🎰",
 };
 
 const MAX_LINES = 300;

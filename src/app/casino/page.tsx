@@ -32,6 +32,15 @@ export default async function CasinoPage() {
         </div>
       </details>
 
+      <Link
+        href="/casino/slot"
+        className="mx-auto block max-w-2xl -rotate-1 border-4 border-[#141414] bg-[#e10600] p-4 text-center shadow-[6px_6px_0_#141414] transition hover:rotate-0"
+      >
+        <span className="block text-4xl tracking-widest" aria-hidden="true">🦆☕🐕</span>
+        <span className="block font-display text-3xl font-black uppercase text-[#f2c230] [text-shadow:2px_2px_0_#141414]">Slot machine</span>
+        <span className="block text-sm font-bold text-white">Jackpot de ×100 · jogadas de 1, 2 ou 5 ☕</span>
+      </Link>
+
       <section className="space-y-3">
         <h2 className={`text-center font-display text-3xl font-black uppercase ${gold}`}>Mesas abertas</h2>
         {open.length === 0 && (

@@ -33,6 +33,7 @@ export type Balance = {
   rota_missed: number;
   weeks: number;
   manual: number;
+  slots: number;
   created_at: Date;
   bonuses: number;
   earned: number;
@@ -80,7 +81,7 @@ function settle(c: Counts, now: Date): Balance {
   const fees = c.weeks * GRAOS.weeklyFee;
   const fines = c.rota_missed * GRAOS.rotaMissedFine;
   const bonuses = bonusFor(c.created_at, now);
-  const balance = earned - fees - fines + bonuses + c.manual;
+  const balance = earned - fees - fines + bonuses + c.manual + c.slots;
   return { ...c, bonuses, earned, fees, fines, balance, frozen: balance < GRAOS.freezeBelow };
 }
 
@@ -113,6 +114,7 @@ export async function getBalances(): Promise<Balance[]> {
           interval '1 day') d
         WHERE extract(isodow FROM d) = 1)::int AS weeks,
       coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::float8 AS manual,
+      coalesce((SELECT sum(s.payout - s.bet) FROM slot_spins s WHERE s.user_id = u.id), 0)::float8 AS slots,
       u.created_at
     FROM users u
     ORDER BY u.id
@@ -121,7 +123,7 @@ export async function getBalances(): Promise<Balance[]> {
 }
 
 export function treasury(balances: Balance[]): number {
-  return balances.reduce((total, b) => total + b.fees + b.fines - b.bonuses - b.manual, 0);
+  return balances.reduce((total, b) => total + b.fees + b.fines - b.bonuses - b.manual - b.slots, 0);
 }
 
 export type Movement = { id: number; name: string; amount: number; reason: string; by: string | null; created_at: Date };

@@ -291,3 +291,15 @@ ALTER TABLE ledger ADD COLUMN IF NOT EXISTS bet_id integer REFERENCES bets(id) O
 DELETE FROM offices WHERE office = 'apostas';
 ALTER TABLE offices DROP CONSTRAINT IF EXISTS offices_office_check;
 ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presidente', 'tesoureiro'));
+
+CREATE TABLE IF NOT EXISTS slot_spins (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  bet integer NOT NULL CHECK (bet IN (1, 2, 5)),
+  reels text NOT NULL,
+  payout integer NOT NULL CHECK (payout >= 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE INDEX IF NOT EXISTS slot_spins_user_id_idx ON slot_spins (user_id, created_at);
