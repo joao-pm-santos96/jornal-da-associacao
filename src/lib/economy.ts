@@ -54,11 +54,21 @@ function festiveDates(now: Date): string[] {
   return dates.filter((d) => d >= ECONOMY_START && d <= today);
 }
 
-function bonusFor(createdAt: Date, now: Date): number {
+export type BonusEvent = { date: string; amount: number; label: string };
+
+export function bonusEvents(createdAt: Date, now: Date): BonusEvent[] {
   const joined = lisbon(createdAt).date;
   return festiveDates(now)
     .filter((d) => d >= joined)
-    .reduce((sum, d) => sum + (d.endsWith("-12-15") ? GRAOS.xmasBonus : GRAOS.folar), 0);
+    .map((d) =>
+      d.endsWith("-12-15")
+        ? { date: d, amount: GRAOS.xmasBonus, label: "Subsídio de Natal" }
+        : { date: d, amount: GRAOS.folar, label: "Folar da Páscoa" },
+    );
+}
+
+function bonusFor(createdAt: Date, now: Date): number {
+  return bonusEvents(createdAt, now).reduce((sum, e) => sum + e.amount, 0);
 }
 
 function settle(c: Counts, now: Date): Balance {
