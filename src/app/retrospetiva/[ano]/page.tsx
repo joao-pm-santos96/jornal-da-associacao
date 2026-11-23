@@ -48,7 +48,7 @@ export default async function RetrospectivePage({ params }: { params: Promise<{ 
         <Stat label="Posts" value={r.posts} />
         <Stat label="Comentários" value={r.comments} />
         <Stat label="Reações" value={r.reactions} />
-        <Stat label="🫘 em multas" value={r.fines} />
+        <Stat label="☕ em multas" value={r.fines} />
       </section>
 
       <section>

@@ -28,7 +28,7 @@ export function EggLayer() {
     startTransition(async () => {
       const { found } = await collectEgg(egg);
       setEggs((list) => list.filter((e) => e.egg !== egg));
-      setToast(found ? `🥚 Ovo n.º ${egg} apanhado! +1 🫘` : "Este ovo já era teu.");
+      setToast(found ? `🥚 Ovo n.º ${egg} apanhado! +1 ☕` : "Este ovo já era teu.");
       setTimeout(() => setToast(null), 3500);
     });
   }

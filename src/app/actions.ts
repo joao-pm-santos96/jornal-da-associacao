@@ -3,6 +3,8 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { flushDueNotifications, notifyComment } from "@/lib/push";
 import { sql } from "@/lib/db";
 import { endSession, requireUser, startSession } from "@/lib/auth";
 import { EDITION_RE } from "@/lib/dates";
@@ -115,6 +117,7 @@ export async function savePost(postId: number | null, _prev: FormState, form: Fo
     if (!rows[0]) return { error: "Post não encontrado." };
     id = rows[0].id;
   }
+  if (status === "published") after(flushDueNotifications);
   redirect(`/post/${id}`);
 }
 
@@ -128,11 +131,13 @@ export async function addComment(postId: number, form: FormData): Promise<void> 
   const user = await requireUser();
   const body = field(form, "body");
   if (!body || body.length > 2000) return;
-  await sql`
+  const inserted = await sql`
     INSERT INTO comments (post_id, author_id, body)
     SELECT ${postId}, ${user.id}, ${body}
     WHERE EXISTS (SELECT 1 FROM visible_posts WHERE id = ${postId})
+    RETURNING id
   `;
+  if (inserted.length > 0) after(() => notifyComment(postId, user.id, body));
   revalidatePath(`/post/${postId}`);
 }
 

@@ -24,7 +24,7 @@ const BANNERS: Record<Season, { title: string; text: string; links: { href: stri
   },
   pascoa: {
     title: "🐰 Caça aos ovos!",
-    text: "Há ovos escondidos pelo jornal. Cada um vale tremoços.",
+    text: "Há ovos escondidos pelo jornal. Cada um vale grãos de café.",
     links: [{ href: "/pascoa", label: "Regras e classificação" }],
   },
 };

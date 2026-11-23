@@ -213,3 +213,21 @@ ALTER TABLE easter_eggs ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFA
 
 ALTER TABLE ledger DROP CONSTRAINT IF EXISTS ledger_amount_check;
 ALTER TABLE ledger ADD CONSTRAINT ledger_amount_check CHECK (amount <> 0);
+
+UPDATE advent_doors
+SET kind = 'graos', payload = replace(replace(payload, 'tremoços', 'grãos de café'), '🫘', '☕')
+WHERE kind = 'tremocos';
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint text PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON push_subscriptions (user_id);
+
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'notified_at') THEN ALTER TABLE posts ADD COLUMN notified_at timestamptz; UPDATE posts SET notified_at = now() WHERE status <> 'draft' AND publish_at <= now(); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rota_slots' AND column_name = 'notified_at') THEN ALTER TABLE rota_slots ADD COLUMN notified_at timestamptz; UPDATE rota_slots SET notified_at = now() WHERE week_start <= (now() AT TIME ZONE 'Europe/Lisbon')::date; END IF; END $$;

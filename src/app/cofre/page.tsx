@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { getBalances, listMovements, treasury, TREMOCOS } from "@/lib/economy";
+import { getBalances, listMovements, treasury, GRAOS } from "@/lib/economy";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
 import { MovementForm } from "./MovementForm";
@@ -20,14 +20,14 @@ export default async function TreasuryPage() {
       <header>
         <h1 className="font-display text-4xl font-black sm:text-5xl">Cofre da Associação</h1>
         <p className="text-muted">
-          Contas certas, tremoços contados. Tesoureiro: <strong>{offices.tesoureiro?.name ?? "vago"}</strong>.{" "}
-          <Link href="/regras#tremoco" className="underline hover:text-scoop">Como funciona?</Link>
+          Contas certas, grãos contados. Tesoureiro: <strong>{offices.tesoureiro?.name ?? "vago"}</strong>.{" "}
+          <Link href="/regras#cafe" className="underline hover:text-scoop">Como funciona?</Link>
         </p>
       </header>
 
       <section className="border-2 border-ink bg-flash p-6 text-center">
         <p className="text-xs font-black uppercase tracking-widest">Saldo do Cofre</p>
-        <p className="font-display text-6xl font-black">{cofre} 🫘</p>
+        <p className="font-display text-6xl font-black">{cofre} ☕</p>
         <p className="text-sm">cotas + multas − subsídios − prémios e bónus das festas</p>
       </section>
 
@@ -63,7 +63,7 @@ export default async function TreasuryPage() {
                   <td className="py-2 pr-2 text-right">{b.bonuses ? signed(b.bonuses) : "—"}</td>
                   <td className="py-2 pr-2 text-right">{b.manual ? signed(b.manual) : "—"}</td>
                   <td className={`py-2 text-right font-display text-lg font-black ${b.balance < 0 ? "text-scoop" : ""}`}>
-                    {b.balance} 🫘
+                    {b.balance} ☕
                   </td>
                 </tr>
               ))}
@@ -71,7 +71,7 @@ export default async function TreasuryPage() {
           </table>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Abaixo de {TREMOCOS.freezeBelow} 🫘 a conta fica congelada: só se pode reagir com 🧂.
+          Abaixo de {GRAOS.freezeBelow} ☕ a conta fica congelada: só se pode reagir com 🧂.
         </p>
       </section>
 
@@ -97,7 +97,7 @@ export default async function TreasuryPage() {
                   </span>
                 </span>
                 <span className={`font-display text-lg font-black ${m.amount < 0 ? "text-scoop" : ""}`}>
-                  {signed(m.amount)} 🫘
+                  {signed(m.amount)} ☕
                 </span>
               </li>
             ))}

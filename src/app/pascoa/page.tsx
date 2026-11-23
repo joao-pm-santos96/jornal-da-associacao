@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getNow, getSeason, lisbon } from "@/lib/seasons";
-import { TREMOCOS } from "@/lib/economy";
+import { GRAOS } from "@/lib/economy";
 import { EGG_COUNT, eggLeaderboard, foundEggs, godparents } from "@/lib/festas/pascoa";
 
 export default async function EasterPage() {
@@ -16,7 +16,7 @@ export default async function EasterPage() {
         <h1 className="font-display text-4xl font-black sm:text-5xl">🐰 Páscoa na Associação</h1>
         <p className="text-muted">
           {season === "pascoa"
-            ? `Há ${EGG_COUNT} ovos 🥚 escondidos pelo jornal. Cada um vale +${TREMOCOS.egg} 🫘. Procura bem: estão em páginas e sítios diferentes.`
+            ? `Há ${EGG_COUNT} ovos 🥚 escondidos pelo jornal. Cada um vale +${GRAOS.egg} ☕. Procura bem: estão em páginas e sítios diferentes.`
             : "A caça aos ovos só acontece entre a Sexta-feira Santa e a Segunda-feira de Páscoa."}
         </p>
       </header>
@@ -30,7 +30,7 @@ export default async function EasterPage() {
         <section className="border-2 border-ink bg-flash p-4">
           <h2 className="font-display text-2xl font-black">🥖 O teu folar</h2>
           <p className="mt-1">
-            Este ano o teu padrinho é <strong>{padrinho.name}</strong>, que te entrega o folar de {TREMOCOS.folar} 🫘 no Domingo de Páscoa.
+            Este ano o teu padrinho é <strong>{padrinho.name}</strong>, que te entrega o folar de {GRAOS.folar} ☕ no Domingo de Páscoa.
             <span className="block text-sm text-muted">(Quem paga é o Cofre. O padrinho só dá a cara.)</span>
           </p>
         </section>
