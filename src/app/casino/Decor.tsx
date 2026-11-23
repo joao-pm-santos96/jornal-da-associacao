@@ -3,9 +3,31 @@ import Link from "next/link";
 export const felt = "bg-[#0b6b3a] text-[#fff6d6]";
 export const gold = "text-[#f2c230]";
 
+const BULB_SIDES = [
+  { start: 0, n: 16, className: "inset-x-2 top-2" },
+  { start: 16, n: 5, className: "inset-y-8 right-2 flex-col" },
+  { start: 21, n: 16, className: "inset-x-2 bottom-2 flex-row-reverse" },
+  { start: 37, n: 5, className: "inset-y-8 left-2 flex-col-reverse" },
+] as const;
+
+function Bulbs() {
+  return BULB_SIDES.map(({ start, n, className }) => (
+    <div key={start} aria-hidden="true" className={`absolute flex justify-between ${className}`}>
+      {Array.from({ length: n }, (_, k) => (
+        <span key={k} className="casino-bulb" style={{ animationDelay: `${((start + k) % 3) * 0.2 - 0.6}s` }} />
+      ))}
+    </div>
+  ));
+}
+
 export function Marquee({ small = false }: { small?: boolean }) {
   return (
-    <div className="border-[6px] border-dotted border-[#f2c230] bg-[#141414] px-4 py-5 text-center">
+    <div
+      className={`relative bg-[#141414] text-center ${
+        small ? "border-[6px] border-dotted border-[#f2c230] px-4 py-5" : "px-8 py-9"
+      }`}
+    >
+      {!small && <Bulbs />}
       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f2c230]">★ Aberto 24h · Fiado não ★</p>
       <Link href="/casino" className="block">
         <span
@@ -13,7 +35,7 @@ export function Marquee({ small = false }: { small?: boolean }) {
             small ? "text-4xl" : "text-6xl sm:text-7xl"
           }`}
         >
-          Casino
+          Ca<span className="casino-dead-bulb">s</span>ino
         </span>
       </Link>
       <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#fff6d6]">
