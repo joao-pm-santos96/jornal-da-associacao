@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { READ_EVENT } from "./ViewTracker";
 
 const TITLE = "Jornal da Associação";
-const POLL_MS = 60_000;
+const POLL_MS = 5 * 60_000;
 
 export function UnreadBadge({ initial }: { initial: number }) {
   const [count, setCount] = useState(initial);
-  const pathname = usePathname();
 
   useEffect(() => {
     let cancelled = false;
@@ -23,7 +21,6 @@ export function UnreadBadge({ initial }: { initial: number }) {
         })
         .catch(() => undefined);
     };
-    refresh();
     const timer = setInterval(refresh, POLL_MS);
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener(READ_EVENT, refresh);
@@ -33,7 +30,7 @@ export function UnreadBadge({ initial }: { initial: number }) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [pathname]);
+  }, []);
 
   return (
     <>
