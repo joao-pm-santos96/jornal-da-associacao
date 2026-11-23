@@ -3,7 +3,7 @@ import { sql } from "./db";
 import { ECONOMY_START, GRAOS, bonusEvents } from "./economy";
 import { getNow } from "./seasons";
 
-export type MovementKind = "post" | "comment" | "laugh" | "rota" | "rota_fine" | "fee" | "bonus" | "ledger" | "slots";
+export type MovementKind = "post" | "comment" | "laugh" | "rota" | "rota_fine" | "fee" | "bonus" | "ledger" | "slots" | "scratch";
 
 export type HistoryEntry = {
   user_id: number;
@@ -17,7 +17,7 @@ export type HistoryEntry = {
 
 export type StatementLine = HistoryEntry & { balance: number };
 
-const COFRE_KINDS: ReadonlySet<MovementKind> = new Set(["fee", "rota_fine", "bonus", "ledger", "slots"]);
+const COFRE_KINDS: ReadonlySet<MovementKind> = new Set(["fee", "rota_fine", "bonus", "ledger", "slots", "scratch"]);
 
 async function activity(userId: number | null): Promise<HistoryEntry[]> {
   const rows = (await sql`
@@ -76,6 +76,11 @@ async function activity(userId: number | null): Promise<HistoryEntry[]> {
         'Slot machine: ' || count(*) || CASE WHEN count(*) = 1 THEN ' jogada' ELSE ' jogadas' END, '/casino/slot'
       FROM slot_spins s WHERE s.user_id IN (SELECT id FROM me)
       GROUP BY s.user_id, (s.created_at AT TIME ZONE 'Europe/Lisbon')::date
+      UNION ALL
+      SELECT t.user_id, max(t.created_at), 'scratch', sum(t.prize - t.cost)::int,
+        'Raspadinha: ' || count(*) || CASE WHEN count(*) = 1 THEN ' bilhete' ELSE ' bilhetes' END, '/casino/raspadinha'
+      FROM scratch_tickets t WHERE t.user_id IN (SELECT id FROM me)
+      GROUP BY t.user_id, (t.created_at AT TIME ZONE 'Europe/Lisbon')::date
     ) e JOIN me ON me.id = e.user_id
   `) as HistoryEntry[];
 
@@ -134,7 +139,7 @@ export async function treasuryStatement(): Promise<StatementLine[]> {
     return { ...first, user_id: 0, name: "", amount: -total, label };
   });
   const individual: HistoryEntry[] = flows
-    .filter((e) => e.kind === "rota_fine" || e.kind === "ledger" || e.kind === "slots")
+    .filter((e) => e.kind === "rota_fine" || e.kind === "ledger" || e.kind === "slots" || e.kind === "scratch")
     .map((e) => ({ ...e, amount: -e.amount, label: `${e.name}: ${e.label}` }));
   return withRunningBalance([...collective, ...individual]);
 }

@@ -303,3 +303,55 @@ CREATE TABLE IF NOT EXISTS slot_spins (
 );
 
 CREATE INDEX IF NOT EXISTS slot_spins_user_id_idx ON slot_spins (user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS scratch_tickets (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cost integer NOT NULL CHECK (cost > 0),
+  cells text NOT NULL,
+  prize integer NOT NULL CHECK (prize >= 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  scratched_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE INDEX IF NOT EXISTS scratch_tickets_user_id_idx ON scratch_tickets (user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS duck_races (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  race_at timestamptz NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'finished')),
+  winner integer CHECK (winner BETWEEN 1 AND 6),
+  seed text,
+  finished_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS duck_bets (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  race_id integer NOT NULL REFERENCES duck_races(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  duck integer NOT NULL CHECK (duck BETWEEN 1 AND 6),
+  amount integer NOT NULL CHECK (amount > 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE INDEX IF NOT EXISTS duck_bets_race_id_idx ON duck_bets (race_id);
+
+CREATE TABLE IF NOT EXISTS duels (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  challenger_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  opponent_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stake integer NOT NULL CHECK (stake > 0),
+  challenger_move text NOT NULL CHECK (challenger_move IN ('pedra', 'papel', 'tesoura')),
+  opponent_move text CHECK (opponent_move IN ('pedra', 'papel', 'tesoura')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'done', 'declined', 'expired', 'cancelled')),
+  winner_id integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  resolved_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  CHECK (challenger_id <> opponent_id)
+);
+
+CREATE INDEX IF NOT EXISTS duels_opponent_idx ON duels (opponent_id, status);

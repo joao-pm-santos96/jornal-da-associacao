@@ -32,14 +32,24 @@ export default async function CasinoPage() {
         </div>
       </details>
 
-      <Link
-        href="/casino/slot"
-        className="mx-auto block max-w-2xl -rotate-1 border-4 border-[#141414] bg-[#e10600] p-4 text-center shadow-[6px_6px_0_#141414] transition hover:rotate-0"
-      >
-        <span className="block text-4xl tracking-widest" aria-hidden="true">🦆☕🐕</span>
-        <span className="block font-display text-3xl font-black uppercase text-[#f2c230] [text-shadow:2px_2px_0_#141414]">Slot machine</span>
-        <span className="block text-sm font-bold text-white">Jackpot de ×100 · jogadas de 1, 2 ou 5 ☕</span>
-      </Link>
+      <section className="mx-auto grid max-w-2xl grid-cols-2 gap-4">
+        {[
+          { href: "/casino/slot", icon: "🦆☕🐕", title: "Slot machine", sub: "Jackpot ×100", rot: "-rotate-1" },
+          { href: "/casino/raspadinha", icon: "🎟️", title: "Raspadinha", sub: "Raspa o Bacalhau · 2 ☕", rot: "rotate-1" },
+          { href: "/casino/patos", icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
+          { href: "/casino/duelos", icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
+        ].map((g) => (
+          <Link
+            key={g.href}
+            href={g.href}
+            className={`block ${g.rot} border-4 border-[#141414] bg-[#e10600] p-3 text-center shadow-[5px_5px_0_#141414] transition hover:rotate-0`}
+          >
+            <span className="block text-3xl tracking-widest" aria-hidden="true">{g.icon}</span>
+            <span className="block font-display text-xl font-black uppercase leading-tight text-[#f2c230] [text-shadow:2px_2px_0_#141414]">{g.title}</span>
+            <span className="block text-xs font-bold text-white">{g.sub}</span>
+          </Link>
+        ))}
+      </section>
 
       <section className="space-y-3">
         <h2 className={`text-center font-display text-3xl font-black uppercase ${gold}`}>Mesas abertas</h2>

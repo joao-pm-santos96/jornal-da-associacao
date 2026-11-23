@@ -3,6 +3,9 @@ import webpush from "web-push";
 import { sql } from "./db";
 import { GRAOS } from "./economy";
 import { betResults } from "./bets";
+import { resolveDueRaces, type RaceResult } from "./ducks";
+import { duckName } from "./ducks-table";
+import { expireDuels } from "./duels";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
 
@@ -59,7 +62,47 @@ function snippet(text: string, max = 120): string {
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }
 
+export async function notifyRaceResults(results: RaceResult[]): Promise<void> {
+  const users = (await sql`SELECT id FROM users`) as { id: number }[];
+  await Promise.all(
+    results.flatMap((r) => {
+      const winner = duckName(r.winner);
+      const bettors = new Map(r.payouts.map((p) => [p.user_id, p]));
+      return users.map((u) => {
+        const p = bettors.get(u.id);
+        const body = !p
+          ? "Não apostaste. Para a semana há mais."
+          : p.prize > 0
+            ? `Apostaste ${p.staked} ☕ e recebeste ${p.prize} ☕. 🤑`
+            : `Perdeste os ${p.staked} ☕ que apostaste. Patos não são de confiança.`;
+        return pushToUsers([u.id], {
+          title: `🦆 Corrida n.º ${r.id}: ganhou o ${winner}!`,
+          body,
+          url: "/casino/patos",
+          tag: `corrida-${r.id}`,
+        });
+      });
+    }),
+  );
+}
+
+export async function settleRaces(): Promise<void> {
+  await notifyRaceResults(await resolveDueRaces());
+}
+
 export async function flushDueNotifications(): Promise<void> {
+  await settleRaces();
+  const expired = await expireDuels();
+  await Promise.all(
+    expired.map((d) =>
+      pushToUsers([d.challenger_id], {
+        title: `⏰ ${d.opponent} não respondeu ao teu duelo`,
+        body: `O desafio expirou e os ${d.stake} ☕ voltaram para ti.`,
+        url: "/casino/duelos",
+        tag: `duelo-${d.id}`,
+      }),
+    ),
+  );
   const posts = (await sql`
     UPDATE posts SET notified_at = now()
     WHERE notified_at IS NULL AND status <> 'draft' AND publish_at <= now()
