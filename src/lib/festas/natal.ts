@@ -1,7 +1,7 @@
 import "server-only";
 import { sql } from "../db";
 import { derangement, lisbon, seededRandom } from "../seasons";
-import { TREMOCOS } from "../economy";
+import { GRAOS } from "../economy";
 
 export function santaRevealed(year: number, now: Date): boolean {
   const t = lisbon(now);
@@ -87,14 +87,14 @@ const JOKES = [
   "O que é que o bacalhau disse à batata? «Contigo, até ao fim da consoada.»",
 ];
 
-export type AdventSurprise = { kind: "tremocos" | "manchete" | "profecia" | "piada"; payload: string };
+export type AdventSurprise = { kind: "graos" | "manchete" | "profecia" | "piada"; payload: string };
 
 export function adventSurprise(year: number, door: number, userId: number, others: string[]): AdventSurprise {
   const random = seededRandom(`advento:${year}:${door}:${userId}`);
   const roll = random();
   const pick = <T,>(items: T[]) => items[Math.floor(random() * items.length)];
   if (roll < 0.3) {
-    return { kind: "tremocos", payload: `Encontraste tremoços no sapatinho! +${TREMOCOS.adventPrize} 🫘` };
+    return { kind: "graos", payload: `Encontraste grãos de café no sapatinho! +${GRAOS.adventPrize} ☕` };
   }
   if (roll < 0.55 && others.length > 0) {
     return { kind: "manchete", payload: pick(HEADLINES).replace("{nome}", pick(others)) };

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { field, type FormState } from "@/lib/form";
-import { TREMOCOS } from "@/lib/economy";
+import { GRAOS } from "@/lib/economy";
 import { getNow, getSeason, lisbon } from "@/lib/seasons";
 import { adventDay, adventSurprise, santaRevealed } from "@/lib/festas/natal";
 import { resolutionYear, resolutionsRevealed } from "@/lib/festas/anonovo";
@@ -44,10 +44,10 @@ export async function openAdventDoor(door: number): Promise<void> {
     VALUES (${year}, ${door}, ${user.id}, ${surprise.kind}, ${surprise.payload})
     ON CONFLICT DO NOTHING RETURNING door
   `;
-  if (inserted.length > 0 && surprise.kind === "tremocos") {
+  if (inserted.length > 0 && surprise.kind === "graos") {
     await sql`
       INSERT INTO ledger (user_id, amount, reason)
-      VALUES (${user.id}, ${TREMOCOS.adventPrize}, ${`Calendário do Advento: porta ${door}`})
+      VALUES (${user.id}, ${GRAOS.adventPrize}, ${`Calendário do Advento: porta ${door}`})
     `;
   }
   revalidatePath("/natal");
@@ -94,7 +94,7 @@ export async function collectEgg(egg: number): Promise<{ found: boolean }> {
     ON CONFLICT DO NOTHING RETURNING egg
   `;
   if (inserted.length === 0) return { found: false };
-  await sql`INSERT INTO ledger (user_id, amount, reason) VALUES (${user.id}, ${TREMOCOS.egg}, ${`Ovo da Páscoa n.º ${egg}`})`;
+  await sql`INSERT INTO ledger (user_id, amount, reason) VALUES (${user.id}, ${GRAOS.egg}, ${`Ovo da Páscoa n.º ${egg}`})`;
   return { found: true };
 }
 

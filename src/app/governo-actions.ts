@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { sql } from "@/lib/db";
+import { notifyDecree, notifyMovement } from "@/lib/push";
 import { requireUser } from "@/lib/auth";
 import { holds, type Office } from "@/lib/offices";
 import { field, type FormState } from "@/lib/form";
@@ -18,13 +20,16 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
   const reason = field(form, "reason");
   if (!Number.isInteger(target) || target <= 0) return { error: "Escolhe o sócio." };
   if (kind !== "multa" && kind !== "subsidio") return { error: "Escolhe multa ou subsídio." };
-  if (!Number.isInteger(amount) || amount < 1) return { error: "O valor tem de ser um número inteiro de tremoços." };
-  if (amount > MAX_AMOUNT) return { error: "Nem o Cofre do Estado tem tantos tremoços. Escolhe um valor mais pequeno." };
+  if (!Number.isInteger(amount) || amount < 1) return { error: "O valor tem de ser um número inteiro de grãos." };
+  if (amount > MAX_AMOUNT) return { error: "Nem o Cofre do Estado tem tantos grãos de café. Escolhe um valor mais pequeno." };
   if (reason.length < 3 || reason.length > 140) return { error: "Indica o motivo (3 a 140 caracteres)." };
-  await sql`
+  const signed = kind === "multa" ? -amount : amount;
+  const inserted = await sql`
     INSERT INTO ledger (user_id, amount, reason, created_by, simulated)
-    SELECT id, ${kind === "multa" ? -amount : amount}, ${reason}, ${user.id}, false FROM users WHERE id = ${target}
+    SELECT id, ${signed}, ${reason}, ${user.id}, false FROM users WHERE id = ${target}
+    RETURNING id
   `;
+  if (inserted.length > 0 && target !== user.id) after(() => notifyMovement(target, signed, reason));
   revalidatePath("/cofre");
   return { ok: kind === "multa" ? "Multa aplicada. A justiça foi feita." : "Subsídio atribuído." };
 }
@@ -37,6 +42,7 @@ export async function createDecree(_prev: FormState, form: FormData): Promise<Fo
   if (!title || title.length > 120) return { error: "O decreto precisa de um título (máx. 120 caracteres)." };
   if (!body || body.length > 2000) return { error: "O decreto precisa de texto (máx. 2000 caracteres)." };
   await sql`INSERT INTO decrees (author_id, title, body) VALUES (${user.id}, ${title}, ${body})`;
+  after(() => notifyDecree(user.id, title));
   revalidatePath("/", "layout");
   return { ok: "Decreto publicado. Cumpra-se." };
 }

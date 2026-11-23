@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Inter, Playfair_Display } from "next/font/google";
 import { getUser } from "@/lib/auth";
@@ -11,6 +11,7 @@ import { ensureMasks } from "@/lib/festas/carnaval";
 import { isNewYearMoment } from "@/lib/festas/anonovo";
 import { Falling } from "@/components/Falling";
 import { EggLayer } from "@/components/EggLayer";
+import { ServiceWorker } from "@/components/ServiceWorker";
 import { formatDateTime } from "@/lib/dates";
 import { logout } from "./actions";
 import "./globals.css";
@@ -21,7 +22,10 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 export const metadata: Metadata = {
   description: "O jornal mensal cá da associação.",
   robots: { index: false, follow: false },
+  appleWebApp: { capable: true, title: "Jornal", statusBarStyle: "default" },
 };
+
+export const viewport: Viewport = { themeColor: "#e10600" };
 
 const today = new Intl.DateTimeFormat("pt-PT", {
   timeZone: "Europe/Lisbon",
@@ -68,7 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/horoscopo" className="hover:text-scoop">Horóscopo</Link>
                 <Link href="/regras" className="hover:text-scoop">Constituição</Link>
                 <Link href="/decretos" className="hover:text-scoop">Decretos</Link>
-                <Link href="/cofre" className="hover:text-scoop" title="O teu saldo no Cofre">🫘 {myBalance}</Link>
+                <Link href="/cofre" className="hover:text-scoop" title="O teu saldo no Cofre">☕ {myBalance}</Link>
                 <Link href="/conta" className="hover:text-scoop">Conta</Link>
                 {user.is_admin && <Link href="/admin" className="hover:text-scoop">Admin</Link>}
                 <form action={logout}>
@@ -81,6 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="relative mx-auto max-w-4xl px-4 py-6">
           {children}
           {user && season === "pascoa" && <EggLayer />}
+          {user && <ServiceWorker />}
         </main>
         <footer className="mx-auto max-w-4xl border-t border-rule px-4 py-6 text-center text-xs text-muted">
           <p>Jornal da Associação · edição privada · não distribuir à concorrência</p>

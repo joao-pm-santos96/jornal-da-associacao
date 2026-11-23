@@ -25,7 +25,7 @@ export function MovementForm({ members }: { members: { id: number; name: string 
           </select>
         </div>
         <div>
-          <label htmlFor="mv-amount" className="block text-xs font-semibold">Tremoços</label>
+          <label htmlFor="mv-amount" className="block text-xs font-semibold">Grãos</label>
           <input id="mv-amount" name="amount" type="number" min={1} step={1} required defaultValue={5}
             className={`${input} w-28`} />
         </div>

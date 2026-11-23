@@ -1,6 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { NameForm } from "./NameForm";
 import { PasswordForm } from "./PasswordForm";
+import { AppSettings } from "./AppSettings";
+import { vapidPublicKey } from "@/lib/push";
 
 export default async function AccountPage() {
   const user = await requireUser();
@@ -20,6 +22,10 @@ export default async function AccountPage() {
       <section>
         <h2 className="mb-3 font-display text-xl font-black">Password</h2>
         <PasswordForm />
+      </section>
+      <section id="app">
+        <h2 className="mb-3 font-display text-xl font-black">App e notificações</h2>
+        <AppSettings vapidKey={vapidPublicKey()} />
       </section>
     </div>
   );

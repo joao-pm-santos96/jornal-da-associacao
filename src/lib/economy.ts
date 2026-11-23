@@ -4,12 +4,12 @@ import { easterSunday, getNow, lisbon } from "./seasons";
 
 export const ECONOMY_START = "2026-11-01";
 
-export const TREMOCOS = {
+export const GRAOS = {
   post: 5,
   comment: 1,
   laugh: 1,
   rotaDone: 10,
-  monthlyFee: 10,
+  weeklyFee: 2,
   rotaMissedFine: 20,
   xmasBonus: 10,
   folar: 5,
@@ -26,7 +26,7 @@ export type Balance = {
   laughs: number;
   rota_done: number;
   rota_missed: number;
-  months: number;
+  weeks: number;
   manual: number;
   created_at: Date;
   bonuses: number;
@@ -53,20 +53,20 @@ function bonusFor(createdAt: Date, now: Date): number {
   const joined = lisbon(createdAt).date;
   return festiveDates(now)
     .filter((d) => d >= joined)
-    .reduce((sum, d) => sum + (d.endsWith("-12-15") ? TREMOCOS.xmasBonus : TREMOCOS.folar), 0);
+    .reduce((sum, d) => sum + (d.endsWith("-12-15") ? GRAOS.xmasBonus : GRAOS.folar), 0);
 }
 
 function settle(c: Counts, now: Date): Balance {
   const earned =
-    c.posts * TREMOCOS.post +
-    c.comments * TREMOCOS.comment +
-    c.laughs * TREMOCOS.laugh +
-    c.rota_done * TREMOCOS.rotaDone;
-  const fees = c.months * TREMOCOS.monthlyFee;
-  const fines = c.rota_missed * TREMOCOS.rotaMissedFine;
+    c.posts * GRAOS.post +
+    c.comments * GRAOS.comment +
+    c.laughs * GRAOS.laugh +
+    c.rota_done * GRAOS.rotaDone;
+  const fees = c.weeks * GRAOS.weeklyFee;
+  const fines = c.rota_missed * GRAOS.rotaMissedFine;
   const bonuses = bonusFor(c.created_at, now);
   const balance = earned - fees - fines + bonuses + c.manual;
-  return { ...c, bonuses, earned, fees, fines, balance, frozen: balance < TREMOCOS.freezeBelow };
+  return { ...c, bonuses, earned, fees, fines, balance, frozen: balance < GRAOS.freezeBelow };
 }
 
 export async function getBalances(): Promise<Balance[]> {
@@ -93,9 +93,10 @@ export async function getBalances(): Promise<Balance[]> {
       (SELECT count(*) FROM slots s WHERE s.user_id = u.id AND s.ended AND NOT s.done AND NOT s.pardoned)::int
         AS rota_missed,
       (SELECT count(*) FROM generate_series(
-          greatest(${ECONOMY_START}::date, date_trunc('month', u.created_at AT TIME ZONE 'Europe/Lisbon')::date),
+          greatest(${ECONOMY_START}::date, (u.created_at AT TIME ZONE 'Europe/Lisbon')::date),
           (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date,
-          interval '1 month'))::int AS months,
+          interval '1 day') d
+        WHERE extract(isodow FROM d) = 1)::int AS weeks,
       coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::float8 AS manual,
       u.created_at
     FROM users u

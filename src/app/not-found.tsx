@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 const EXCUSES = [
   "Esta notícia foi censurada pela direção.",
   "{nome} garante que esta página existe. A redação continua a investigar.",
-  "Página apreendida pela ASAE por excesso de tremoços.",
+  "Página apreendida pela ASAE por excesso de cafeína.",
   "O jornalista responsável foi visto pela última vez a caminho da tasca.",
   "Esta página só vai ser publicada em 2031. Volta mais tarde.",
   "{nome} levou esta página emprestada e nunca mais a devolveu.",

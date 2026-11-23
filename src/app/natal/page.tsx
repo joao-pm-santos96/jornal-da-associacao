@@ -5,7 +5,7 @@ import { adventDay, ensureSantaDraw, getAdventDoors, getSanta, santaRevealed } f
 import { openAdventDoor } from "@/app/festas-actions";
 import { SantaCardForm } from "./SantaCardForm";
 
-const KIND_LABEL = { tremocos: "🫘 Prémio", manchete: "📰 Manchete", profecia: "🔮 Profecia", piada: "🤭 Piada" };
+const KIND_LABEL = { graos: "☕ Prémio", manchete: "📰 Manchete", profecia: "🔮 Profecia", piada: "🤭 Piada" };
 
 function countdown(now: Date, year: number): string {
   const today = new Date(`${lisbon(now).date}T00:00:00Z`).getTime();
