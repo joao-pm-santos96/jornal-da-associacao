@@ -287,3 +287,7 @@ CREATE INDEX IF NOT EXISTS bet_wagers_bet_id_idx ON bet_wagers (bet_id);
 CREATE INDEX IF NOT EXISTS bet_options_bet_id_idx ON bet_options (bet_id);
 
 ALTER TABLE ledger ADD COLUMN IF NOT EXISTS bet_id integer REFERENCES bets(id) ON DELETE CASCADE;
+
+DELETE FROM offices WHERE office = 'apostas';
+ALTER TABLE offices DROP CONSTRAINT IF EXISTS offices_office_check;
+ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presidente', 'tesoureiro'));

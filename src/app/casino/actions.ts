@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { holds } from "@/lib/offices";
 import { GRAOS, getBalances } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
 import { notifyBetResult, notifyNewBet } from "@/lib/push";
@@ -14,12 +13,11 @@ const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 function refresh(betId?: number): void {
   revalidatePath("/", "layout");
-  if (betId) revalidatePath(`/apostas/${betId}`);
+  if (betId) revalidatePath(`/casino/${betId}`);
 }
 
 export async function createBet(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await holds("apostas", user.id))) return { error: "Só o Gestor de Apostas pode abrir apostas." };
   const title = field(form, "title");
   const description = field(form, "description");
   const local = field(form, "closes_at");
@@ -33,6 +31,10 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
   if (labels.some((l) => l.length > 60)) return { error: "Cada opção tem no máximo 60 caracteres." };
   if (new Set(labels.map((l) => l.toLowerCase())).size !== labels.length) return { error: "Há opções repetidas." };
   if (!LOCAL_DATETIME_RE.test(local)) return { error: "Escolhe a data e hora de fecho." };
+  const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
+  if (balance < GRAOS.betOpenFee) {
+    return { error: `A licença para abrir uma aposta custa ${GRAOS.betOpenFee} ☕ e só tens ${balance} ☕.` };
+  }
 
   const [row] = (await sql`
     WITH b AS (
@@ -43,6 +45,10 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
       WHERE t.closes_at > now() + interval '5 minutes'
       RETURNING id
     ),
+    fee AS (
+      INSERT INTO ledger (user_id, amount, reason, created_by)
+      SELECT ${user.id}, ${-GRAOS.betOpenFee}, 'Casino: licença da aposta n.º ' || b.id, ${user.id} FROM b
+    ),
     o AS (
       INSERT INTO bet_options (bet_id, position, label)
       SELECT b.id, t.position, t.label FROM b, unnest(${labels}::text[]) WITH ORDINALITY AS t(label, position)
@@ -52,7 +58,7 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
   if (!row) return { error: "A aposta tem de fechar pelo menos daqui a 5 minutos." };
   after(() => notifyNewBet(row.id, user.id, title));
   refresh();
-  redirect(`/apostas/${row.id}`);
+  redirect(`/casino/${row.id}`);
 }
 
 export async function placeWager(betId: number, _prev: FormState, form: FormData): Promise<FormState> {
@@ -88,14 +94,15 @@ export async function placeWager(betId: number, _prev: FormState, form: FormData
 
 export async function closeBetNow(betId: number): Promise<void> {
   const user = await requireUser();
-  if (!(await holds("apostas", user.id))) return;
-  await sql`UPDATE bets SET closes_at = now() WHERE id = ${betId} AND status = 'open' AND closes_at > now()`;
+  await sql`
+    UPDATE bets SET closes_at = now()
+    WHERE id = ${betId} AND status = 'open' AND closes_at > now() AND (created_by = ${user.id} OR ${user.is_admin})
+  `;
   refresh(betId);
 }
 
 export async function resolveBet(betId: number, _prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await holds("apostas", user.id))) return { error: "Só o Gestor de Apostas declara resultados." };
   const optionId = Number(field(form, "option_id"));
   if (!Number.isInteger(optionId) || optionId <= 0) return { error: "Escolhe a opção vencedora." };
 
@@ -103,8 +110,9 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
     WITH b AS (
       UPDATE bets SET status = 'resolved', winning_option = ${optionId}, resolved_at = now()
       WHERE id = ${betId} AND status = 'open' AND closes_at <= now()
+        AND (created_by = ${user.id} OR ${user.is_admin})
         AND EXISTS (SELECT 1 FROM bet_options o WHERE o.id = ${optionId} AND o.bet_id = ${betId})
-      RETURNING id
+      RETURNING id, created_by
     ),
     w AS (SELECT user_id, option_id, amount FROM bet_wagers WHERE bet_id IN (SELECT id FROM b)),
     tot AS (
@@ -125,12 +133,14 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
     ),
     fee AS (
       INSERT INTO ledger (user_id, amount, reason, created_by)
-      SELECT ${user.id}, ${GRAOS.betManagerFee}, ${`Aposta n.º ${betId}: comissão de gestão`}, ${user.id}
-      FROM tot WHERE tot.bettors >= ${GRAOS.betManagerMinBettors} AND EXISTS (SELECT 1 FROM b)
+      SELECT b.created_by, ${GRAOS.betBankerFee}, ${`Aposta n.º ${betId}: comissão da banca`}, ${user.id}
+      FROM tot, b WHERE tot.bettors >= ${GRAOS.betBankerMinBettors} AND b.created_by IS NOT NULL
     )
     SELECT (SELECT count(*) FROM b)::int AS resolved, (SELECT label FROM bet_options WHERE id = ${optionId}) AS label
   `) as { resolved: number; label: string | null }[];
-  if (!row?.resolved) return { error: "Só se declara o resultado de uma aposta fechada e ainda por resolver." };
+  if (!row?.resolved) {
+    return { error: "Só quem abriu a aposta declara o resultado, e só depois de fechar e antes de estar resolvida." };
+  }
   after(() => notifyBetResult(betId, `saiu «${row.label}»`));
   refresh(betId);
   return { ok: `Resultado declarado: «${row.label}». Os prémios já foram pagos.` };
@@ -138,11 +148,10 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
 
 export async function voidBet(betId: number): Promise<void> {
   const user = await requireUser();
-  if (!(await holds("apostas", user.id))) return;
   const [row] = (await sql`
     WITH b AS (
       UPDATE bets SET status = 'void', resolved_at = now()
-      WHERE id = ${betId} AND status = 'open'
+      WHERE id = ${betId} AND status = 'open' AND (created_by = ${user.id} OR ${user.is_admin})
       RETURNING id
     ),
     r AS (

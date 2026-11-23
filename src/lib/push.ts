@@ -82,24 +82,24 @@ export async function flushDueNotifications(): Promise<void> {
   const closed = (await sql`
     UPDATE bets SET closed_notified_at = now()
     WHERE status = 'open' AND closed_notified_at IS NULL AND closes_at <= now()
-    RETURNING id, title, (SELECT user_id FROM offices WHERE office = 'apostas') AS manager
-  `) as { id: number; title: string; manager: number | null }[];
+    RETURNING id, title, created_by AS banker
+  `) as { id: number; title: string; banker: number | null }[];
   await Promise.all([
     ...closing.map((b) =>
       pushToAllExcept(0, {
         title: `⏳ Faltam menos de ${GRAOS.betClosingWarningHours} horas para fechar`,
         body: `Aposta n.º ${b.id}: ${b.title}`,
-        url: `/apostas/${b.id}`,
+        url: `/casino/${b.id}`,
         tag: `aposta-${b.id}`,
       }),
     ),
     ...closed
-      .filter((b) => b.manager !== null)
+      .filter((b) => b.banker !== null)
       .map((b) =>
-        pushToUsers([b.manager!], {
-          title: "🎲 Aposta fechada: declara o resultado",
+        pushToUsers([b.banker!], {
+          title: "🎰 Aposta fechada: declara o resultado",
           body: `Aposta n.º ${b.id}: ${b.title}`,
-          url: `/apostas/${b.id}`,
+          url: `/casino/${b.id}`,
           tag: `aposta-${b.id}`,
         }),
       ),
@@ -156,11 +156,12 @@ export async function notifyMovement(targetId: number, amount: number, reason: s
   });
 }
 
-export async function notifyNewBet(betId: number, managerId: number, title: string): Promise<void> {
-  await pushToAllExcept(managerId, {
-    title: `🎲 Nova aposta n.º ${betId}`,
+export async function notifyNewBet(betId: number, bankerId: number, title: string): Promise<void> {
+  const [row] = (await sql`SELECT member_label(${bankerId}) AS who`) as { who: string }[];
+  await pushToAllExcept(bankerId, {
+    title: `🎰 ${row.who} abriu a aposta n.º ${betId}`,
     body: title,
-    url: `/apostas/${betId}`,
+    url: `/casino/${betId}`,
     tag: `aposta-${betId}`,
   });
 }
@@ -179,9 +180,9 @@ export async function notifyBetResult(betId: number, outcome: string): Promise<v
             ? `Recebeste ${r.returned} ☕ (${net >= 0 ? "+" : "−"}${Math.abs(net)} ☕ de lucro). 🤑`
             : `Perdeste os ${r.staked} ☕ que apostaste. A banca agradece.`;
       return pushToUsers([r.user_id], {
-        title: `🎲 Aposta n.º ${betId}: ${outcome}`,
+        title: `🎰 Aposta n.º ${betId}: ${outcome}`,
         body: `${bet.title} · ${body}`,
-        url: `/apostas/${betId}`,
+        url: `/casino/${betId}`,
         tag: `aposta-${betId}`,
       });
     }),

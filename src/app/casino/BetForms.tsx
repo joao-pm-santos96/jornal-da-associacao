@@ -4,17 +4,20 @@ import { startTransition, useActionState } from "react";
 import { createBet, placeWager, resolveBet } from "./actions";
 import type { FormState } from "@/lib/form";
 
-const input = "border-2 border-ink bg-white p-1.5";
-const button = "bg-ink px-4 py-2 text-sm font-bold uppercase text-white disabled:opacity-50";
+const input = "border-2 border-ink bg-white p-1.5 text-ink";
+const button = "border-2 border-ink bg-scoop px-4 py-2 text-sm font-black uppercase text-white shadow-[3px_3px_0_#141414] active:translate-y-0.5 disabled:opacity-50";
 
 function Feedback({ state }: { state: FormState }) {
   if (state.error) return <p className="border-2 border-scoop bg-white p-2 text-sm font-semibold text-scoop">{state.error}</p>;
-  if (state.ok) return <p className="border-2 border-ink bg-flash p-2 text-sm font-semibold">{state.ok}</p>;
+  if (state.ok) return <p className="border-2 border-ink bg-flash p-2 text-sm font-semibold text-ink">{state.ok}</p>;
   return null;
 }
 
-export function NewBetForm() {
+export function NewBetForm({ balance, fee }: { balance: number; fee: number }) {
   const [state, action, pending] = useActionState(createBet, {});
+  if (balance < fee) {
+    return <p className="text-sm">A licença custa {fee} ☕ e tens {balance} ☕. Volta quando tiveres grãos.</p>;
+  }
   return (
     <form
       className="space-y-3"
@@ -28,7 +31,7 @@ export function NewBetForm() {
       <div>
         <label htmlFor="bet-title" className="block text-xs font-semibold">Pergunta</label>
         <input id="bet-title" name="title" required minLength={3} maxLength={120}
-          placeholder="ex.: O Tiago chega a horas ao jantar?" className={`${input} w-full`} />
+          placeholder="ex.: Alguém chega a horas ao jantar?" className={`${input} w-full`} />
       </div>
       <div>
         <label htmlFor="bet-description" className="block text-xs font-semibold">Regras e letra miudinha (opcional)</label>
@@ -44,7 +47,7 @@ export function NewBetForm() {
           <input id="bet-closes" name="closes_at" type="datetime-local" required className={input} />
         </div>
       </div>
-      <button disabled={pending} className={button}>🎲 Abrir aposta</button>
+      <button disabled={pending} className={button}>🎰 Abrir mesa (−{fee} ☕)</button>
     </form>
   );
 }
@@ -60,7 +63,7 @@ export function WagerForm({
 }) {
   const [state, action, pending] = useActionState(placeWager.bind(null, betId), {});
   if (balance <= 0) {
-    return <p className="text-sm text-muted">Sem saldo positivo não há apostas. Tens {balance} ☕.</p>;
+    return <p className="text-sm">Sem saldo positivo não há apostas. Tens {balance} ☕. O crupiê não aceita fiado.</p>;
   }
   return (
     <form action={action} className="space-y-3">

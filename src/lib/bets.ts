@@ -28,6 +28,7 @@ export type Wager = { name: string; user_id: number; option_id: number; amount: 
 export type BetDetail = BetSummary & {
   description: string;
   author: string | null;
+  created_by: number | null;
   winning_option: number | null;
   options: BetOption[];
   wagers: Wager[];
@@ -64,7 +65,7 @@ export async function featuredBet(): Promise<BetSummary | null> {
 export async function getBet(id: number, viewerId: number): Promise<BetDetail | null> {
   const [bet] = (await sql.query(
     `
-    SELECT b.id, b.title, b.description, b.closes_at, ${STATUS_SQL} AS status, b.winning_option,
+    SELECT b.id, b.title, b.description, b.closes_at, ${STATUS_SQL} AS status, b.winning_option, b.created_by,
       CASE WHEN b.created_by IS NULL THEN NULL ELSE member_label(b.created_by) END AS author,
       coalesce((SELECT sum(w.amount) FROM bet_wagers w WHERE w.bet_id = b.id), 0)::int AS pot,
       (SELECT count(DISTINCT w.user_id) FROM bet_wagers w WHERE w.bet_id = b.id)::int AS bettors,

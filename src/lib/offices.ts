@@ -2,14 +2,13 @@ import "server-only";
 import { cache } from "react";
 import { sql } from "./db";
 
-export type Office = "presidente" | "tesoureiro" | "apostas";
+export type Office = "presidente" | "tesoureiro";
 
-export const OFFICES: readonly Office[] = ["presidente", "tesoureiro", "apostas"];
+export const OFFICES: readonly Office[] = ["presidente", "tesoureiro"];
 
 export const OFFICE_LABEL: Record<Office, { title: string; emoji: string }> = {
   presidente: { title: "Presidente", emoji: "👑" },
   tesoureiro: { title: "Tesoureiro", emoji: "💰" },
-  apostas: { title: "Gestor de Apostas", emoji: "🎲" },
 };
 
 export type OfficeHolder = { office: Office; user_id: number; name: string };

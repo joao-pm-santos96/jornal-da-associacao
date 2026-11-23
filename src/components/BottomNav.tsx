@@ -24,7 +24,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
       { href: "/regras", label: "Constituição" },
       { href: "/decretos", label: "Decretos" },
       { href: "/cofre", label: "Cofre" },
-      { href: "/apostas", label: "Casa de Apostas" },
+      { href: "/casino", label: "Casino" },
     ],
   },
 ];
@@ -125,7 +125,7 @@ export function BottomNav({ balance, isAdmin }: { balance: number; isAdmin: bool
       >
         <Tab href="/" label="Início" icon="📰" active={isActive(pathname, "/")} />
         <Tab href="/novo" label="Escrever" icon="✍️" active={isActive(pathname, "/novo")} />
-        <Tab href="/apostas" label="Apostas" icon="🎲" active={isActive(pathname, "/apostas")} />
+        <Tab href="/casino" label="Casino" icon="🎰" active={isActive(pathname, "/casino")} />
         <Tab href="/cofre" label={`${balance}`} icon="☕" active={isActive(pathname, "/cofre")} />
         <button
           onClick={() => setOpen(true)}

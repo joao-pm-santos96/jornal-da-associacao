@@ -83,7 +83,7 @@ export default async function RetrospectivePage({ params }: { params: Promise<{ 
       </section>
 
       <section>
-        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🎲 O casino</h2>
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🎰 O casino</h2>
         {r.casino.length === 0 ? (
           <p className="mt-2 text-muted">Ninguém apostou um grão. Um ano de gente ajuizada.</p>
         ) : (
