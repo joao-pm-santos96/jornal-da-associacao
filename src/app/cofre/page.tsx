@@ -29,6 +29,9 @@ export default async function TreasuryPage() {
         <p className="text-xs font-black uppercase tracking-widest">Saldo do Cofre</p>
         <p className="font-display text-6xl font-black">{cofre} ☕</p>
         <p className="text-sm">cotas + multas − subsídios − prémios e bónus das festas</p>
+        <Link href="/cofre/livro" className="mt-3 inline-block border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
+          📒 Ver o Livro do Cofre
+        </Link>
       </section>
 
       <section>
@@ -50,7 +53,9 @@ export default async function TreasuryPage() {
               {balances.map((b) => (
                 <tr key={b.user_id} className={b.user_id === user.id ? "bg-white font-semibold" : ""}>
                   <td className="py-2 pr-2">
-                    {b.name}
+                    <Link href={`/cofre/socio/${b.user_id}`} className="underline decoration-rule underline-offset-2 hover:text-scoop" title="Ver extrato">
+                      {b.name}
+                    </Link>
                     {b.frozen && (
                       <span className="ml-2 bg-ink px-1.5 py-0.5 text-[10px] font-black uppercase text-white">
                         🧊 Congelado
@@ -71,7 +76,7 @@ export default async function TreasuryPage() {
           </table>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Abaixo de {GRAOS.freezeBelow} ☕ a conta fica congelada: só se pode reagir com 🧂.
+          Toca num nome para veres o extrato. Abaixo de {GRAOS.freezeBelow} ☕ a conta fica congelada: só se pode reagir com 🧂.
         </p>
       </section>
 
@@ -83,7 +88,7 @@ export default async function TreasuryPage() {
       )}
 
       <section>
-        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Livro do Cofre</h2>
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Movimentos manuais e apostas</h2>
         {movements.length === 0 ? (
           <p className="mt-2 text-muted">Ainda nenhum movimento. O Tesoureiro anda distraído.</p>
         ) : (
