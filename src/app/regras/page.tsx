@@ -94,7 +94,7 @@ export default async function RulesPage() {
       </Article>
 
       <Article n={5} title="Honra e Vergonha">
-        <p>O <Link href="/quadro" className="underline hover:text-scoop">Quadro de Honra</Link> e o Mural da Vergonha são atualizados automaticamente. Não há júri, não há recurso e não há misericórdia.</p>
+        <p>O <Link href="/quadro" className="underline hover:text-scoop">Quadro de Honra</Link>, o Mural da Vergonha e o Quadro da Cobardia são atualizados automaticamente. Não há júri, não há recurso e não há misericórdia.</p>
       </Article>
 
       <Article id="festas" n={6} title="As Épocas Festivas">
