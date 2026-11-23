@@ -22,12 +22,8 @@ function Bulbs() {
 
 export function Marquee({ small = false }: { small?: boolean }) {
   return (
-    <div
-      className={`relative bg-[#141414] text-center ${
-        small ? "border-[6px] border-dotted border-[#f2c230] px-4 py-5" : "px-8 py-9"
-      }`}
-    >
-      {!small && <Bulbs />}
+    <div className="relative bg-[#141414] px-8 py-9 text-center">
+      <Bulbs />
       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f2c230]">★ Aberto 24h · Fiado não ★</p>
       <Link href="/casino" className="block">
         <span
