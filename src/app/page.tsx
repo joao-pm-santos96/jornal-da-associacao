@@ -12,15 +12,18 @@ import { DecreeBanner, PresidentShortcut } from "@/components/DecreeBanner";
 import { SeasonBanner } from "@/components/SeasonBanner";
 import { getNow, seasonFor } from "@/lib/seasons";
 import { reviewYear } from "@/lib/festas/anonovo";
+import { featuredBet } from "@/lib/bets";
+import { BetBanner } from "@/components/BetBanner";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota, decree, offices] = await Promise.all([
+  const [editions, activity, rota, decree, offices, bet] = await Promise.all([
     listEditions(),
     listUnread(user.id),
     getRota(),
     latestDecree(),
     getOffices(),
+    featuredBet(),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
   const now = await getNow();
@@ -33,6 +36,7 @@ export default async function Home() {
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
+        <BetBanner bet={bet} />
         <div className="py-16 text-center">
           <h2 className="font-display text-4xl font-black">Ainda não há notícias!</h2>
           <p className="mt-2 text-muted">A redação está vazia. Sê o primeiro a dar o furo.</p>
@@ -53,6 +57,7 @@ export default async function Home() {
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
+        <BetBanner bet={bet} />
       <ActivityBox activity={activity} />
       <section>
         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-scoop">

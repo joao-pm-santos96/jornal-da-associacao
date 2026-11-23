@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { notifyDecree, notifyMovement } from "@/lib/push";
 import { requireUser } from "@/lib/auth";
-import { holds, type Office } from "@/lib/offices";
+import { holds, OFFICES, type Office } from "@/lib/offices";
 import { field, type FormState } from "@/lib/form";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -70,7 +70,7 @@ export async function setOffice(_prev: FormState, form: FormData): Promise<FormS
   if (!user.is_admin) return { error: "Sem permissões." };
   const office = field(form, "office") as Office;
   const target = field(form, "user_id");
-  if (office !== "presidente" && office !== "tesoureiro") return { error: "Cargo inválido." };
+  if (!OFFICES.includes(office)) return { error: "Cargo inválido." };
   if (target === "") {
     await sql`DELETE FROM offices WHERE office = ${office}`;
   } else {

@@ -72,6 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/horoscopo" className="hover:text-scoop">Horóscopo</Link>
                 <Link href="/regras" className="hover:text-scoop">Constituição</Link>
                 <Link href="/decretos" className="hover:text-scoop">Decretos</Link>
+                <Link href="/apostas" className="hover:text-scoop">Apostas</Link>
                 <Link href="/cofre" className="hover:text-scoop" title="O teu saldo no Cofre">☕ {myBalance}</Link>
                 <Link href="/conta" className="hover:text-scoop">Conta</Link>
                 {user.is_admin && <Link href="/admin" className="hover:text-scoop">Admin</Link>}

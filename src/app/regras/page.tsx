@@ -20,6 +20,7 @@ export default async function RulesPage() {
   const offices = await getOffices();
   const president = offices.presidente?.name ?? "cargo vago";
   const treasurer = offices.tesoureiro?.name ?? "cargo vago";
+  const manager = offices.apostas?.name ?? "cargo vago";
   const t = GRAOS;
 
   return (
@@ -51,7 +52,7 @@ export default async function RulesPage() {
       </Article>
 
       <Article id="cargos" n={3} title="Os Cargos">
-        <p>A Associação tem dois cargos, e só dois.</p>
+        <p>A Associação tem três cargos, e só três.</p>
         <div className="border-2 border-ink bg-white p-3">
           <p className="font-display text-xl font-black">👑 Presidente: {president}</p>
           <ul className="mt-1 list-disc space-y-1 pl-6 text-sm">
@@ -68,8 +69,15 @@ export default async function RulesPage() {
             <li>Pode movimentar o Cofre a seu favor. Conflitos de interesses não existem; existe confiança institucional. Os sócios lesados podem queixar-se no jantar seguinte.</li>
           </ul>
         </div>
+        <div className="border-2 border-ink bg-white p-3">
+          <p className="font-display text-xl font-black">🎲 Gestor de Apostas: {manager}</p>
+          <ul className="mt-1 list-disc space-y-1 pl-6 text-sm">
+            <li>É o único que abre, fecha, resolve e anula <Link href="/apostas" className="underline hover:text-scoop">apostas</Link>.</li>
+            <li>Pode apostar nas suas próprias apostas e é ele quem declara o resultado. A sua palavra é final: não há veto nem recurso.</li>
+          </ul>
+        </div>
         <p className="text-sm text-muted">
-          Os cargos aparecem junto ao nome (👑 e 💰). A manutenção do site está a cargo do Departamento Técnico, que não governa coisa nenhuma.
+          Os cargos aparecem junto ao nome (👑, 💰 e 🎲). A manutenção do site está a cargo do Departamento Técnico, que não governa coisa nenhuma.
         </p>
       </Article>
 
@@ -116,7 +124,20 @@ export default async function RulesPage() {
         </ul>
       </Article>
 
-      <Article n={7} title="Disposições finais">
+      <Article id="apostas" n={7} title="As Apostas 🎲">
+        <p>Na <Link href="/apostas" className="underline hover:text-scoop">Casa de Apostas</Link> aposta-se em grãos de café, com <strong>apostas mútuas</strong>: o pote é de quem acerta.</p>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>Cada aposta tem entre 2 e 6 opções e uma hora de fecho. Até lá, qualquer sócio pode apostar as vezes que quiser.</li>
+          <li>Os grãos apostados saem logo do saldo. Só aposta quem tem saldo positivo, e no máximo o que tem.</li>
+          <li>Ao resolver, <strong>{t.betHouseCutPct}% do pote fica no Cofre</strong>. O resto é dividido pelos vencedores na proporção do que cada um apostou (os arredondamentos também ficam no Cofre).</li>
+          <li>Se ninguém acertar, o pote inteiro fica no Cofre. A banca agradece.</li>
+          <li>Se a aposta for anulada, os grãos voltam todos a quem apostou.</li>
+          <li>Com {t.betManagerMinBettors} ou mais apostadores, o Gestor recebe uma comissão de gestão de +{t.betManagerFee} ☕, paga pelo Cofre.</li>
+          <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
+        </ul>
+      </Article>
+
+      <Article n={8} title="Disposições finais">
         <ul className="list-disc space-y-1 pl-6">
           <li>Tudo isto é para rir. Quem levar a mal paga a próxima rodada.</li>
           <li>Os conflitos institucionais resolvem-se no jantar seguinte.</li>

@@ -2,6 +2,7 @@ import "server-only";
 import webpush from "web-push";
 import { sql } from "./db";
 import { GRAOS } from "./economy";
+import { betResults } from "./bets";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
 
@@ -72,7 +73,36 @@ export async function flushDueNotifications(): Promise<void> {
     RETURNING user_id, week_start::text AS week_start,
       week_start > (now() AT TIME ZONE 'Europe/Lisbon')::date - 7 AS current
   `) as { user_id: number; week_start: string; current: boolean }[];
+  const closing = (await sql`
+    UPDATE bets SET closing_notified_at = now()
+    WHERE status = 'open' AND closing_notified_at IS NULL AND closes_at > now()
+      AND closes_at <= now() + make_interval(hours => ${GRAOS.betClosingWarningHours})
+    RETURNING id, title
+  `) as { id: number; title: string }[];
+  const closed = (await sql`
+    UPDATE bets SET closed_notified_at = now()
+    WHERE status = 'open' AND closed_notified_at IS NULL AND closes_at <= now()
+    RETURNING id, title, (SELECT user_id FROM offices WHERE office = 'apostas') AS manager
+  `) as { id: number; title: string; manager: number | null }[];
   await Promise.all([
+    ...closing.map((b) =>
+      pushToAllExcept(0, {
+        title: `⏳ Faltam menos de ${GRAOS.betClosingWarningHours} horas para fechar`,
+        body: `Aposta n.º ${b.id}: ${b.title}`,
+        url: `/apostas/${b.id}`,
+        tag: `aposta-${b.id}`,
+      }),
+    ),
+    ...closed
+      .filter((b) => b.manager !== null)
+      .map((b) =>
+        pushToUsers([b.manager!], {
+          title: "🎲 Aposta fechada: declara o resultado",
+          body: `Aposta n.º ${b.id}: ${b.title}`,
+          url: `/apostas/${b.id}`,
+          tag: `aposta-${b.id}`,
+        }),
+      ),
     ...posts
       .filter((p) => p.fresh)
       .map((p) =>
@@ -124,4 +154,36 @@ export async function notifyMovement(targetId: number, amount: number, reason: s
     body: reason,
     url: "/cofre",
   });
+}
+
+export async function notifyNewBet(betId: number, managerId: number, title: string): Promise<void> {
+  await pushToAllExcept(managerId, {
+    title: `🎲 Nova aposta n.º ${betId}`,
+    body: title,
+    url: `/apostas/${betId}`,
+    tag: `aposta-${betId}`,
+  });
+}
+
+export async function notifyBetResult(betId: number, outcome: string): Promise<void> {
+  const [bet] = (await sql`SELECT title FROM bets WHERE id = ${betId}`) as { title: string }[];
+  if (!bet) return;
+  const results = await betResults(betId);
+  await Promise.all(
+    results.map((r) => {
+      const net = r.returned - r.staked;
+      const body =
+        outcome === "foi anulada"
+          ? `Devolvemos-te os ${r.staked} ☕ que apostaste.`
+          : r.returned > 0
+            ? `Recebeste ${r.returned} ☕ (${net >= 0 ? "+" : "−"}${Math.abs(net)} ☕ de lucro). 🤑`
+            : `Perdeste os ${r.staked} ☕ que apostaste. A banca agradece.`;
+      return pushToUsers([r.user_id], {
+        title: `🎲 Aposta n.º ${betId} ${outcome}`,
+        body: `${bet.title} · ${body}`,
+        url: `/apostas/${betId}`,
+        tag: `aposta-${betId}`,
+      });
+    }),
+  );
 }
