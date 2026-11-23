@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { holds, type Office } from "@/lib/offices";
-import { TREMOCOS } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_AMOUNT = 2_147_483_647;
 
 export async function applyMovement(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
@@ -18,13 +18,9 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
   const reason = field(form, "reason");
   if (!Number.isInteger(target) || target <= 0) return { error: "Escolhe o sócio." };
   if (kind !== "multa" && kind !== "subsidio") return { error: "Escolhe multa ou subsídio." };
-  if (!Number.isInteger(amount) || amount < 1 || amount > TREMOCOS.manualMax) {
-    return { error: `O valor tem de ser entre 1 e ${TREMOCOS.manualMax} tremoços.` };
-  }
+  if (!Number.isInteger(amount) || amount < 1) return { error: "O valor tem de ser um número inteiro de tremoços." };
+  if (amount > MAX_AMOUNT) return { error: "Nem o Cofre do Estado tem tantos tremoços. Escolhe um valor mais pequeno." };
   if (reason.length < 3 || reason.length > 140) return { error: "Indica o motivo (3 a 140 caracteres)." };
-  if (kind === "subsidio" && target === user.id) {
-    return { error: "Conflito de interesses: o Tesoureiro não se pode subsidiar a si próprio." };
-  }
   await sql`
     INSERT INTO ledger (user_id, amount, reason, created_by, simulated)
     SELECT id, ${kind === "multa" ? -amount : amount}, ${reason}, ${user.id}, false FROM users WHERE id = ${target}

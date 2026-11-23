@@ -11,7 +11,6 @@ export const TREMOCOS = {
   rotaDone: 10,
   monthlyFee: 10,
   rotaMissedFine: 20,
-  manualMax: 100,
   xmasBonus: 10,
   folar: 5,
   adventPrize: 2,
@@ -97,7 +96,7 @@ export async function getBalances(): Promise<Balance[]> {
           greatest(${ECONOMY_START}::date, date_trunc('month', u.created_at AT TIME ZONE 'Europe/Lisbon')::date),
           (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date,
           interval '1 month'))::int AS months,
-      coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::int AS manual,
+      coalesce((SELECT sum(l.amount) FROM ledger l WHERE l.user_id = u.id), 0)::float8 AS manual,
       u.created_at
     FROM users u
     ORDER BY u.id

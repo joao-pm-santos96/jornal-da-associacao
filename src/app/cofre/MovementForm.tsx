@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { applyMovement } from "@/app/governo-actions";
 
-export function MovementForm({ members, max }: { members: { id: number; name: string }[]; max: number }) {
+export function MovementForm({ members }: { members: { id: number; name: string }[] }) {
   const [state, action, pending] = useActionState(applyMovement, {});
   const input = "border-2 border-ink bg-white p-1.5";
   return (
@@ -26,8 +26,8 @@ export function MovementForm({ members, max }: { members: { id: number; name: st
         </div>
         <div>
           <label htmlFor="mv-amount" className="block text-xs font-semibold">Tremoços</label>
-          <input id="mv-amount" name="amount" type="number" min={1} max={max} required defaultValue={5}
-            className={`${input} w-20`} />
+          <input id="mv-amount" name="amount" type="number" min={1} step={1} required defaultValue={5}
+            className={`${input} w-28`} />
         </div>
       </div>
       <div>

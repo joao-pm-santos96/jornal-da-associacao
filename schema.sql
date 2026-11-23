@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS offices (
 CREATE TABLE IF NOT EXISTS ledger (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  amount integer NOT NULL CHECK (amount <> 0 AND abs(amount) <= 100),
+  amount integer NOT NULL CONSTRAINT ledger_amount_check CHECK (amount <> 0),
   reason text NOT NULL,
   created_by integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -210,3 +210,6 @@ ALTER TABLE resolutions ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFA
 ALTER TABLE resolution_votes ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
 ALTER TABLE carnival_masks ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
 ALTER TABLE easter_eggs ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT jornal_simulating();
+
+ALTER TABLE ledger DROP CONSTRAINT IF EXISTS ledger_amount_check;
+ALTER TABLE ledger ADD CONSTRAINT ledger_amount_check CHECK (amount <> 0);
