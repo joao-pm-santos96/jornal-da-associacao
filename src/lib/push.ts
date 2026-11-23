@@ -179,7 +179,7 @@ export async function notifyBetResult(betId: number, outcome: string): Promise<v
             ? `Recebeste ${r.returned} ☕ (${net >= 0 ? "+" : "−"}${Math.abs(net)} ☕ de lucro). 🤑`
             : `Perdeste os ${r.staked} ☕ que apostaste. A banca agradece.`;
       return pushToUsers([r.user_id], {
-        title: `🎲 Aposta n.º ${betId} ${outcome}`,
+        title: `🎲 Aposta n.º ${betId}: ${outcome}`,
         body: `${bet.title} · ${body}`,
         url: `/apostas/${betId}`,
         tag: `aposta-${betId}`,
