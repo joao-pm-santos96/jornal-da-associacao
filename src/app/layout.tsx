@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           {user && (
             <nav className="hidden border-t border-rule md:block" aria-label="Secções">
-              <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+              <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 py-2 text-xs font-bold uppercase tracking-wider">
                 <Link href="/" className="hover:text-scoop">Início</Link>
                 <Link href="/novo" className="hover:text-scoop">Escrever</Link>
                 <Link href="/meus" className="hover:text-scoop">Os meus</Link>
