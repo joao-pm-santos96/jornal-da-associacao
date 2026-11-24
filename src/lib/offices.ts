@@ -23,3 +23,9 @@ export const getOffices = cache(async (): Promise<Partial<Record<Office, OfficeH
 export async function holds(office: Office, userId: number): Promise<boolean> {
   return (await getOffices())[office]?.user_id === userId;
 }
+
+export const LETTER_PUSH = {
+  title: "📨 Correspondência do Gabinete",
+  body: "Tens uma carta confidencial à tua espera no teu gabinete, no Cofre.",
+  url: "/cofre",
+} as const;

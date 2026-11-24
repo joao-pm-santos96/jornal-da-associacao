@@ -192,3 +192,8 @@ export async function auditedThisWeek(userId: number, week: string): Promise<boo
   `) as { done: boolean }[];
   return row.done;
 }
+
+export async function readLetters(userId: number): Promise<Set<string>> {
+  const rows = (await sql`SELECT office FROM office_letters WHERE user_id = ${userId}`) as { office: string }[];
+  return new Set(rows.map((r) => r.office));
+}
