@@ -10,9 +10,26 @@ import { decideSubsidy } from "@/app/governo-actions";
 import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
 import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
+import { RepresentationForm } from "./RepresentationForms";
+import { EXCUSES, hasSlushHistory, slushState, type SlushState } from "@/lib/slush";
 
 function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
+}
+
+function Representation({ slush, max }: { slush: SlushState; max: number }) {
+  return (
+    <div className="space-y-2 border-t-2 border-dashed border-ink pt-3">
+      <h3 className="font-bold">💼 Despesas de representação</h3>
+      <p className="text-sm text-muted">
+        Uma por semana, até {GRAOS.slushPct}% do disponível ({max} ☕). Aparece no livro do Cofre com a justificação; o destino é confidencial.
+      </p>
+      <RepresentationForm excuses={EXCUSES} max={max} done={slush.desviou} />
+      <p className="text-sm">
+        <Link href="/cofre/saco-azul" className="underline hover:text-scoop">Ver o teu saco azul ({slush.balance} ☕) →</Link>
+      </p>
+    </div>
+  );
 }
 
 type SubsidyRequest = { id: number; name: string; amount: number; reason: string; created_at: Date };
@@ -40,6 +57,9 @@ export default async function TreasuryPage() {
       `) as SubsidyRequest[])
     : [];
   const members = economy.balances.map((b) => ({ id: b.user_id, name: b.name })).sort((a, b) => a.name.localeCompare(b.name));
+  const inOffice = isTreasurer || isPresident;
+  const slush = inOffice || (await hasSlushHistory(user.id)) ? await slushState(user.id, now) : null;
+  const repMax = Math.floor((Math.max(economy.available, 0) * GRAOS.slushPct) / 100);
   const debtors = economy.balances.filter((b) => b.balance < 0).map((b) => ({ id: b.user_id, name: b.name, balance: b.balance }));
 
   return (
@@ -169,6 +189,12 @@ export default async function TreasuryPage() {
             </div>
           </section>
 
+          {slush && !inOffice && (
+            <p className="text-sm">
+              <Link href="/cofre/saco-azul" className="underline decoration-dashed hover:text-scoop">💼 O teu saco azul ({slush.balance} ☕)</Link>
+            </p>
+          )}
+
           {isTreasurer && (
             <section className="max-w-lg border-2 border-ink bg-white p-4">
               <h2 className="mb-3 font-display text-2xl font-black">💰 Gabinete do Tesoureiro</h2>
@@ -180,6 +206,7 @@ export default async function TreasuryPage() {
                 <Link href="/cofre/tabela" className="font-bold underline hover:text-scoop">⚙️ Mudar preços, taxas e percentagens →</Link>
                 <span className="block text-xs text-muted">Tudo menos o total de grãos em circulação. Entra em vigor de imediato e sai num despacho.</span>
               </p>
+              {slush && <Representation slush={slush} max={repMax} />}
             </section>
           )}
 
@@ -217,6 +244,7 @@ export default async function TreasuryPage() {
                   <AmnestyForm debtors={debtors} />
                 )}
               </div>
+              {slush && !isTreasurer && <Representation slush={slush} max={repMax} />}
             </section>
           )}
         </>
@@ -229,7 +257,7 @@ export default async function TreasuryPage() {
         ) : (
           <ul className="divide-y divide-rule">
             {movements.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
+              <li key={m.key} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
                 <span>
                   <strong>{m.name}</strong> · {m.reason}
                   <span className="block text-xs text-muted">

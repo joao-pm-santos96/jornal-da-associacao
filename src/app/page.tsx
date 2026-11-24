@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listEditionPosts, listEditions, listHighlights, listUnread } from "@/lib/posts";
 import { HighlightBox } from "@/components/HighlightBox";
+import { ScandalBox } from "@/components/ScandalBox";
+import { recentScandals } from "@/lib/slush";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
@@ -18,7 +20,7 @@ import { BetBanner } from "@/components/BetBanner";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota, decree, offices, bet, highlights] = await Promise.all([
+  const [editions, activity, rota, decree, offices, bet, highlights, scandals] = await Promise.all([
     listEditions(),
     listUnread(user.id),
     getRota(),
@@ -26,6 +28,7 @@ export default async function Home() {
     getOffices(),
     featuredBet(),
     listHighlights(),
+    recentScandals(),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
   const now = await getNow();
@@ -37,6 +40,7 @@ export default async function Home() {
         <SeasonBanner season={season} extra={seasonExtra} />
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
+        <ScandalBox scandals={scandals} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <BetBanner bet={bet} />
         <div className="py-16 text-center">
@@ -58,6 +62,7 @@ export default async function Home() {
       <SeasonBanner season={season} extra={seasonExtra} />
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
+        <ScandalBox scandals={scandals} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <BetBanner bet={bet} />
       <HighlightBox highlights={highlights} />

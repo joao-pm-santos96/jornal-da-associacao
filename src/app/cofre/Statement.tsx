@@ -19,6 +19,10 @@ const ICON: Record<string, string> = {
   raspadinha: "🎟️",
   festa: "🎉",
   injecao: "💸",
+  representacao: "💼",
+  confisco: "🚔",
+  consultoria: "📎",
+  auditoria: "🔍",
 };
 
 const MAX_LINES = 300;
@@ -44,7 +48,7 @@ export function Statement({ lines, empty }: { lines: StatementLine[]; empty: str
             </>
           );
           return (
-            <li key={i} className="flex items-baseline gap-3 py-2 text-sm">
+            <li key={i} className={`flex items-baseline gap-3 py-2 text-sm ${l.kind === "representacao" ? "bg-flash" : ""}`}>
               <span className="w-16 shrink-0 text-xs leading-tight text-muted">
                 {day.format(l.at)}
                 <span className="block">{time.format(l.at)}</span>

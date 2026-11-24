@@ -7,6 +7,7 @@ import { resolveDueRaces, type RaceResult } from "./ducks";
 import { duckName } from "./ducks-table";
 import { expireDuels } from "./duels";
 import { runBonuses, runPayrolls, settleCommissions } from "./payroll";
+import { runPrescriptions } from "./slush";
 import { getNow } from "./seasons";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
@@ -97,6 +98,7 @@ async function settleEconomy(): Promise<void> {
   const payrolls = await runPayrolls(now);
   const bonuses = await runBonuses(now);
   const commissions = await settleCommissions();
+  await runPrescriptions(now);
   await Promise.all([
     ...payrolls.flatMap((p) =>
       p.notices
