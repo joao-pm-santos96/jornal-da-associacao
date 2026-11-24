@@ -18,6 +18,7 @@ const ICON: Record<string, string> = {
   slot: "🎰",
   raspadinha: "🎟️",
   festa: "🎉",
+  injecao: "💸",
 };
 
 const MAX_LINES = 300;

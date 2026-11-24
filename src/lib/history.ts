@@ -42,12 +42,32 @@ export async function memberStatement(userId: number): Promise<StatementLine[]> 
     .reverse();
 }
 
+type SupplyChange = { at: Date; amount: number; label: string };
+
+async function supplyChanges(): Promise<SupplyChange[]> {
+  const rows = (await sql`
+    SELECT created_at AS at, amount, reason AS label FROM supply_changes ORDER BY created_at, id
+  `) as SupplyChange[];
+  return rows.map((r) => ({ ...r, at: new Date(r.at) }));
+}
+
 export async function treasuryStatement(): Promise<StatementLine[]> {
-  const economy = await loadEconomy();
+  const [economy, ledger, changes] = await Promise.all([loadEconomy(), ledgerLines(null), supplyChanges()]);
+  const events = [
+    ...changes.map((c) => ({ source: "supply" as const, line: c })),
+    ...ledger.map((l) => ({ source: "ledger" as const, line: l })),
+  ].sort((a, b) => a.line.at.getTime() - b.line.at.getTime());
   const held = new Map<number, number>();
-  let cofre = economy.supply;
+  let cofre = economy.supply - changes.reduce((sum, c) => sum + c.amount, 0);
   const lines: StatementLine[] = [];
-  for (const l of await ledgerLines(null)) {
+  for (const e of events) {
+    if (e.source === "supply") {
+      const c = e.line;
+      cofre += c.amount;
+      lines.push({ user_id: 0, name: "Cofre", at: c.at, kind: "injecao", amount: c.amount, label: c.label, href: null, balance: cofre });
+      continue;
+    }
+    const l = e.line;
     const before = held.get(l.user_id) ?? 0;
     const after = before + l.amount;
     held.set(l.user_id, after);
