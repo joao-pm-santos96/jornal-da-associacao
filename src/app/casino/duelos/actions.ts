@@ -7,7 +7,8 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
-import { DUEL_EXPIRY_HOURS, duelPrize, isMove, moveEmoji, outcome, type Move } from "@/lib/duels-table";
+import { duelPrize, isMove, moveEmoji, outcome, type Move } from "@/lib/duels-table";
+import { getRules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
 
 async function balanceOf(userId: number): Promise<number> {
@@ -16,12 +17,13 @@ async function balanceOf(userId: number): Promise<number> {
 
 export async function challenge(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  const R = await getRules();
   const opponentId = Number(field(form, "opponent_id"));
   const stake = Number(field(form, "stake"));
   const move = field(form, "move");
   if (!Number.isInteger(opponentId) || opponentId === user.id) return { error: "Escolhe outro sócio para desafiar." };
   if (!isMove(move)) return { error: "Escolhe pedra, papel ou tesoura." };
-  if (!Number.isInteger(stake) || stake < 2) return { error: "Um duelo é de pelo menos 2 ☕." };
+  if (!Number.isInteger(stake) || stake < R.duelMinStake) return { error: `Um duelo é de pelo menos ${R.duelMinStake} ☕.` };
   const balance = await balanceOf(user.id);
   if (balance < stake) return { error: `Só tens ${balance} ☕. Não se desafia com dinheiro que não se tem.` };
 
@@ -42,7 +44,7 @@ export async function challenge(_prev: FormState, form: FormData): Promise<FormS
   after(() =>
     pushToUsers([opponentId], {
       title: `⚔️ ${user.name} desafiou-te para um duelo`,
-      body: `${stake} ☕ em jogo. Pedra, papel ou tesoura? Tens ${DUEL_EXPIRY_HOURS} horas.`,
+      body: `${stake} ☕ em jogo. Pedra, papel ou tesoura? Tens ${R.duelExpiryHours} horas.`,
       url: "/casino/duelos",
       tag: `duelo-${row.id}`,
     }),
@@ -53,6 +55,7 @@ export async function challenge(_prev: FormState, form: FormData): Promise<FormS
 
 export async function respondDuel(duelId: number, _prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  const R = await getRules();
   const move = field(form, "move");
   if (!isMove(move)) return { error: "Escolhe pedra, papel ou tesoura." };
   const [duel] = (await sql`
@@ -66,7 +69,7 @@ export async function respondDuel(duelId: number, _prev: FormState, form: FormDa
 
   const result = outcome(duel.challenger_move, move);
   const winnerId = result === "tie" ? null : result === "challenger" ? duel.challenger_id : user.id;
-  const prize = duelPrize(duel.stake);
+  const prize = duelPrize(duel.stake, R.duelHouseCutPct);
   const [row] = (await sql`
     WITH d AS (
       UPDATE duels SET opponent_move = ${move}, status = 'done', winner_id = ${winnerId}, resolved_at = now()

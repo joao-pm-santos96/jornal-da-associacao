@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SCRATCH_COST, winningSymbol } from "@/lib/scratch-table";
+import { winningSymbol } from "@/lib/scratch-table";
 import { buyTicket, markScratched, type Ticket } from "./actions";
 
 const REVEAL_AT = 0.55;
@@ -40,7 +40,7 @@ function scratchedFraction(canvas: HTMLCanvasElement): number {
   return total ? clear / total : 1;
 }
 
-export function ScratchCard({ initial }: { initial: Ticket | null }) {
+export function ScratchCard({ initial, price }: { initial: Ticket | null; price: number }) {
   const router = useRouter();
   const [ticket, setTicket] = useState<Ticket | null>(initial);
   const [revealed, setRevealed] = useState(false);
@@ -90,9 +90,9 @@ export function ScratchCard({ initial }: { initial: Ticket | null }) {
   const winner = ticket && revealed ? winningSymbol(ticket.cells) : null;
   const message = !ticket || !revealed
     ? null
-    : ticket.prize > SCRATCH_COST
+    : ticket.prize > ticket.cost
       ? { text: `🎉 Ganhaste ${ticket.prize} ☕!`, tone: "bg-[#f2c230] text-[#141414] animate-bounce" }
-      : ticket.prize === SCRATCH_COST
+      : ticket.prize === ticket.cost
         ? { text: "🫘🫘🫘 Recuperas o bilhete.", tone: "bg-white text-[#141414]" }
         : { text: "Não foi desta. O bacalhau fica para a próxima.", tone: "bg-[#141414] text-[#fff6d6]" };
 
@@ -101,7 +101,7 @@ export function ScratchCard({ initial }: { initial: Ticket | null }) {
       <div className="-rotate-1 border-4 border-[#141414] bg-[#fff6d6] p-3 text-[#141414] shadow-[6px_6px_0_#141414]">
         <div className="flex items-baseline justify-between border-b-2 border-dashed border-[#141414] pb-1">
           <span className="font-display text-2xl font-black uppercase text-[#e10600]">Raspa o Bacalhau</span>
-          <span className="text-xs font-black">{SCRATCH_COST} ☕</span>
+          <span className="text-xs font-black">{ticket?.cost ?? price} ☕</span>
         </div>
         <p className="mt-1 text-[11px] font-bold uppercase tracking-wider">Três iguais ganham · série «Ílhavo da Sorte»</p>
         {ticket ? (
@@ -162,7 +162,7 @@ export function ScratchCard({ initial }: { initial: Ticket | null }) {
             disabled={busy}
             className="flex-1 border-4 border-[#f2c230] bg-[#e10600] py-3 font-display text-xl font-black uppercase text-white shadow-[4px_4px_0_#141414] active:translate-y-0.5 disabled:opacity-60"
           >
-            {busy ? "A imprimir…" : `Comprar bilhete (${SCRATCH_COST} ☕)`}
+            {busy ? "A imprimir…" : `Comprar bilhete (${price} ☕)`}
           </button>
         )}
       </div>

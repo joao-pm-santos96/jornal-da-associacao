@@ -7,6 +7,8 @@ import { ResetPasswordButton } from "./ResetPasswordButton";
 import { RotaForm } from "./RotaForm";
 import { OfficeForm } from "./OfficeForm";
 import { TimeMachineForm } from "./TimeMachineForm";
+import { ResetRulesForm } from "./ResetRulesForm";
+import { RULE_KEYS, defaultRules, getRules } from "@/lib/rules";
 import { getFakeNow } from "@/lib/seasons";
 import { getOffices } from "@/lib/offices";
 import { removeRotaSlot } from "./actions";
@@ -18,17 +20,20 @@ type Row = { id: number; username: string; name: string; is_admin: boolean; crea
 export default async function AdminPage() {
   const user = await requireUser();
   if (!user.is_admin) notFound();
-  const [userRows, rota, mondayRows, offices, fakeNow] = await Promise.all([
+  const [userRows, rota, mondayRows, offices, fakeNow, rules] = await Promise.all([
     sql`SELECT id, username, name, is_admin, created_at FROM users ORDER BY created_at`,
     getRota(),
     sql`SELECT to_char(date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + interval '7 days', 'YYYY-MM-DD') AS next_monday`,
     getOffices(),
     getFakeNow(),
+    getRules(),
   ]);
   const fakeLocal = fakeNow
     ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Lisbon", dateStyle: "short", timeStyle: "short" }).format(fakeNow).replace(" ", "T")
     : "";
   const users = userRows as Row[];
+  const defaults = defaultRules();
+  const changedRules = RULE_KEYS.filter((k) => rules[k] !== defaults[k]).length;
   const [{ next_monday }] = mondayRows as { next_monday: string }[];
 
   return (
@@ -50,6 +55,10 @@ export default async function AdminPage() {
             tesoureiro: offices.tesoureiro?.user_id,
           }}
         />
+      </section>
+      <section className="space-y-3">
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🛠️ Regras da economia</h2>
+        <ResetRulesForm changed={changedRules} />
       </section>
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Escala de escrita</h2>

@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "./db";
-import { GRAOS } from "./economy";
+import { getRules } from "./rules";
 
 export type BetStatus = "open" | "closed" | "resolved" | "void";
 
@@ -35,12 +35,12 @@ export type BetDetail = BetSummary & {
   mine: Wager[];
 };
 
-export function netPot(pot: number): number {
-  return pot - Math.ceil((pot * GRAOS.betHouseCutPct) / 100);
+export function netPot(pot: number, cutPct: number): number {
+  return pot - Math.ceil((pot * cutPct) / 100);
 }
 
-export function payoutPerGrain(pot: number, optionTotal: number): number | null {
-  return optionTotal > 0 ? netPot(pot) / optionTotal : null;
+export function payoutPerGrain(pot: number, optionTotal: number, cutPct: number): number | null {
+  return optionTotal > 0 ? netPot(pot, cutPct) / optionTotal : null;
 }
 
 const STATUS_SQL = `CASE WHEN b.status = 'open' AND b.closes_at <= now() THEN 'closed' ELSE b.status END`;
@@ -90,10 +90,11 @@ export async function getBet(id: number, viewerId: number): Promise<BetDetail | 
     `,
   ]);
   const options = optionRows as Omit<BetOption, "payout">[];
+  const { betHouseCutPct } = await getRules();
   const wagers = wagerRows as Wager[];
   return {
     ...bet,
-    options: options.map((o) => ({ ...o, payout: payoutPerGrain(bet.pot, o.total) })),
+    options: options.map((o) => ({ ...o, payout: payoutPerGrain(bet.pot, o.total, betHouseCutPct) })),
     wagers: bet.status === "open" ? [] : wagers,
     mine: wagers.filter((w) => w.user_id === viewerId),
   };

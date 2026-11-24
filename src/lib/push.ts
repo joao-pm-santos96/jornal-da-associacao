@@ -1,7 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { sql } from "./db";
-import { GRAOS } from "./economy";
+import { getRules } from "./rules";
 import { betResults } from "./bets";
 import { resolveDueRaces, type RaceResult } from "./ducks";
 import { duckName } from "./ducks-table";
@@ -136,6 +136,7 @@ async function settleEconomy(): Promise<void> {
 }
 
 export async function flushDueNotifications(): Promise<void> {
+  const R = await getRules();
   await settleEconomy();
   await settleRaces();
   const expired = await expireDuels();
@@ -165,7 +166,7 @@ export async function flushDueNotifications(): Promise<void> {
   const closing = (await sql`
     UPDATE bets SET closing_notified_at = now()
     WHERE status = 'open' AND closing_notified_at IS NULL AND closes_at > now()
-      AND closes_at <= now() + make_interval(hours => ${GRAOS.betClosingWarningHours})
+      AND closes_at <= now() + make_interval(hours => ${R.betClosingWarningHours})
     RETURNING id, title
   `) as { id: number; title: string }[];
   const closed = (await sql`
@@ -176,7 +177,7 @@ export async function flushDueNotifications(): Promise<void> {
   await Promise.all([
     ...closing.map((b) =>
       pushToAllExcept(0, {
-        title: `⏳ Faltam menos de ${GRAOS.betClosingWarningHours} horas para fechar`,
+        title: `⏳ Faltam menos de ${R.betClosingWarningHours} horas para fechar`,
         body: `Aposta n.º ${b.id}: ${b.title}`,
         url: `/casino/${b.id}`,
         tag: `aposta-${b.id}`,
@@ -207,7 +208,7 @@ export async function flushDueNotifications(): Promise<void> {
       .map((s) =>
         pushToUsers([s.user_id], {
           title: "✍️ Esta semana é a tua vez",
-          body: `Estás na escala até domingo às 23:59. Publicar vale +${GRAOS.rotaDone} pontos no ordenado, falhar custa −${GRAOS.rotaMissedFine} ☕.`,
+          body: `Estás na escala até domingo às 23:59. Publicar vale +${R.rotaDone} pontos no ordenado, falhar custa −${R.rotaMissedFine} ☕.`,
           url: "/novo",
           tag: `escala-${s.week_start}`,
         }),

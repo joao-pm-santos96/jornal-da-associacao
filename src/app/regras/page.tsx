@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
-import { GRAOS } from "@/lib/economy";
+import { getRules, slotBets } from "@/lib/rules";
 import { grains } from "@/lib/grains";
 
 function Article({ id, n, title, children }: { id?: string; n: number; title: string; children: React.ReactNode }) {
@@ -20,7 +20,7 @@ export default async function RulesPage() {
   const offices = await getOffices();
   const president = offices.presidente?.name ?? "cargo vago";
   const treasurer = offices.tesoureiro?.name ?? "cargo vago";
-  const t = GRAOS;
+  const t = await getRules();
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -80,6 +80,12 @@ export default async function RulesPage() {
           <Link href="/cofre" className="underline hover:text-scoop">Cofre</Link>, e nenhum aparece do nada. Tudo fica escrito num só livro, que não se apaga:
           um erro corrige-se com um estorno.
         </p>
+        <p>
+          Os valores desta secção são os que estão em vigor. Preços, taxas, multas, pontos e percentagens são decididos pelo{" "}
+          <strong>Tesoureiro</strong>, por despacho publicado em <Link href="/decretos" className="underline hover:text-scoop">/decretos</Link>, e mudam
+          logo. Só o total de grãos em circulação é intocável. A tabela completa está em{" "}
+          <Link href="/cofre/tabela" className="underline hover:text-scoop">Preços e taxas</Link>.
+        </p>
         <h3 className="font-bold">O ordenado semanal</h3>
         <p>
           Todas as segundas-feiras de manhã o Cofre distribui <strong>{t.payrollPct}% do seu saldo disponível</strong> pelos pontos que cada sócio fez na
@@ -88,8 +94,8 @@ export default async function RulesPage() {
         <table className="w-full border-2 border-ink bg-white text-left text-sm">
           <tbody className="divide-y divide-rule">
             <tr><td className="p-2">Publicar um post</td><td className="p-2 text-right font-bold">{t.post} pontos</td></tr>
-            <tr><td className="p-2">Comentar (até {t.commentCap} por semana)</td><td className="p-2 text-right font-bold">{t.comment} ponto</td></tr>
-            <tr><td className="p-2">Receber um 😂 de outro sócio (um por sócio por dia, até {t.laughCap} por semana)</td><td className="p-2 text-right font-bold">{t.laugh} ponto</td></tr>
+            <tr><td className="p-2">Comentar (até {t.commentCap} por semana)</td><td className="p-2 text-right font-bold">{t.comment} {t.comment === 1 ? "ponto" : "pontos"}</td></tr>
+            <tr><td className="p-2">Receber um 😂 de outro sócio (um por sócio por dia, até {t.laughCap} por semana)</td><td className="p-2 text-right font-bold">{t.laugh} {t.laugh === 1 ? "ponto" : "pontos"}</td></tr>
             <tr><td className="p-2">Cumprir a semana da escala</td><td className="p-2 text-right font-bold">+{t.rotaDone} pontos</td></tr>
             <tr><td className="p-2">Falhar a semana da escala</td><td className="p-2 text-right font-bold text-scoop">0 pontos e −{t.rotaMissedFine} ☕</td></tr>
             <tr><td className="p-2">Cota semanal, cobrada à segunda-feira</td><td className="p-2 text-right font-bold text-scoop">−{t.weeklyFee} ☕</td></tr>
@@ -153,10 +159,10 @@ export default async function RulesPage() {
           <li>Com {t.betBankerMinBettors} ou mais apostadores, a banca recebe uma comissão de até {t.betBankerFee} ☕, tirada da parte da casa.</li>
           <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
           <li>Em caso de batota flagrante, o admin pode fechar, resolver ou anular qualquer aposta.</li>
-          <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de 1, 2 ou 5 ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>
-          <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa 2 ☕ por bilhete; três símbolos iguais ganham. Também devolve, em média, menos do que custa.</li>
-          <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é todos os domingos às 21h. As apostas são mútuas, a casa fica com 10% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
-          <li>Nos <Link href="/casino/duelos" className="underline hover:text-scoop">Duelos</Link> desafia-se outro sócio para pedra, papel ou tesoura. Quem ganha leva o pote menos 10%; em caso de empate, cada um fica com o seu. Um desafio sem resposta em 48h expira e os grãos voltam.</li>
+          <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de {slotBets(t).join(", ").replace(/, (\d+)$/, " ou $1")} ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>
+          <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa {t.scratchCost} ☕ por bilhete; três símbolos iguais ganham. Também devolve, em média, menos do que custa.</li>
+          <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é todos os domingos às 21h. As apostas são mútuas, a casa fica com {t.raceHouseCutPct}% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
+          <li>Nos <Link href="/casino/duelos" className="underline hover:text-scoop">Duelos</Link> desafia-se outro sócio para pedra, papel ou tesoura. Quem ganha leva o pote menos {t.duelHouseCutPct}%; em caso de empate, cada um fica com o seu. O mínimo é {t.duelMinStake} ☕ e um desafio sem resposta em {t.duelExpiryHours}h expira e os grãos voltam.</li>
         </ul>
       </Article>
 

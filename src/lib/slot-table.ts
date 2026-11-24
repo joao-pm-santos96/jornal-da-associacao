@@ -1,6 +1,3 @@
-export const SLOT_BETS = [1, 2, 5] as const;
-export type SlotBet = (typeof SLOT_BETS)[number];
-
 export type SlotSymbol = { emoji: string; name: string; weight: number; triple: number; pair: number };
 
 export const SLOT_SYMBOLS: readonly SlotSymbol[] = [

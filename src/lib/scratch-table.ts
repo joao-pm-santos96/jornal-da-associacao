@@ -1,4 +1,3 @@
-export const SCRATCH_COST = 2;
 export const SCRATCH_ODDS_BASE = 3000;
 
 export type ScratchPrize = { emoji: string; multiplier: number; chances: number };

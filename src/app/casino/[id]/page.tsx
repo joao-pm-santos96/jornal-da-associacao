@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getBet, netPot, STATUS_LABEL } from "@/lib/bets";
-import { getBalances, GRAOS } from "@/lib/economy";
+import { getBalances } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { formatDateTime, formatSchedule } from "@/lib/dates";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { closeBetNow, voidBet } from "../actions";
@@ -12,6 +13,7 @@ import { Chip, Disclaimer, Marquee, Sticker, felt, gold } from "../Decor";
 const odds = new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default async function BetPage({ params }: { params: Promise<{ id: string }> }) {
+  const R = await getRules();
   const user = await requireUser();
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
@@ -45,7 +47,7 @@ export default async function BetPage({ params }: { params: Promise<{ id: string
 
         <section className="flex justify-center gap-8">
           <Chip value={`${bet.pot}`} label="☕ no pote" />
-          <Chip value={`${netPot(bet.pot)}`} label="☕ para quem acertar" tone="black" />
+          <Chip value={`${netPot(bet.pot, R.betHouseCutPct)}`} label="☕ para quem acertar" tone="black" />
         </section>
 
         <section>
@@ -145,7 +147,7 @@ export default async function BetPage({ params }: { params: Promise<{ id: string
               </form>
             </div>
             <p className="text-xs text-muted">
-              Com {GRAOS.betBankerMinBettors} ou mais apostadores, a banca recebe até {GRAOS.betBankerFee} ☕ de comissão ao declarar o resultado, tirados da parte da casa.
+              Com {R.betBankerMinBettors} ou mais apostadores, a banca recebe até {R.betBankerFee} ☕ de comissão ao declarar o resultado, tirados da parte da casa.
             </p>
           </section>
         )}

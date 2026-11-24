@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { duelsFor } from "@/lib/duels";
-import { DUEL_EXPIRY_HOURS, DUEL_HOUSE_CUT_PCT, duelPrize, moveEmoji } from "@/lib/duels-table";
+import { duelPrize, moveEmoji } from "@/lib/duels-table";
+import { getRules } from "@/lib/rules";
 import { timeAgo } from "@/lib/dates";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
@@ -13,6 +14,7 @@ const VERBS = ["esmagou", "humilhou", "despachou", "deu uma lição a", "mandou 
 
 export default async function DuelsPage({ searchParams }: { searchParams: Promise<{ duelo?: string }> }) {
   const user = await requireUser();
+  const R = await getRules();
   const { duelo } = await searchParams;
   const [balances, duels] = await Promise.all([getBalances(), duelsFor(user.id)]);
   const balance = balances.find((b) => b.user_id === user.id)?.balance ?? 0;
@@ -33,7 +35,7 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
       <header className="text-center">
         <h1 className={`font-display text-4xl font-black uppercase ${gold}`}>⚔️ Duelos</h1>
         <p className="text-sm">
-          Pedra, papel ou tesoura a dinheiro. Quem ganha leva o pote menos {DUEL_HOUSE_CUT_PCT}%. Empate: cada um fica com o seu.
+          Pedra, papel ou tesoura a dinheiro. Quem ganha leva o pote menos {R.duelHouseCutPct}%. Empate: cada um fica com o seu.
         </p>
       </header>
 
@@ -47,7 +49,7 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
             {moveEmoji(just.challenger_move)} <span className="text-2xl">vs</span> {moveEmoji(just.opponent_move)}
           </p>
           <p className="mt-2 font-display text-2xl font-black">
-            {justTie ? `Empate com ${rival}!` : justWon ? `Ganhaste ${duelPrize(just.stake)} ☕ a ${rival}!` : `${rival} ganhou-te ${just.stake} ☕.`}
+            {justTie ? `Empate com ${rival}!` : justWon ? `Ganhaste ${duelPrize(just.stake, R.duelHouseCutPct)} ☕ a ${rival}!` : `${rival} ganhou-te ${just.stake} ☕.`}
           </p>
           <p className="text-sm">{justTie ? "Cada um fica com os seus grãos." : justWon ? "Humilhação registada na Arena." : "Fica para a desforra."}</p>
         </section>
@@ -60,8 +62,8 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
             <div key={d.id} className={`${card} space-y-3`}>
               <p>
                 <strong>{d.challenger}</strong> desafiou-te para um duelo de <strong>{d.stake} ☕</strong>. Se ganhares, levas{" "}
-                <strong>{duelPrize(d.stake)} ☕</strong>.
-                <span className="block text-xs text-muted">Desafio feito {timeAgo(d.created_at)} · expira {DUEL_EXPIRY_HOURS}h depois</span>
+                <strong>{duelPrize(d.stake, R.duelHouseCutPct)} ☕</strong>.
+                <span className="block text-xs text-muted">Desafio feito {timeAgo(d.created_at)} · expira {R.duelExpiryHours}h depois</span>
               </p>
               <RespondForm duelId={d.id} />
               <form action={declineDuel.bind(null, d.id)}>
@@ -76,9 +78,9 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
 
       <section className={`mx-auto max-w-xl ${card}`}>
         <h2 className="mb-3 font-display text-2xl font-black">Desafiar alguém</h2>
-        <ChallengeForm members={members} balance={balance} />
+        <ChallengeForm members={members} balance={balance} min={R.duelMinStake} />
         <p className="mt-2 text-xs text-muted">
-          Os grãos saem logo do teu saldo. Se o adversário recusar ou não responder em {DUEL_EXPIRY_HOURS}h, voltam para ti.
+          Os grãos saem logo do teu saldo. Se o adversário recusar ou não responder em {R.duelExpiryHours}h, voltam para ti.
         </p>
       </section>
 
@@ -121,7 +123,7 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
                     </span>
                   ) : (
                     <span>
-                      <strong className={gold}>{w}</strong> {verb} {l} e levou {duelPrize(d.stake)} ☕.
+                      <strong className={gold}>{w}</strong> {verb} {l} e levou {duelPrize(d.stake, R.duelHouseCutPct)} ☕.
                     </span>
                   )}
                 </li>

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { field, type FormState } from "@/lib/form";
-import { GRAOS, loadEconomy } from "@/lib/economy";
+import { loadEconomy } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { getNow, getSeason, lisbon } from "@/lib/seasons";
 import { adventDay, adventSurprise, santaRevealed } from "@/lib/festas/natal";
 import { resolutionYear, resolutionsRevealed } from "@/lib/festas/anonovo";
@@ -31,6 +32,7 @@ export async function sendSantaCard(_prev: FormState, form: FormData): Promise<F
 }
 
 export async function openAdventDoor(door: number): Promise<void> {
+  const R = await getRules();
   const user = await requireUser();
   const now = await getNow();
   if ((await getSeason()) !== "natal" || adventDay(now) !== door) return;
@@ -38,8 +40,8 @@ export async function openAdventDoor(door: number): Promise<void> {
   const others = ((await sql`SELECT name FROM users WHERE id <> ${user.id} ORDER BY id`) as { name: string }[]).map(
     (u) => u.name,
   );
-  const drawn = adventSurprise(year, door, user.id, others);
-  const funded = drawn.kind !== "graos" || (await loadEconomy()).available >= GRAOS.adventPrize;
+  const drawn = adventSurprise(year, door, user.id, others, R.adventPrize);
+  const funded = drawn.kind !== "graos" || (await loadEconomy()).available >= R.adventPrize;
   const surprise = funded
     ? drawn
     : { kind: "piada" as const, payload: "Havia grãos de café no sapatinho, mas o Cofre está vazio. Fica a intenção. 🧦" };
@@ -51,7 +53,7 @@ export async function openAdventDoor(door: number): Promise<void> {
   if (inserted.length > 0 && surprise.kind === "graos") {
     await sql`
       INSERT INTO ledger (user_id, amount, reason, kind)
-      VALUES (${user.id}, ${GRAOS.adventPrize}, ${`Calendário do Advento: porta ${door}`}, 'festa')
+      VALUES (${user.id}, ${R.adventPrize}, ${`Calendário do Advento: porta ${door}`}, 'festa')
     `;
   }
   revalidatePath("/natal");
@@ -86,7 +88,8 @@ export async function voteResolution(year: number, targetId: number, kept: boole
   revalidatePath("/resolucoes");
 }
 
-export async function collectEgg(egg: number): Promise<{ found: boolean }> {
+export async function collectEgg(egg: number): Promise<{ found: boolean; prize?: number }> {
+  const R = await getRules();
   const user = await requireUser();
   if ((await getSeason()) !== "pascoa" || !Number.isInteger(egg) || egg < 1 || egg > EGG_COUNT) {
     return { found: false };
@@ -98,13 +101,14 @@ export async function collectEgg(egg: number): Promise<{ found: boolean }> {
     ON CONFLICT DO NOTHING RETURNING egg
   `;
   if (inserted.length === 0) return { found: false };
-  if ((await loadEconomy()).available >= GRAOS.egg) {
+  if ((await loadEconomy()).available >= R.egg) {
     await sql`
       INSERT INTO ledger (user_id, amount, reason, kind)
-      VALUES (${user.id}, ${GRAOS.egg}, ${`Ovo da Páscoa n.º ${egg}`}, 'festa')
+      VALUES (${user.id}, ${R.egg}, ${`Ovo da Páscoa n.º ${egg}`}, 'festa')
     `;
+    return { found: true, prize: R.egg };
   }
-  return { found: true };
+  return { found: true, prize: 0 };
 }
 
 export async function setFakeNow(_prev: FormState, form: FormData): Promise<FormState> {

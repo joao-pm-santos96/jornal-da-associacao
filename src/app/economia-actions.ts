@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { GRAOS, TIP_OPTIONS, getEconomy, weekOf } from "@/lib/economy";
+import { TIP_OPTIONS, getEconomy, weekOf } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { pushToUsers } from "@/lib/push";
 import { getNow } from "@/lib/seasons";
@@ -18,11 +19,12 @@ async function spendCheck(userId: number, price: number): Promise<string | null>
 }
 
 export async function tip(kind: "post" | "comment", targetId: number, amount: number): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   if (!TIP_OPTIONS.includes(amount as (typeof TIP_OPTIONS)[number])) return { error: "Valor inválido." };
   const problem = await spendCheck(user.id, amount);
   if (problem) return { error: problem };
-  const vat = Math.round((amount * GRAOS.tipVatPct) / 100);
+  const vat = Math.round((amount * R.tipVatPct) / 100);
   const [row] = (await sql`
     WITH t AS (
       SELECT p.author_id, p.id AS post_id, 'post «' || p.title || '»' AS what
@@ -56,8 +58,9 @@ export async function tip(kind: "post" | "comment", targetId: number, amount: nu
 }
 
 export async function buyHighlight(postId: number): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
-  const problem = await spendCheck(user.id, GRAOS.highlight);
+  const problem = await spendCheck(user.id, R.highlight);
   if (problem) return { error: problem };
   const [row] = (await sql`
     WITH p AS (SELECT id, title FROM visible_posts WHERE id = ${postId}),
@@ -65,24 +68,25 @@ export async function buyHighlight(postId: number): Promise<FormState> {
       INSERT INTO post_highlights (post_id, buyer_id, until)
       SELECT p.id, ${user.id},
         greatest(now(), coalesce((SELECT max(until) FROM post_highlights WHERE post_id = p.id), now()))
-          + make_interval(hours => ${GRAOS.highlightHours})
+          + make_interval(hours => ${R.highlightHours})
       FROM p
       RETURNING until
     ),
     l AS (
       INSERT INTO ledger (user_id, amount, reason, kind)
-      SELECT ${user.id}, ${-GRAOS.highlight}, 'Loja: destaque do post «' || p.title || '»', 'loja' FROM p
+      SELECT ${user.id}, ${-R.highlight}, 'Loja: destaque do post «' || p.title || '»', 'loja' FROM p
     )
     SELECT until FROM h
   `) as { until: Date }[];
   if (!row) return { error: "Esse post não existe." };
   revalidatePath("/", "layout");
-  return { ok: `Post em destaque na primeira página durante ${GRAOS.highlightHours} horas.` };
+  return { ok: `Post em destaque na primeira página durante ${R.highlightHours} horas.` };
 }
 
 export async function buyPardon(): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
-  const problem = await spendCheck(user.id, GRAOS.pardon);
+  const problem = await spendCheck(user.id, R.pardon);
   if (problem) return { error: problem };
   const week = weekOf(await getNow());
   const [row] = (await sql`
@@ -99,7 +103,7 @@ export async function buyPardon(): Promise<FormState> {
     ),
     l AS (
       INSERT INTO ledger (user_id, amount, reason, kind)
-      SELECT ${user.id}, ${-GRAOS.pardon}, 'Loja: indulto da escala', 'loja' FROM s
+      SELECT ${user.id}, ${-R.pardon}, 'Loja: indulto da escala', 'loja' FROM s
     )
     SELECT week_start FROM s
   `) as { week_start: string }[];
@@ -109,23 +113,24 @@ export async function buyPardon(): Promise<FormState> {
 }
 
 export async function buyNickname(_prev: FormState, form: FormData): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   const target = Number(field(form, "user_id"));
   const nickname = field(form, "nickname").replace(/\s+/g, " ");
   if (!Number.isInteger(target) || target <= 0) return { error: "Escolhe o sócio." };
   if (nickname.length < 2 || nickname.length > 30) return { error: "A alcunha tem de 2 a 30 caracteres." };
-  const problem = await spendCheck(user.id, GRAOS.nickname);
+  const problem = await spendCheck(user.id, R.nickname);
   if (problem) return { error: problem };
   const [row] = (await sql`
     WITH u AS (SELECT id, name FROM users WHERE id = ${target}),
     n AS (
       INSERT INTO nicknames (user_id, buyer_id, nickname, until)
-      SELECT id, ${user.id}, ${nickname}, now() + make_interval(days => ${GRAOS.nicknameDays}) FROM u
+      SELECT id, ${user.id}, ${nickname}, now() + make_interval(days => ${R.nicknameDays}) FROM u
       RETURNING id
     ),
     l AS (
       INSERT INTO ledger (user_id, amount, reason, kind)
-      SELECT ${user.id}, ${-GRAOS.nickname}, 'Loja: alcunha «' || ${nickname} || '» para ' || u.name, 'loja' FROM u
+      SELECT ${user.id}, ${-R.nickname}, 'Loja: alcunha «' || ${nickname} || '» para ' || u.name, 'loja' FROM u
     )
     SELECT u.name FROM u
   `) as { name: string }[];
@@ -134,24 +139,25 @@ export async function buyNickname(_prev: FormState, form: FormData): Promise<For
     after(() =>
       pushToUsers([target], {
         title: `🏷️ Tens alcunha nova: «${nickname}»`,
-        body: `Oferta de ${user.name}. Dura ${GRAOS.nicknameDays} dias.`,
+        body: `Oferta de ${user.name}. Dura ${R.nicknameDays} dias.`,
         url: "/cofre",
       }),
     );
   }
   revalidatePath("/", "layout");
-  return { ok: `${row.name} passa a ser «${nickname}» durante ${GRAOS.nicknameDays} dias.` };
+  return { ok: `${row.name} passa a ser «${nickname}» durante ${R.nicknameDays} dias.` };
 }
 
 export async function createCommission(_prev: FormState, form: FormData): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   const theme = field(form, "theme");
   const reward = Number(field(form, "reward"));
   const days = Number(field(form, "days"));
   if (theme.length < 3 || theme.length > 140) return { error: "Descreve o tema (3 a 140 caracteres)." };
   if (!Number.isInteger(reward) || reward < 1) return { error: "A recompensa é um número inteiro de grãos." };
-  if (!Number.isInteger(days) || days < 1 || days > GRAOS.commissionMaxDays) {
-    return { error: `O prazo vai de 1 a ${GRAOS.commissionMaxDays} dias.` };
+  if (!Number.isInteger(days) || days < 1 || days > R.commissionMaxDays) {
+    return { error: `O prazo vai de 1 a ${R.commissionMaxDays} dias.` };
   }
   const problem = await spendCheck(user.id, reward);
   if (problem) return { error: problem };

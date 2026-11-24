@@ -1,12 +1,12 @@
 import Link from "next/link";
-import type { Decree } from "@/lib/decrees";
+import { decreeKind, type Decree } from "@/lib/decrees";
 
 export function DecreeBanner({ decree }: { decree: Decree | null }) {
   if (!decree) return null;
   return (
     <aside className="border-4 border-double border-ink bg-white p-4">
       <p className="text-xs font-black uppercase tracking-widest text-scoop">
-        👑 Decreto Presidencial n.º {decree.number}/{decree.year}
+        {decreeKind(decree.office)} n.º {decree.number}/{decree.year}
       </p>
       <p className="mt-1 font-display text-2xl font-black leading-tight">{decree.title}</p>
       <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm">{decree.body}</p>

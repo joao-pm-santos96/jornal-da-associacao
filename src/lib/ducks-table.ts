@@ -1,4 +1,3 @@
-export const RACE_HOUSE_CUT_PCT = 10;
 export const RACE_SEGMENTS = 12;
 
 export type Duck = { n: number; name: string; color: string };

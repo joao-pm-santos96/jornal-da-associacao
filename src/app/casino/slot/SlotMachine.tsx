@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SLOT_BETS, SLOT_SYMBOLS, type SlotBet } from "@/lib/slot-table";
+import { SLOT_SYMBOLS } from "@/lib/slot-table";
 import { spinSlot } from "../slot-actions";
 
 const LOSSES = [
@@ -20,10 +20,10 @@ function randomSymbol(): string {
   return SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)].emoji;
 }
 
-export function SlotMachine({ initialBalance }: { initialBalance: number }) {
+export function SlotMachine({ initialBalance, bets }: { initialBalance: number; bets: number[] }) {
   const router = useRouter();
   const [reels, setReels] = useState<string[]>(["☕", "☕", "☕"]);
-  const [bet, setBet] = useState<SlotBet>(1);
+  const [bet, setBet] = useState(bets[0]);
   const [balance, setBalance] = useState(initialBalance);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -104,7 +104,7 @@ export function SlotMachine({ initialBalance }: { initialBalance: number }) {
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <div className="flex gap-1" role="group" aria-label="Aposta">
-            {SLOT_BETS.map((b) => (
+            {bets.map((b) => (
               <button
                 key={b}
                 type="button"

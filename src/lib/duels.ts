@@ -1,14 +1,15 @@
 import "server-only";
 import { sql } from "./db";
-import { DUEL_EXPIRY_HOURS } from "./duels-table";
+import { getRules } from "./rules";
 
 export type ExpiredDuel = { id: number; challenger_id: number; stake: number; opponent: string };
 
 export async function expireDuels(): Promise<ExpiredDuel[]> {
+  const { duelExpiryHours } = await getRules();
   return (await sql`
     WITH d AS (
       UPDATE duels SET status = 'expired', resolved_at = now()
-      WHERE status = 'pending' AND created_at < now() - make_interval(hours => ${DUEL_EXPIRY_HOURS})
+      WHERE status = 'pending' AND created_at < now() - make_interval(hours => ${duelExpiryHours})
       RETURNING id, challenger_id, opponent_id, stake
     ),
     r AS (

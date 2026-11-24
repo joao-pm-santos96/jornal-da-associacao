@@ -2,7 +2,6 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { sql } from "./db";
 import {
-  GRAOS,
   addDays,
   debit,
   lisbonMidnight,
@@ -15,16 +14,17 @@ import {
   type WeekPoints,
 } from "./economy";
 import { easterSunday, lisbon } from "./seasons";
+import { loadRules, type Rules } from "./rules";
 
 type LedgerRow = { user_id: number; amount: number; reason: string; kind: string };
 
 export type PayrollNotice = { user_id: number; wage: number; points: number; fine: number; fee: number };
 
-function pointsDetail(p: WeekPoints): string {
+function pointsDetail(p: WeekPoints, R: Rules): string {
   const parts = [
     p.posts && `${p.posts} ${p.posts === 1 ? "post" : "posts"}`,
-    p.comments && `${Math.min(p.comments, GRAOS.commentCap)} coment.`,
-    p.laughs && `${Math.min(p.laughs, GRAOS.laughCap)} 😂`,
+    p.comments && `${Math.min(p.comments, R.commentCap)} coment.`,
+    p.laughs && `${Math.min(p.laughs, R.laughCap)} 😂`,
     p.rota === "done" && p.rota_points && "escala",
     p.extra && `${p.extra} extra`,
   ].filter(Boolean);
@@ -42,11 +42,12 @@ function unnestRows(rows: LedgerRow[]) {
 
 async function payWeek(week: string, monday: string): Promise<PayrollNotice[] | null> {
   const economy = await loadEconomy();
+  const R = await loadRules();
   if (!economy.start) return null;
   const weekLo = lisbonMidnight(week);
   const from = economy.start > weekLo ? economy.start : weekLo;
   const points = await weekPoints(week, from, lisbonMidnight(monday));
-  const budget = payrollBudget(economy.available);
+  const budget = payrollBudget(economy.available, R.payrollPct);
   const shares = splitByPoints(budget, new Map(points.map((p) => [p.user_id, p.points])), Math.random);
   const totalPoints = points.reduce((sum, p) => sum + p.points, 0);
   const balance = new Map(economy.balances.map((b) => [b.user_id, b.balance]));
@@ -61,20 +62,20 @@ async function payWeek(week: string, monday: string): Promise<PayrollNotice[] | 
       rows.push({
         user_id: p.user_id,
         amount: wage,
-        reason: `Ordenado da semana de ${shortDate(week)}: ${p.points} ${p.points === 1 ? "ponto" : "pontos"} (${pointsDetail(p)})`,
+        reason: `Ordenado da semana de ${shortDate(week)}: ${p.points} ${p.points === 1 ? "ponto" : "pontos"} (${pointsDetail(p, R)})`,
         kind: "ordenado",
       });
       bal += wage;
     }
     let fine = 0;
     if (p.rota === "missed") {
-      fine = debit(bal, GRAOS.rotaMissedFine);
+      fine = debit(bal, R.rotaMissedFine, R.debtFloor);
       if (fine > 0) rows.push({ user_id: p.user_id, amount: -fine, reason: `Escala: falta na semana de ${shortDate(week)}`, kind: "multa" });
       bal -= fine;
     }
     let fee = 0;
     if ((created.get(p.user_id) ?? monday) < monday) {
-      fee = debit(bal, GRAOS.weeklyFee);
+      fee = debit(bal, R.weeklyFee, R.debtFloor);
       if (fee > 0) rows.push({ user_id: p.user_id, amount: -fee, reason: "Cota semanal", kind: "cota" });
       bal -= fee;
     }
@@ -127,6 +128,7 @@ export type BonusNotice = { key: string; label: string; share: number };
 
 export async function runBonuses(now: Date): Promise<BonusNotice[]> {
   const economy = await loadEconomy();
+  const R = await loadRules();
   if (!economy.start) return [];
   const startDate = lisbon(economy.start).date;
   const today = lisbon(now).date;
@@ -134,8 +136,8 @@ export async function runBonuses(now: Date): Promise<BonusNotice[]> {
   const notices: BonusNotice[] = [];
   for (let year = lisbon(economy.start).year; year <= lisbon(now).year; year++) {
     const events = [
-      { key: `natal-${year}`, date: `${year}-12-15`, pct: GRAOS.xmasPct, label: "Subsídio de Natal", kind: "natal" },
-      { key: `folar-${year}`, date: easterSunday(year), pct: GRAOS.folarPct, label: "Folar da Páscoa", kind: "folar" },
+      { key: `natal-${year}`, date: `${year}-12-15`, pct: R.xmasPct, label: "Subsídio de Natal", kind: "natal" },
+      { key: `folar-${year}`, date: easterSunday(year), pct: R.folarPct, label: "Folar da Páscoa", kind: "folar" },
     ];
     for (const e of events) {
       if (e.date < startDate || e.date > today || done.has(e.key)) continue;
