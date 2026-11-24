@@ -80,6 +80,10 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[]; cow
     duelCount("declined", "opponent_id"),
     duelCount("expired", "opponent_id"),
     duelCount("cancelled", "challenger_id"),
+    top(sql`
+      SELECT member_label(culprit_id) AS name, sum(recovered)::int AS value FROM scandals
+      GROUP BY culprit_id ORDER BY value DESC, max(created_at) DESC LIMIT 1
+    `),
   ]);
   const [scoop, laughs, prolific, commenter, lightning, ghost, snail, missing, skipper, bunny, shark, wizard, broke] = await Promise.all([
     top(sql`
@@ -165,7 +169,7 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[]; cow
       GROUP BY l.user_id HAVING sum(l.amount) < 0 ORDER BY value DESC LIMIT 1
     `),
   ]);
-  const [jackpot, scratchWin, duckMaster, gunslinger, slotAddict, scratchLoser, punchbag, chicken, ostrich, whiteFlag] =
+  const [jackpot, scratchWin, duckMaster, gunslinger, slotAddict, scratchLoser, punchbag, chicken, ostrich, whiteFlag, lightFingers] =
     await casino;
 
   return {
@@ -257,6 +261,9 @@ export async function getAwards(): Promise<{ honor: Award[]; shame: Award[]; cow
         emoji: "🚨", title: "Baldas da Escala", description: "Mais semanas da escala falhadas",
         winner: skipper?.name ?? null, stat: skipper ? plural(skipper.value, "semana em falta", "semanas em falta") : null,
       },
+      ...(lightFingers
+        ? [{ emoji: "🫳", title: "Mão Leve", description: "Mais grãos apanhados no saco azul", winner: lightFingers.name, stat: `${lightFingers.value} ☕ desviados` }]
+        : []),
     ],
     coward: [
       {

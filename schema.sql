@@ -481,3 +481,36 @@ ALTER TABLE decrees ADD COLUMN IF NOT EXISTS office text NOT NULL DEFAULT 'presi
 
 ALTER TABLE slot_spins DROP CONSTRAINT IF EXISTS slot_spins_bet_check;
 ALTER TABLE slot_spins ADD CONSTRAINT slot_spins_bet_check CHECK (bet > 0);
+
+CREATE TABLE IF NOT EXISTS slush_moves (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  owner_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount integer NOT NULL CHECK (amount <> 0),
+  kind text NOT NULL CHECK (kind IN ('desvio', 'lavagem', 'prescricao', 'confisco', 'recompensa')),
+  reason text NOT NULL,
+  week_start date NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+CREATE INDEX IF NOT EXISTS slush_moves_owner_idx ON slush_moves (owner_id, week_start);
+
+CREATE TABLE IF NOT EXISTS audits (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  auditor_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind text NOT NULL CHECK (kind IN ('auditoria', 'denuncia')),
+  week_start date NOT NULL,
+  found boolean NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  UNIQUE (auditor_id, kind, week_start)
+);
+
+CREATE TABLE IF NOT EXISTS scandals (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  culprit_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recovered integer NOT NULL CHECK (recovered > 0),
+  fine integer NOT NULL,
+  source text NOT NULL CHECK (source IN ('auditoria', 'denuncia')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);

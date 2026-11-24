@@ -61,7 +61,7 @@ if (row.created) {
         coalesce((SELECT value FROM economy_rules WHERE key = 'welcomeKit'), 10) AS kit,
         (SELECT coalesce(sum(greatest(b, 0)), 0) FROM (
           SELECT sum(amount) AS b FROM ledger WHERE NOT archived GROUP BY user_id
-        ) x)::int AS held
+        ) x)::int + (SELECT coalesce(sum(amount), 0) FROM slush_moves)::int AS held
     )
     INSERT INTO ledger (user_id, amount, reason, kind, simulated)
     SELECT ${row.id}, state.kit, 'Kit de boas-vindas', 'kit', false FROM state

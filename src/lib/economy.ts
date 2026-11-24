@@ -25,9 +25,10 @@ export type Economy = {
   escrow: number;
   available: number;
   debts: number;
+  slush: number;
 };
 
-type EconomyRow = { start: string | null; supply: string | null; escrow: number };
+type EconomyRow = { start: string | null; supply: string | null; escrow: number; slush: number };
 
 export async function loadEconomy(): Promise<Economy> {
   const [stateRows, balanceRows, rules] = await Promise.all([
@@ -40,7 +41,8 @@ export async function loadEconomy(): Promise<Economy> {
           + coalesce((SELECT sum(d.amount) FROM duck_bets d JOIN duck_races r ON r.id = d.race_id WHERE r.status = 'open'), 0)
           + coalesce((SELECT sum(stake) FROM duels WHERE status = 'pending'), 0)
           + coalesce((SELECT sum(reward) FROM commissions WHERE status IN ('open', 'claimed')), 0)
-        )::int AS escrow
+        )::int AS escrow,
+        (SELECT coalesce(sum(amount), 0) FROM slush_moves)::int AS slush
     `,
     sql`
       SELECT u.id AS user_id, member_label(u.id) AS name, u.created_at,
@@ -59,7 +61,8 @@ export async function loadEconomy(): Promise<Economy> {
     .map((r) => ({ ...r, frozen: open && r.balance <= rules.debtFloor }))
     .sort((a, b) => b.balance - a.balance);
   const supply = Number(state.supply ?? 0);
-  const cofre = open ? supply - balances.reduce((sum, b) => sum + Math.max(b.balance, 0), 0) : 0;
+  const slush = open ? state.slush : 0;
+  const cofre = open ? supply - slush - balances.reduce((sum, b) => sum + Math.max(b.balance, 0), 0) : 0;
   const escrow = open ? state.escrow : 0;
   return {
     open,
@@ -70,6 +73,7 @@ export async function loadEconomy(): Promise<Economy> {
     escrow,
     available: cofre - escrow,
     debts: balances.reduce((sum, b) => sum + Math.max(-b.balance, 0), 0),
+    slush,
   };
 }
 
@@ -200,15 +204,23 @@ export function payrollBudget(available: number, pct: number): number {
   return Math.floor((Math.max(available, 0) * pct) / 100);
 }
 
-export type Movement = { id: number; name: string; amount: number; reason: string; by: string | null; created_at: Date };
+export type Movement = { key: string; name: string; amount: number; reason: string; by: string | null; created_at: Date };
 
 export async function listMovements(limit = 30): Promise<Movement[]> {
   return (await sql`
-    SELECT l.id, member_label(l.user_id) AS name, l.amount, l.reason,
-      CASE WHEN l.created_by IS NULL THEN NULL ELSE member_label(l.created_by) END AS by, l.created_at
-    FROM ledger l
-    WHERE NOT l.archived
-    ORDER BY l.created_at DESC, l.id DESC
+    SELECT * FROM (
+      SELECT 'l' || l.id AS key, member_label(l.user_id) AS name, l.amount, l.reason,
+        CASE WHEN l.created_by IS NULL THEN NULL ELSE member_label(l.created_by) END AS by, l.created_at, l.id
+      FROM ledger l
+      WHERE NOT l.archived
+      UNION ALL
+      SELECT 's' || s.id, CASE WHEN s.kind = 'confisco' THEN member_label(s.owner_id) ELSE 'Cofre' END,
+        -s.amount, s.reason,
+        CASE WHEN s.kind = 'confisco' THEN NULL ELSE 'ordem superior' END, s.created_at, s.id
+      FROM slush_moves s
+      WHERE s.kind IN ('desvio', 'recompensa', 'confisco')
+    ) m
+    ORDER BY created_at DESC, id DESC
     LIMIT ${limit}
   `) as Movement[];
 }
