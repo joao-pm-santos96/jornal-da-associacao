@@ -9,6 +9,7 @@ import { field, type FormState } from "@/lib/form";
 import { LETTER_PUSH, OFFICES, getOffices, holds, type Office } from "@/lib/offices";
 import { pushToAllExcept, pushToUsers } from "@/lib/push";
 import { getNow } from "@/lib/seasons";
+import { grains } from "@/lib/grains";
 import { EXCUSES, REPRESENTATION, bust, representationTotal, rollCaught, slushHolders, slushState, type Busted } from "@/lib/slush";
 
 async function inOffice(userId: number): Promise<boolean> {
@@ -94,7 +95,7 @@ export async function requestAudit(): Promise<FormState> {
   const economy = await getEconomy();
   if (!economy.open) return { error: "O Cofre está fechado para obras." };
   const balance = economy.balances.find((b) => b.user_id === user.id)?.balance ?? 0;
-  if (balance < GRAOS.auditCost) return { error: `Uma auditoria custa ${GRAOS.auditCost} ☕ e tens ${balance} ☕.` };
+  if (balance < GRAOS.auditCost) return { error: `Uma auditoria custa ${GRAOS.auditCost} ☕ e tens ${grains(balance)} ☕.` };
   if ((await representationTotal()) <= 0) return { error: "Não há despesas de representação para auditar." };
   const now = await getNow();
   const week = weekOf(now);
