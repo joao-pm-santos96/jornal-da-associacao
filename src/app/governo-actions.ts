@@ -8,6 +8,7 @@ import { GRAOS, debit, getBalances, getEconomy } from "@/lib/economy";
 import { requireUser } from "@/lib/auth";
 import { getOffices, holds, OFFICES, type Office } from "@/lib/offices";
 import { field, type FormState } from "@/lib/form";
+import { grains } from "@/lib/grains";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_AMOUNT = 2_147_483_647;
@@ -31,7 +32,7 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
 
   if (kind === "multa") {
     const fined = debit(member.balance, amount);
-    if (fined === 0) return { error: `${member.name} já está no teto da dívida (${GRAOS.debtFloor} ☕). Não há mais por onde multar.` };
+    if (fined === 0) return { error: `${member.name} já está no teto da dívida (${grains(GRAOS.debtFloor)} ☕). Não há mais por onde multar.` };
     await sql`
       INSERT INTO ledger (user_id, amount, reason, created_by, kind)
       VALUES (${target}, ${-fined}, ${reason}, ${user.id}, 'multa')
@@ -40,7 +41,7 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
     revalidatePath("/cofre");
     return {
       ok: fined < amount
-        ? `Multa de ${fined} ☕ aplicada: o resto passava o teto da dívida (${GRAOS.debtFloor} ☕).`
+        ? `Multa de ${fined} ☕ aplicada: o resto passava o teto da dívida (${grains(GRAOS.debtFloor)} ☕).`
         : "Multa aplicada. A justiça foi feita.",
     };
   }

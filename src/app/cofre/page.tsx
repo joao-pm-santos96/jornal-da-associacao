@@ -6,6 +6,7 @@ import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
 import { getNow } from "@/lib/seasons";
 import { decideSubsidy } from "@/app/governo-actions";
+import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
 import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
 
@@ -134,7 +135,7 @@ export default async function TreasuryPage() {
             </div>
             <p className="mt-2 text-xs text-muted">
               Toca num nome para veres o extrato. Quem está em dívida não aposta, não dá gorjetas nem compra na loja; o ordenado paga a dívida primeiro.
-              A {GRAOS.debtFloor} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
+              A {grains(GRAOS.debtFloor)} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
             </p>
           </section>
 
@@ -148,7 +149,13 @@ export default async function TreasuryPage() {
             <div>
               <h3 className="font-bold">🙏 Indulto da escala ({GRAOS.pardon} ☕)</h3>
               <p className="mb-2 text-sm text-muted">Só na tua semana da escala, antes de publicares e antes de domingo acabar. Evita a multa de {GRAOS.rotaMissedFine} ☕.</p>
-              {mine?.rota === "pending" ? <PardonButton price={GRAOS.pardon} /> : <p className="text-sm">Não estás na escala por cumprir esta semana.</p>}
+              {mine?.rota === "pending" ? (
+                <PardonButton price={GRAOS.pardon} />
+              ) : mine?.rota === "pardoned" ? (
+                <p className="text-sm font-semibold">Esta semana estás indultado: não há multa nem pontos da escala.</p>
+              ) : (
+                <p className="text-sm">Não estás na escala por cumprir esta semana.</p>
+              )}
             </div>
             <div>
               <h3 className="font-bold">🏷️ Alcunha durante {GRAOS.nicknameDays} dias ({GRAOS.nickname} ☕)</h3>

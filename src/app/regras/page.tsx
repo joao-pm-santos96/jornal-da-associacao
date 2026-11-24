@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
 import { GRAOS } from "@/lib/economy";
+import { grains } from "@/lib/grains";
 
 function Article({ id, n, title, children }: { id?: string; n: number; title: string; children: React.ReactNode }) {
   return (
@@ -103,7 +104,7 @@ export default async function RulesPage() {
         <ul className="list-disc space-y-1 pl-6">
           <li>Quem não tem saldo para a cota ou uma multa fica a dever ao Cofre. O ordenado paga a dívida primeiro.</li>
           <li>Quem está em dívida não aposta, não dá gorjetas, não compra na loja nem encomenda posts.</li>
-          <li>A dívida deixa de crescer aos <strong>{t.debtFloor} ☕</strong>, quando a conta fica <strong>congelada 🧊</strong>: só se pode reagir com 🧂.</li>
+          <li>A dívida deixa de crescer aos <strong>{grains(t.debtFloor)} ☕</strong>, quando a conta fica <strong>congelada 🧊</strong>: só se pode reagir com 🧂.</li>
           <li>O Presidente pode decretar amnistias. Não custam nada ao Cofre, porque esses grãos nunca lá entraram.</li>
         </ul>
         <h3 className="font-bold">Para que serve o grão</h3>

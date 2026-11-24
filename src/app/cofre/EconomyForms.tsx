@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { buyNickname, buyPardon } from "@/app/economia-actions";
 import { grantAmnesty } from "@/app/governo-actions";
 import type { FormState } from "@/lib/form";
+import { grains } from "@/lib/grains";
 
 const input = "border-2 border-ink bg-white p-1.5";
 
@@ -68,7 +69,7 @@ export function AmnestyForm({ debtors }: { debtors: { id: number; name: string; 
           <label htmlFor="amnesty-user" className="block text-xs font-semibold">Perdoar a dívida de</label>
           <select id="amnesty-user" name="user_id" className={input}>
             <option value="todos">Todos os devedores</option>
-            {debtors.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.balance} ☕)</option>)}
+            {debtors.map((d) => <option key={d.id} value={d.id}>{d.name} ({grains(d.balance)} ☕)</option>)}
           </select>
         </div>
         <button disabled={pending} className="bg-ink px-4 py-2 text-sm font-bold uppercase text-white disabled:opacity-50">
