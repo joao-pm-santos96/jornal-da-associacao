@@ -11,7 +11,7 @@ import { latestDecree } from "@/lib/decrees";
 import { getOffices } from "@/lib/offices";
 import { DecreeBanner, PresidentShortcut } from "@/components/DecreeBanner";
 import { SeasonBanner } from "@/components/SeasonBanner";
-import { getNow, seasonFor } from "@/lib/seasons";
+import { getNow, getSeason } from "@/lib/seasons";
 import { reviewYear } from "@/lib/festas/anonovo";
 import { featuredBet } from "@/lib/bets";
 import { BetBanner } from "@/components/BetBanner";
@@ -29,7 +29,7 @@ export default async function Home() {
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
   const now = await getNow();
-  const season = seasonFor(now);
+  const season = await getSeason();
   const seasonExtra = season === "anonovo" ? [{ href: `/retrospetiva/${reviewYear(now)}`, label: `O ano de ${reviewYear(now)} em revista` }] : undefined;
   if (editions.length === 0) {
     return (

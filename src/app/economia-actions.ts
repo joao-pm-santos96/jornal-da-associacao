@@ -9,6 +9,7 @@ import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { pushToUsers } from "@/lib/push";
 import { getNow } from "@/lib/seasons";
+import { MODULES, isOpen } from "@/lib/modules";
 
 async function spendCheck(userId: number, price: number): Promise<string | null> {
   const economy = await getEconomy();
@@ -151,6 +152,7 @@ export async function buyNickname(_prev: FormState, form: FormData): Promise<For
 export async function createCommission(_prev: FormState, form: FormData): Promise<FormState> {
   const R = await getRules();
   const user = await requireUser();
+  if (!(await isOpen("encomendas"))) return { error: MODULES.encomendas.closed };
   const theme = field(form, "theme");
   const reward = Number(field(form, "reward"));
   const days = Number(field(form, "days"));
@@ -200,6 +202,7 @@ export async function cancelCommission(id: number): Promise<void> {
 
 export async function claimCommission(id: number, _prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (!(await isOpen("encomendas"))) return { error: MODULES.encomendas.closed };
   const postId = Number(field(form, "post_id"));
   if (!Number.isInteger(postId) || postId <= 0) return { error: "Escolhe o post que escreveste." };
   const [row] = (await sql`

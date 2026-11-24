@@ -9,6 +9,7 @@ import { getBalances } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { notifyBetResult, notifyNewBet } from "@/lib/push";
+import { MODULES, isOpen } from "@/lib/modules";
 
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -20,6 +21,7 @@ function refresh(betId?: number): void {
 export async function createBet(_prev: FormState, form: FormData): Promise<FormState> {
   const R = await getRules();
   const user = await requireUser();
+  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
   const title = field(form, "title");
   const description = field(form, "description");
   const local = field(form, "closes_at");
@@ -65,6 +67,7 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
 
 export async function placeWager(betId: number, _prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
   const optionId = Number(field(form, "option_id"));
   const amount = Number(field(form, "amount"));
   if (!Number.isInteger(optionId) || optionId <= 0) return { error: "Escolhe uma opção." };

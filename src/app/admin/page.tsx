@@ -11,7 +11,8 @@ import { ResetRulesForm } from "./ResetRulesForm";
 import { RULE_KEYS, defaultRules, getRules } from "@/lib/rules";
 import { getFakeNow } from "@/lib/seasons";
 import { getOffices } from "@/lib/offices";
-import { removeRotaSlot } from "./actions";
+import { removeRotaSlot, setModuleOpen } from "./actions";
+import { MODULES, MODULE_KEYS, getClosedModules } from "@/lib/modules";
 import { getRota } from "@/lib/rota";
 import { ConfirmButton } from "@/components/ConfirmButton";
 
@@ -20,13 +21,14 @@ type Row = { id: number; username: string; name: string; is_admin: boolean; crea
 export default async function AdminPage() {
   const user = await requireUser();
   if (!user.is_admin) notFound();
-  const [userRows, rota, mondayRows, offices, fakeNow, rules] = await Promise.all([
+  const [userRows, rota, mondayRows, offices, fakeNow, rules, closedModules] = await Promise.all([
     sql`SELECT id, username, name, is_admin, created_at FROM users ORDER BY created_at`,
     getRota(),
     sql`SELECT to_char(date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + interval '7 days', 'YYYY-MM-DD') AS next_monday`,
     getOffices(),
     getFakeNow(),
     getRules(),
+    getClosedModules(),
   ]);
   const fakeLocal = fakeNow
     ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Lisbon", dateStyle: "short", timeStyle: "short" }).format(fakeNow).replace(" ", "T")
@@ -59,6 +61,30 @@ export default async function AdminPage() {
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🛠️ Regras da economia</h2>
         <ResetRulesForm changed={changedRules} />
+      </section>
+      <section className="space-y-3">
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🔒 Módulos</h2>
+        <p className="text-sm text-muted">Fechar um módulo impede coisas novas (apostas, jogadas, encomendas, festas); o que já está em curso termina normalmente. Cada mudança sai como intervenção em /decretos.</p>
+        <ul className="divide-y divide-rule">
+          {MODULE_KEYS.map((m) => {
+            const open = !closedModules.has(m);
+            return (
+              <li key={m} className="flex items-center justify-between gap-2 py-2 text-sm">
+                <span>
+                  <strong>{MODULES[m].label}</strong> · {open ? "aberto" : <span className="font-bold text-scoop">fechado</span>}
+                </span>
+                <form action={setModuleOpen.bind(null, m, !open)}>
+                  <ConfirmButton
+                    message={open ? `Fechar: ${MODULES[m].label}? Sai uma intervenção pública.` : `Reabrir: ${MODULES[m].label}?`}
+                    className={open ? "bg-scoop px-3 py-1 text-xs font-bold uppercase text-white" : "bg-ink px-3 py-1 text-xs font-bold uppercase text-white"}
+                  >
+                    {open ? "Fechar" : "Reabrir"}
+                  </ConfirmButton>
+                </form>
+              </li>
+            );
+          })}
+        </ul>
       </section>
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Escala de escrita</h2>

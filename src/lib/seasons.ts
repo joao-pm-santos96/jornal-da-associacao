@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { sql } from "./db";
+import { isOpen } from "./modules";
 
 export type Season = "natal" | "anonovo" | "carnaval" | "cinzas" | "pascoa";
 
@@ -95,6 +96,7 @@ export async function getNow(): Promise<Date> {
 }
 
 export async function getSeason(): Promise<Season | null> {
+  if (!(await isOpen("festas"))) return null;
   return seasonFor(await getNow());
 }
 

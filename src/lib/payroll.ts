@@ -15,6 +15,7 @@ import {
 } from "./economy";
 import { easterSunday, lisbon } from "./seasons";
 import { loadRules, type Rules } from "./rules";
+import { isOpen } from "./modules";
 
 type LedgerRow = { user_id: number; amount: number; reason: string; kind: string };
 
@@ -129,7 +130,7 @@ export type BonusNotice = { key: string; label: string; share: number };
 export async function runBonuses(now: Date): Promise<BonusNotice[]> {
   const economy = await loadEconomy();
   const R = await loadRules();
-  if (!economy.start) return [];
+  if (!economy.start || !(await isOpen("festas"))) return [];
   const startDate = lisbon(economy.start).date;
   const today = lisbon(now).date;
   const done = new Set(((await sql`SELECT key FROM bonus_payments`) as { key: string }[]).map((r) => r.key));
