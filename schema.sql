@@ -462,3 +462,10 @@ LANGUAGE sql STABLE AS $$
       FROM users u WHERE u.id = uid)
   )
 $$;
+
+CREATE TABLE IF NOT EXISTS supply_changes (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  amount integer NOT NULL CHECK (amount <> 0),
+  reason text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
