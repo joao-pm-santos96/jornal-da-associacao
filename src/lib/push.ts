@@ -6,6 +6,8 @@ import { betResults } from "./bets";
 import { resolveDueRaces, type RaceResult } from "./ducks";
 import { duckName } from "./ducks-table";
 import { expireDuels } from "./duels";
+import { runBonuses, runPayrolls, settleCommissions } from "./payroll";
+import { getNow } from "./seasons";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
 
@@ -90,7 +92,51 @@ export async function settleRaces(): Promise<void> {
   await notifyRaceResults(await resolveDueRaces());
 }
 
+async function settleEconomy(): Promise<void> {
+  const now = await getNow();
+  const payrolls = await runPayrolls(now);
+  const bonuses = await runBonuses(now);
+  const commissions = await settleCommissions();
+  await Promise.all([
+    ...payrolls.flatMap((p) =>
+      p.notices
+        .filter((n) => n.wage > 0 || n.fine > 0)
+        .map((n) =>
+          pushToUsers([n.user_id], {
+            title: n.wage > 0 ? `💰 Ordenado da semana: +${n.wage} ☕` : `🚫 Multa da escala: −${n.fine} ☕`,
+            body: [
+              `${n.points} ${n.points === 1 ? "ponto" : "pontos"} na semana de ${p.week.slice(8, 10)}/${p.week.slice(5, 7)}.`,
+              n.fine > 0 && n.wage > 0 && `Multa da escala −${n.fine} ☕.`,
+              n.fee > 0 && `Cota −${n.fee} ☕.`,
+            ]
+              .filter(Boolean)
+              .join(" "),
+            url: "/cofre",
+            tag: `ordenado-${p.week}`,
+          }),
+        ),
+    ),
+    ...bonuses.map((b) =>
+      pushToAllExcept(0, {
+        title: b.share > 0 ? `🎁 ${b.label}: +${b.share} ☕` : `✂️ ${b.label} cortado`,
+        body: b.share > 0 ? "Pago pelo Cofre, a cada sócio." : "O Cofre não tem verba. A redação lamenta.",
+        url: "/cofre",
+        tag: b.key,
+      }),
+    ),
+    ...commissions.map((c) =>
+      pushToUsers([c.user_id], {
+        title: c.outcome === "paid" ? `✍️ Encomenda paga: +${c.reward} ☕` : `↩️ Encomenda devolvida: +${c.reward} ☕`,
+        body: c.outcome === "paid" ? `«${c.theme}»: o prazo acabou e o pagamento saiu.` : `Ninguém escreveu sobre «${c.theme}».`,
+        url: "/cofre/encomendas",
+        tag: `encomenda-${c.id}`,
+      }),
+    ),
+  ]);
+}
+
 export async function flushDueNotifications(): Promise<void> {
+  await settleEconomy();
   await settleRaces();
   const expired = await expireDuels();
   await Promise.all(
@@ -161,7 +207,7 @@ export async function flushDueNotifications(): Promise<void> {
       .map((s) =>
         pushToUsers([s.user_id], {
           title: "✍️ Esta semana é a tua vez",
-          body: `Estás na escala até domingo às 23:59. Publicar vale +${GRAOS.rotaDone} ☕, falhar custa −${GRAOS.rotaMissedFine} ☕.`,
+          body: `Estás na escala até domingo às 23:59. Publicar vale +${GRAOS.rotaDone} pontos no ordenado, falhar custa −${GRAOS.rotaMissedFine} ☕.`,
           url: "/novo",
           tag: `escala-${s.week_start}`,
         }),

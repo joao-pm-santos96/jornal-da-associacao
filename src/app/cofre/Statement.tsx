@@ -1,17 +1,23 @@
 import Link from "next/link";
-import type { MovementKind, StatementLine } from "@/lib/history";
+import type { StatementLine } from "@/lib/history";
 
-const ICON: Record<MovementKind, string> = {
-  post: "📝",
-  comment: "💬",
-  laugh: "😂",
-  rota: "✍️",
-  rota_fine: "🚫",
-  fee: "🧾",
-  bonus: "🎁",
-  ledger: "📒",
-  slots: "🎰",
-  scratch: "🎟️",
+const ICON: Record<string, string> = {
+  abertura: "🏦",
+  kit: "🎒",
+  ordenado: "💰",
+  cota: "🧾",
+  multa: "🚫",
+  subsidio: "🎁",
+  natal: "🎄",
+  folar: "🥖",
+  amnistia: "🕊️",
+  estorno: "↩️",
+  gorjeta: "☕",
+  loja: "🛒",
+  encomenda: "✍️",
+  slot: "🎰",
+  raspadinha: "🎟️",
+  festa: "🎉",
 };
 
 const MAX_LINES = 300;
@@ -32,7 +38,7 @@ export function Statement({ lines, empty }: { lines: StatementLine[]; empty: str
         {shown.map((l, i) => {
           const label = (
             <>
-              <span className="mr-1" aria-hidden="true">{ICON[l.kind]}</span>
+              <span className="mr-1" aria-hidden="true">{(l.kind && ICON[l.kind]) ?? "📒"}</span>
               {l.label}
             </>
           );

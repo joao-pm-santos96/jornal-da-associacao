@@ -20,9 +20,16 @@ export async function buyTicket(): Promise<{ ok: true; ticket: Ticket } | { ok: 
   }
   const { cells, prize } = drawTicket();
   const [row] = (await sql`
-    INSERT INTO scratch_tickets (user_id, cost, cells, prize)
-    VALUES (${user.id}, ${SCRATCH_COST}, ${cells.join(",")}, ${prize})
-    RETURNING id
+    WITH t AS (
+      INSERT INTO scratch_tickets (user_id, cost, cells, prize)
+      VALUES (${user.id}, ${SCRATCH_COST}, ${cells.join(",")}, ${prize})
+      RETURNING id
+    ),
+    l AS (
+      INSERT INTO ledger (user_id, amount, reason, kind)
+      SELECT ${user.id}, ${-SCRATCH_COST}, 'Raspadinha: bilhete n.º ' || id, 'raspadinha' FROM t
+    )
+    SELECT id FROM t
   `) as { id: number }[];
   return { ok: true, ticket: { id: row.id, cells, prize } };
 }
@@ -30,7 +37,14 @@ export async function buyTicket(): Promise<{ ok: true; ticket: Ticket } | { ok: 
 export async function markScratched(ticketId: number): Promise<void> {
   const user = await requireUser();
   await sql`
-    UPDATE scratch_tickets SET scratched_at = now()
-    WHERE id = ${ticketId} AND user_id = ${user.id} AND scratched_at IS NULL
+    WITH t AS (
+      UPDATE scratch_tickets SET scratched_at = now()
+      WHERE id = ${ticketId} AND user_id = ${user.id} AND scratched_at IS NULL
+      RETURNING id, prize, created_at
+    )
+    INSERT INTO ledger (user_id, amount, reason, kind)
+    SELECT ${user.id}, prize, 'Raspadinha: prémio do bilhete n.º ' || id, 'raspadinha' FROM t
+    WHERE prize > 0
+      AND created_at >= (SELECT value::timestamptz FROM settings WHERE key = 'economia_inicio')
   `;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { listEditionPosts, listEditions, listUnread } from "@/lib/posts";
+import { listEditionPosts, listEditions, listHighlights, listUnread } from "@/lib/posts";
+import { HighlightBox } from "@/components/HighlightBox";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
@@ -17,13 +18,14 @@ import { BetBanner } from "@/components/BetBanner";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota, decree, offices, bet] = await Promise.all([
+  const [editions, activity, rota, decree, offices, bet, highlights] = await Promise.all([
     listEditions(),
     listUnread(user.id),
     getRota(),
     latestDecree(),
     getOffices(),
     featuredBet(),
+    listHighlights(),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
   const now = await getNow();
@@ -58,6 +60,7 @@ export default async function Home() {
         <DecreeBanner decree={decree} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <BetBanner bet={bet} />
+      <HighlightBox highlights={highlights} />
       <ActivityBox activity={activity} />
       <section>
         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-scoop">

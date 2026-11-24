@@ -75,6 +75,7 @@ export async function placeWager(betId: number, _prev: FormState, form: FormData
     WITH o AS (
       SELECT o.id, o.label, o.bet_id FROM bet_options o JOIN bets b ON b.id = o.bet_id
       WHERE o.id = ${optionId} AND o.bet_id = ${betId} AND b.status = 'open' AND b.closes_at > now()
+        AND b.created_by IS DISTINCT FROM ${user.id}
     ),
     w AS (
       INSERT INTO bet_wagers (bet_id, option_id, user_id, amount)
@@ -87,7 +88,7 @@ export async function placeWager(betId: number, _prev: FormState, form: FormData
     )
     SELECT label FROM o
   `) as { label: string }[];
-  if (!row) return { error: "Esta aposta já fechou." };
+  if (!row) return { error: "Esta aposta já fechou, ou é tua: a banca não aposta na própria mesa." };
   refresh(betId);
   return { ok: `Apostaste ${amount} ☕ em «${row.label}». Boa sorte!` };
 }
@@ -133,8 +134,11 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
     ),
     fee AS (
       INSERT INTO ledger (user_id, amount, reason, created_by)
-      SELECT b.created_by, ${GRAOS.betBankerFee}, ${`Aposta n.º ${betId}: comissão da banca`}, ${user.id}
-      FROM tot, b WHERE tot.bettors >= ${GRAOS.betBankerMinBettors} AND b.created_by IS NOT NULL
+      SELECT b.created_by, x.fee, ${`Aposta n.º ${betId}: comissão da banca (da parte da casa)`}, ${user.id}
+      FROM tot, b, LATERAL (
+        SELECT least(${GRAOS.betBankerFee}, (tot.pot - coalesce((SELECT sum(prize) FROM pay WHERE prize > 0), 0))::int) AS fee
+      ) x
+      WHERE tot.bettors >= ${GRAOS.betBankerMinBettors} AND b.created_by IS NOT NULL AND x.fee > 0
     )
     SELECT (SELECT count(*) FROM b)::int AS resolved, (SELECT label FROM bet_options WHERE id = ${optionId}) AS label
   `) as { resolved: number; label: string | null }[];

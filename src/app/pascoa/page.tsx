@@ -30,7 +30,7 @@ export default async function EasterPage() {
         <section className="border-2 border-ink bg-flash p-4">
           <h2 className="font-display text-2xl font-black">🥖 O teu folar</h2>
           <p className="mt-1">
-            Este ano o teu padrinho é <strong>{padrinho.name}</strong>, que te entrega o folar de {GRAOS.folar} ☕ no Domingo de Páscoa.
+            Este ano o teu padrinho é <strong>{padrinho.name}</strong>, que te entrega a tua parte do folar no Domingo de Páscoa: o Cofre reparte {GRAOS.folarPct}% do que tem por todos.
             <span className="block text-sm text-muted">(Quem paga é o Cofre. O padrinho só dá a cara.)</span>
           </p>
         </section>

@@ -90,7 +90,11 @@ export default async function BetPage({ params }: { params: Promise<{ id: string
         {bet.status === "open" && (
           <section className="space-y-2 border-4 border-double border-[#f2c230] bg-[#08502b] p-4">
             <h2 className={`font-display text-2xl font-black uppercase ${gold}`}>Façam as vossas apostas</h2>
-            <WagerForm betId={bet.id} options={bet.options} balance={balance} />
+            {isBanker ? (
+              <p className="text-sm">A mesa é tua: a banca não aposta na própria aposta.</p>
+            ) : (
+              <WagerForm betId={bet.id} options={bet.options} balance={balance} />
+            )}
             <p className="text-xs opacity-80">
               Os grãos saem logo do teu saldo. As apostas de cada um só se revelam quando a mesa fechar.
             </p>
@@ -141,7 +145,7 @@ export default async function BetPage({ params }: { params: Promise<{ id: string
               </form>
             </div>
             <p className="text-xs text-muted">
-              Com {GRAOS.betBankerMinBettors} ou mais apostadores, a banca recebe {GRAOS.betBankerFee} ☕ de comissão ao declarar o resultado.
+              Com {GRAOS.betBankerMinBettors} ou mais apostadores, a banca recebe até {GRAOS.betBankerFee} ☕ de comissão ao declarar o resultado, tirados da parte da casa.
             </p>
           </section>
         )}
