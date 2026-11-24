@@ -11,7 +11,9 @@ import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
 import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
 import { RepresentationForm } from "./RepresentationForms";
-import { EXCUSES, hasSlushHistory, slushState, type SlushState } from "@/lib/slush";
+import { EXCUSES, hasSlushHistory, readLetters, slushState, type SlushState } from "@/lib/slush";
+import { ConfidentialLetter } from "./ConfidentialLetter";
+import { LetterBody } from "./LetterBody";
 
 function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
@@ -60,6 +62,7 @@ export default async function TreasuryPage() {
   const inOffice = isTreasurer || isPresident;
   const slush = inOffice || (await hasSlushHistory(user.id)) ? await slushState(user.id, now) : null;
   const repMax = Math.floor((Math.max(economy.available, 0) * GRAOS.slushPct) / 100);
+  const letters = inOffice ? await readLetters(user.id) : new Set<string>();
   const debtors = economy.balances.filter((b) => b.balance < 0).map((b) => ({ id: b.user_id, name: b.name, balance: b.balance }));
 
   return (
@@ -198,6 +201,11 @@ export default async function TreasuryPage() {
           {isTreasurer && (
             <section className="max-w-lg border-2 border-ink bg-white p-4">
               <h2 className="mb-3 font-display text-2xl font-black">💰 Gabinete do Tesoureiro</h2>
+              <div className="mb-4">
+                <ConfidentialLetter office="tesoureiro" unread={!letters.has("tesoureiro")}>
+                  <LetterBody office="tesoureiro" />
+                </ConfidentialLetter>
+              </div>
               <p className="mb-3 text-sm text-muted">
                 Subsídios até ao disponível ({Math.max(economy.available, 0)} ☕). Um subsídio a ti próprio precisa do aval do Presidente.
               </p>
@@ -213,6 +221,9 @@ export default async function TreasuryPage() {
           {isPresident && (
             <section className="max-w-lg space-y-4 border-2 border-ink bg-white p-4">
               <h2 className="font-display text-2xl font-black">👑 Gabinete do Presidente</h2>
+              <ConfidentialLetter office="presidente" unread={!letters.has("presidente")}>
+                <LetterBody office="presidente" />
+              </ConfidentialLetter>
               {requests.length > 0 && (
                 <div>
                   <h3 className="font-bold">Pedidos de aval do Tesoureiro</h3>

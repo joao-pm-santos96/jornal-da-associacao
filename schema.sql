@@ -514,3 +514,10 @@ CREATE TABLE IF NOT EXISTS scandals (
   created_at timestamptz NOT NULL DEFAULT now(),
   simulated boolean NOT NULL DEFAULT jornal_simulating()
 );
+
+CREATE TABLE IF NOT EXISTS office_letters (
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  office text NOT NULL CHECK (office IN ('presidente', 'tesoureiro')),
+  read_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, office)
+);

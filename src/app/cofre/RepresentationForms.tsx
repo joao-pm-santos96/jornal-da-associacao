@@ -94,8 +94,8 @@ export function AuditButton({ cost, done }: { cost: number; done: boolean }) {
 export function DenounceButton({ done }: { done: boolean }) {
   return (
     <OneShot
-      label="🐀 Denunciar o colega"
-      question="Denunciar à Judiciária? Se o outro tiver um saco azul, ficas com metade e esta semana as auditorias não te tocam."
+      label="🐀 Denunciar à Judiciária"
+      question="Fazer uma denúncia anónima? Se houver outro saco azul no Cofre, ficas com metade e esta semana as auditorias não te tocam."
       run={denounce}
       done={done ? "Já denunciaste esta semana." : undefined}
       className="border-2 border-scoop bg-white px-4 py-2 text-sm font-bold uppercase text-scoop hover:bg-scoop hover:text-white"

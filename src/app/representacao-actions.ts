@@ -6,7 +6,7 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { GRAOS, getEconomy, weekOf } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
-import { holds } from "@/lib/offices";
+import { LETTER_PUSH, OFFICES, getOffices, holds, type Office } from "@/lib/offices";
 import { pushToAllExcept, pushToUsers } from "@/lib/push";
 import { getNow } from "@/lib/seasons";
 import { EXCUSES, REPRESENTATION, bust, representationTotal, rollCaught, slushHolders, slushState, type Busted } from "@/lib/slush";
@@ -166,4 +166,21 @@ export async function denounce(): Promise<FormState> {
   after(() => announce(busted, true));
   const share = busted.reduce((sum, b) => sum + Math.floor(b.recovered / 2), 0);
   return { ok: `Denúncia certeira. ${share} ☕ de honorários no teu saco, e esta semana as auditorias não te tocam.` };
+}
+
+export async function markLetterRead(office: Office): Promise<void> {
+  const user = await requireUser();
+  if (!OFFICES.includes(office) || !(await holds(office, user.id))) return;
+  await sql`INSERT INTO office_letters (user_id, office) VALUES (${user.id}, ${office}) ON CONFLICT DO NOTHING`;
+}
+
+export async function sendOfficeLetter(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!user.is_admin) return { error: "Sem permissões." };
+  const office = field(form, "office") as Office;
+  if (!OFFICES.includes(office)) return { error: "Cargo inválido." };
+  const holder = (await getOffices())[office];
+  if (!holder) return { error: "O cargo está vago." };
+  await pushToUsers([holder.user_id], LETTER_PUSH);
+  return { ok: `Aviso enviado a ${holder.name}.` };
 }

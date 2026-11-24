@@ -78,8 +78,8 @@ export default async function SlushPage() {
         <section className="space-y-2 border-2 border-scoop bg-white p-4">
           <h2 className="font-display text-2xl font-black">🐀 Delação premiada</h2>
           <p className="text-sm text-muted">
-            Se o colega de governo também tiver um saco azul, a denúncia apanha-o sempre: ficas com metade, discretamente, e esta semana as
-            auditorias não te tocam. Se não tiver, não acontece nada. Uma vez por semana.
+            Denúncia anónima à Judiciária. Se houver outro saco azul no Cofre, é apanhado de certeza: ficas com metade, discretamente, e
+            esta semana as auditorias não te tocam. Se não houver, não acontece nada. Uma vez por semana.
           </p>
           <DenounceButton done={state.denounced} />
         </section>
