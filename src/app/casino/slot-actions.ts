@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { multiplier, spinReels } from "@/lib/slots";
 import { getRules, slotBets } from "@/lib/rules";
+import { MODULES, isOpen } from "@/lib/modules";
 
 export type SpinResult =
   | { ok: true; reels: [string, string, string]; payout: number; bet: number; balance: number }
@@ -12,6 +13,7 @@ export type SpinResult =
 
 export async function spinSlot(bet: number): Promise<SpinResult> {
   const user = await requireUser();
+  if (!(await isOpen("casino"))) return { ok: false, error: MODULES.casino.closed };
   if (!slotBets(await getRules()).includes(bet)) return { ok: false, error: "Aposta inválida. As fichas mudaram: recarrega a página." };
   const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
   if (balance < bet) {

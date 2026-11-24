@@ -6,7 +6,7 @@ import { countUnread } from "@/lib/posts";
 import { UnreadBadge } from "@/components/UnreadBadge";
 import { Masthead } from "@/components/Masthead";
 import { getBalances } from "@/lib/economy";
-import { SEASON_INFO, getFakeNow, getNow, lisbon, seasonFor } from "@/lib/seasons";
+import { SEASON_INFO, getFakeNow, getNow, getSeason, lisbon } from "@/lib/seasons";
 import { ensureMasks } from "@/lib/festas/carnaval";
 import { isNewYearMoment } from "@/lib/festas/anonovo";
 import { Falling } from "@/components/Falling";
@@ -39,7 +39,7 @@ const today = new Intl.DateTimeFormat("pt-PT", {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
   const [now, fakeNow] = await Promise.all([getNow(), getFakeNow()]);
-  const season = seasonFor(now);
+  const season = await getSeason();
   const lisbonNow = lisbon(now);
   if (season === "carnaval") await ensureMasks(lisbonNow.date);
   const [unread, balances] = user ? await Promise.all([countUnread(user.id), getBalances()]) : [0, []];

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { getEconomy } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
+import { MODULES, isOpen } from "@/lib/modules";
 import { formatDateTime } from "@/lib/dates";
 import { cancelCommission, decideCommission } from "@/app/economia-actions";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -32,6 +33,7 @@ const STATUS: Record<Commission["status"], string> = {
 
 export default async function CommissionsPage() {
   const R = await getRules();
+  const open = await isOpen("encomendas");
   const user = await requireUser();
   const [economy, commissionRows, postRows] = await Promise.all([
     getEconomy(),
@@ -67,7 +69,9 @@ export default async function CommissionsPage() {
         </p>
       </header>
 
-      {economy.open && (
+      {!open && <p className="border-4 border-scoop bg-white p-3 text-center font-bold text-scoop">🔒 {MODULES.encomendas.closed}</p>}
+
+      {economy.open && open && (
         <section className="border-2 border-ink bg-white p-4">
           <h2 className="mb-3 font-display text-2xl font-black">Nova encomenda</h2>
           <NewCommissionForm balance={balance} maxDays={R.commissionMaxDays} />
@@ -115,7 +119,7 @@ export default async function CommissionsPage() {
                       </form>
                     </div>
                   )}
-                  {!mineRequest && c.status === "open" && economy.open && <ClaimForm commissionId={c.id} posts={eligible} />}
+                  {!mineRequest && c.status === "open" && economy.open && open && <ClaimForm commissionId={c.id} posts={eligible} />}
                 </li>
               );
             })}

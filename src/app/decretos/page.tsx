@@ -5,11 +5,22 @@ import { formatDateTime } from "@/lib/dates";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { revokeDecree } from "@/app/governo-actions";
 import { DecreeForm } from "./DecreeForm";
+import { TreasurerForm } from "./TreasurerForm";
+import { RotaForm } from "../admin/RotaForm";
+import { removeRotaSlot } from "../admin/actions";
+import { sql } from "@/lib/db";
+import { getRota } from "@/lib/rota";
+import { addDays, weekOf } from "@/lib/economy";
+import { getNow } from "@/lib/seasons";
 
 export default async function DecreesPage() {
   const user = await requireUser();
   const [decrees, offices] = await Promise.all([listDecrees(), getOffices()]);
   const isPresident = offices.presidente?.user_id === user.id;
+  const thisWeek = weekOf(await getNow());
+  const [memberRows, rota] = isPresident ? await Promise.all([sql`SELECT id, name FROM users ORDER BY name`, getRota()]) : [[], []];
+  const members = memberRows as { id: number; name: string }[];
+  const upcoming = rota.filter((s) => s.week_start >= thisWeek);
 
   return (
     <div className="space-y-10">
@@ -24,6 +35,31 @@ export default async function DecreesPage() {
         <section id="gabinete" className="max-w-2xl scroll-mt-4 border-2 border-ink bg-white p-4">
           <h2 className="mb-3 font-display text-2xl font-black">👑 Gabinete da Presidência</h2>
           <DecreeForm />
+          <div className="mt-6 space-y-3 border-t-2 border-dashed border-ink pt-4">
+            <h3 className="font-display text-xl font-black">Governo</h3>
+            <TreasurerForm members={members.filter((m) => m.id !== user.id)} current={offices.tesoureiro?.user_id ?? null} />
+          </div>
+          <div className="mt-6 space-y-3 border-t-2 border-dashed border-ink pt-4">
+            <h3 className="font-display text-xl font-black">✍️ Escala de escrita</h3>
+            <p className="text-xs text-muted">Desta semana em diante. Quem for escalado recebe um aviso.</p>
+            <RotaForm users={members} nextMonday={addDays(thisWeek, 7)} />
+            {upcoming.length > 0 && (
+              <ul className="divide-y divide-rule">
+                {upcoming.map((s) => (
+                  <li key={s.week_start} className="flex items-center justify-between gap-2 py-2 text-sm">
+                    <span>
+                      <span className="text-muted">{s.week_start}</span> · <strong>{s.name}</strong>
+                    </span>
+                    <form action={removeRotaSlot.bind(null, s.week_start)}>
+                      <ConfirmButton message={`Tirar a semana de ${s.week_start} da escala?`} className="text-xs text-scoop underline">
+                        Remover
+                      </ConfirmButton>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
       )}
 

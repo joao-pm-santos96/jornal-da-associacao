@@ -187,3 +187,36 @@ export async function setOffice(_prev: FormState, form: FormData): Promise<FormS
   revalidatePath("/", "layout");
   return { ok: "Cargo atualizado." };
 }
+
+export async function appointTreasurer(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!(await holds("presidente", user.id))) return { error: "Só o Presidente nomeia o Tesoureiro." };
+  const raw = field(form, "user_id");
+  const target = raw === "" ? null : Number(raw);
+  if (target === user.id) return { error: "O Presidente não pode ser também Tesoureiro. Separação de poderes, ainda que pouca." };
+  const current = (await getOffices()).tesoureiro;
+  if ((current?.user_id ?? null) === target) return { error: target === null ? "O cargo já está vago." : "Esse sócio já é o Tesoureiro." };
+  let title: string;
+  let body: string;
+  if (target === null) {
+    await sql`DELETE FROM offices WHERE office = 'tesoureiro'`;
+    title = `Exoneração do Tesoureiro ${current?.name ?? ""}`.trim();
+    body = `Por decreto presidencial, ${current?.name ?? "o Tesoureiro"} é exonerado do cargo. O Cofre fica sem Tesoureiro até nova nomeação.`;
+  } else {
+    if (!Number.isInteger(target) || target <= 0) return { error: "Escolhe um sócio." };
+    const [member] = (await sql`SELECT name FROM users WHERE id = ${target}`) as { name: string }[];
+    if (!member) return { error: "Esse sócio não existe." };
+    await sql`
+      INSERT INTO offices (office, user_id) VALUES ('tesoureiro', ${target})
+      ON CONFLICT (office) DO UPDATE SET user_id = EXCLUDED.user_id
+    `;
+    title = `Nomeação do Tesoureiro: ${member.name}`;
+    body = current
+      ? `Por decreto presidencial, ${current.name} é exonerado e ${member.name} passa a Tesoureiro, com efeito imediato.`
+      : `Por decreto presidencial, ${member.name} é nomeado Tesoureiro, com efeito imediato.`;
+  }
+  await sql`INSERT INTO decrees (author_id, title, body) VALUES (${user.id}, ${title}, ${body})`;
+  after(() => notifyDecree(user.id, title));
+  revalidatePath("/", "layout");
+  return { ok: target === null ? "Tesoureiro exonerado. Saiu o decreto." : "Tesoureiro nomeado. Saiu o decreto." };
+}
