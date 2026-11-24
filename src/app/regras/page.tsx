@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
-import { ECONOMY_START, GRAOS } from "@/lib/economy";
-import { editionLabel } from "@/lib/dates";
+import { GRAOS } from "@/lib/economy";
 
 function Article({ id, n, title, children }: { id?: string; n: number; title: string; children: React.ReactNode }) {
   return (
@@ -64,8 +63,8 @@ export default async function RulesPage() {
           <p className="font-display text-xl font-black">💰 Tesoureiro: {treasurer}</p>
           <ul className="mt-1 list-disc space-y-1 pl-6 text-sm">
             <li>Gere o <Link href="/cofre" className="underline hover:text-scoop">Cofre</Link>.</li>
-            <li>Aplica <strong>multas</strong> e atribui <strong>subsídios</strong> no valor que entender, sempre com motivo, que fica público no livro.</li>
-            <li>Pode movimentar o Cofre a seu favor. Conflitos de interesses não existem; existe confiança institucional. Os sócios lesados podem queixar-se no jantar seguinte.</li>
+            <li>Aplica <strong>multas</strong> e atribui <strong>subsídios</strong>, sempre com motivo, que fica público no livro. Os subsídios só saem até ao saldo disponível do Cofre.</li>
+            <li>Para se pagar a si próprio precisa do aval do Presidente. Conflitos de interesses existem; agora há quem os vigie.</li>
           </ul>
         </div>
         <p className="text-sm text-muted">
@@ -75,22 +74,46 @@ export default async function RulesPage() {
 
       <Article id="cafe" n={4} title="O Grão de Café ☕">
         <p>A moeda oficial da Associação é o <strong>Grão de Café</strong>. Não vale dinheiro, mas vale honra (e cafeína).</p>
+        <p>
+          A economia é <strong>fechada</strong>: o número de grãos não muda. Cada grão está na carteira de um sócio ou no{" "}
+          <Link href="/cofre" className="underline hover:text-scoop">Cofre</Link>, e nenhum aparece do nada. Tudo fica escrito num só livro, que não se apaga:
+          um erro corrige-se com um estorno.
+        </p>
+        <h3 className="font-bold">O ordenado semanal</h3>
+        <p>
+          Todas as segundas-feiras de manhã o Cofre distribui <strong>{t.payrollPct}% do seu saldo disponível</strong> pelos pontos que cada sócio fez na
+          semana anterior (de segunda a domingo, hora de Ílhavo). Com o Cofre cheio cada ponto vale mais; com o Cofre vazio vale menos.
+        </p>
         <table className="w-full border-2 border-ink bg-white text-left text-sm">
           <tbody className="divide-y divide-rule">
-            <tr><td className="p-2">Publicar um post</td><td className="p-2 text-right font-bold">+{t.post}</td></tr>
-            <tr><td className="p-2">Comentar</td><td className="p-2 text-right font-bold">+{t.comment}</td></tr>
-            <tr><td className="p-2">Receber um 😂 de outro sócio</td><td className="p-2 text-right font-bold">+{t.laugh}</td></tr>
-            <tr><td className="p-2">Cumprir a semana da escala</td><td className="p-2 text-right font-bold">+{t.rotaDone}</td></tr>
-            <tr><td className="p-2">Cota semanal, cobrada à segunda-feira (desde {editionLabel(ECONOMY_START.slice(0, 7)).toLowerCase()})</td><td className="p-2 text-right font-bold text-scoop">−{t.weeklyFee}</td></tr>
-            <tr><td className="p-2">Falhar a semana da escala</td><td className="p-2 text-right font-bold text-scoop">−{t.rotaMissedFine}</td></tr>
-            <tr><td className="p-2">Multas e subsídios do Tesoureiro</td><td className="p-2 text-right font-bold">± à discrição</td></tr>
+            <tr><td className="p-2">Publicar um post</td><td className="p-2 text-right font-bold">{t.post} pontos</td></tr>
+            <tr><td className="p-2">Comentar (até {t.commentCap} por semana)</td><td className="p-2 text-right font-bold">{t.comment} ponto</td></tr>
+            <tr><td className="p-2">Receber um 😂 de outro sócio (um por sócio por dia, até {t.laughCap} por semana)</td><td className="p-2 text-right font-bold">{t.laugh} ponto</td></tr>
+            <tr><td className="p-2">Cumprir a semana da escala</td><td className="p-2 text-right font-bold">+{t.rotaDone} pontos</td></tr>
+            <tr><td className="p-2">Falhar a semana da escala</td><td className="p-2 text-right font-bold text-scoop">0 pontos e −{t.rotaMissedFine} ☕</td></tr>
+            <tr><td className="p-2">Cota semanal, cobrada à segunda-feira</td><td className="p-2 text-right font-bold text-scoop">−{t.weeklyFee} ☕</td></tr>
           </tbody>
         </table>
         <ul className="list-disc space-y-1 pl-6">
-          <li>As cotas e as multas entram no <strong>Cofre da Associação</strong>; os subsídios saem de lá.</li>
-          <li>Apagar um post ou um comentário devolve os grãos que valeu. Não há almoços grátis.</li>
-          <li>Quem descer abaixo de <strong>{t.freezeBelow} ☕</strong> fica com a conta <strong>congelada 🧊</strong>: só pode reagir com 🧂 até pôr as contas em dia.</li>
+          <li>O ordenado é em grãos inteiros. As sobras vão, uma a uma, para quem ficou com o maior resto (empate: mais pontos, depois sorteio).</li>
+          <li>Um post apagado antes de segunda-feira não conta; apagado depois de pago, devolve o que rendeu.</li>
+          <li>As cotas, as multas, a margem do Casino e as compras na loja entram no Cofre. O ordenado, os subsídios e os bónus das festas saem de lá. O Cofre nunca paga o que não tem.</li>
         </ul>
+        <h3 className="font-bold">Dívidas</h3>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>Quem não tem saldo para a cota ou uma multa fica a dever ao Cofre. O ordenado paga a dívida primeiro.</li>
+          <li>Quem está em dívida não aposta, não dá gorjetas, não compra na loja nem encomenda posts.</li>
+          <li>A dívida deixa de crescer aos <strong>{t.debtFloor} ☕</strong>, quando a conta fica <strong>congelada 🧊</strong>: só se pode reagir com 🧂.</li>
+          <li>O Presidente pode decretar amnistias. Não custam nada ao Cofre, porque esses grãos nunca lá entraram.</li>
+        </ul>
+        <h3 className="font-bold">Para que serve o grão</h3>
+        <ul className="list-disc space-y-1 pl-6">
+          <li><strong>Gorjetas:</strong> «pagar um café» a um post ou comentário de que gostaste, com {t.tipVatPct}% de IVA para o Cofre.</li>
+          <li><strong>Encomendas:</strong> oferecer grãos a quem escrever sobre um tema. Ficam retidos até alguém entregar; se ninguém pegar até ao prazo, voltam.</li>
+          <li><strong>Loja do Cofre:</strong> destacar um post na primeira página durante {t.highlightHours} h ({t.highlight} ☕), indulto da escala ({t.pardon} ☕, na tua semana, antes de publicares) e alcunha durante {t.nicknameDays} dias ({t.nickname} ☕).</li>
+          <li>E o <Link href="/casino" className="underline hover:text-scoop">Casino</Link>, claro.</li>
+        </ul>
+        <p className="text-sm text-muted">Novos sócios começam a zero e recebem um kit de boas-vindas de {t.welcomeKit} ☕, pago pelo Cofre.</p>
       </Article>
 
       <Article n={5} title="Honra e Vergonha">
@@ -101,7 +124,7 @@ export default async function RulesPage() {
         <p>O jornal muda sozinho nas épocas festivas. Tudo começa e acaba automaticamente, em hora de Ílhavo.</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>
-            <strong>🎄 Natal (1 a 26 de dezembro):</strong> sorteio do <Link href="/natal" className="underline hover:text-scoop">Amigo Secreto</Link>, com postais anónimos e revelação na consoada (24 de dezembro, 20h00). Calendário do Advento com uma porta por dia (algumas dão +{t.adventPrize} ☕). A 15 de dezembro, subsídio de Natal de +{t.xmasBonus} ☕ para todos, pago pelo Cofre.
+            <strong>🎄 Natal (1 a 26 de dezembro):</strong> sorteio do <Link href="/natal" className="underline hover:text-scoop">Amigo Secreto</Link>, com postais anónimos e revelação na consoada (24 de dezembro, 20h00). Calendário do Advento com uma porta por dia (algumas dão +{t.adventPrize} ☕). A 15 de dezembro, subsídio de Natal: o Cofre reparte {t.xmasPct}% do disponível por todos, em partes iguais. Os grãos do Advento só saem enquanto o Cofre tiver fundos.
           </li>
           <li>
             <strong>🥂 Ano Novo (27 de dezembro a 6 de janeiro):</strong> o ano em revista e as <Link href="/resolucoes" className="underline hover:text-scoop">resoluções</Link>, seladas até 1 de dezembro do ano seguinte, quando os outros votam se as cumpriste.
@@ -110,7 +133,7 @@ export default async function RulesPage() {
             <strong>🎭 Carnaval (sábado gordo a terça de Carnaval):</strong> toda a gente aparece no jornal com o nome de outro sócio, e os disfarces mudam todos os dias. Na Quarta-feira de Cinzas caem as <Link href="/carnaval" className="underline hover:text-scoop">máscaras</Link>.
           </li>
           <li>
-            <strong>🐰 Páscoa (Sexta-feira Santa a Segunda-feira de Páscoa):</strong> caça aos <Link href="/pascoa" className="underline hover:text-scoop">ovos</Link> escondidos pelo jornal (+{t.egg} ☕ cada) e folar de +{t.folar} ☕ no Domingo de Páscoa, entregue por um padrinho sorteado e pago pelo Cofre. Quem apanhar mais ovos é o Coelho do Ano.
+            <strong>🐰 Páscoa (Sexta-feira Santa a Segunda-feira de Páscoa):</strong> caça aos <Link href="/pascoa" className="underline hover:text-scoop">ovos</Link> escondidos pelo jornal (+{t.egg} ☕ cada, enquanto o Cofre tiver fundos) e folar no Domingo de Páscoa: {t.folarPct}% do disponível no Cofre, repartido por todos e entregue por um padrinho sorteado. Quem apanhar mais ovos é o Coelho do Ano.
           </li>
           <li>Cada época traz uma reação própria (🎄, 🥂, 🎭 🥳, 🐣), que só se pode usar durante a festa.</li>
         </ul>
@@ -120,13 +143,13 @@ export default async function RulesPage() {
         <p>No <Link href="/casino" className="underline hover:text-scoop">Casino da Associação</Link> aposta-se em grãos de café, com <strong>apostas mútuas</strong>: o pote é de quem acerta.</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>Qualquer sócio pode abrir uma aposta, pagando uma <strong>licença de {t.betOpenFee} ☕</strong> ao Cofre. A licença não é devolvida, nem se a aposta for anulada.</li>
-          <li>Quem abre a aposta fica com a <strong>banca</strong>: decide quando fecha, declara o resultado e pode anulá-la. Pode apostar na sua própria aposta. A palavra da banca é final.</li>
+          <li>Quem abre a aposta fica com a <strong>banca</strong>: decide quando fecha, declara o resultado e pode anulá-la. Não pode apostar na sua própria aposta. A palavra da banca é final.</li>
           <li>Cada aposta tem entre 2 e 6 opções e uma hora de fecho. Até lá, qualquer sócio pode apostar as vezes que quiser.</li>
           <li>Os grãos apostados saem logo do saldo. Só aposta quem tem saldo positivo, e no máximo o que tem.</li>
           <li>Ao resolver, <strong>{t.betHouseCutPct}% do pote fica no Cofre</strong>. O resto é dividido pelos vencedores na proporção do que cada um apostou (os arredondamentos também ficam no Cofre).</li>
           <li>Se ninguém acertar, o pote inteiro fica no Cofre. A casa agradece.</li>
           <li>Se a aposta for anulada, os grãos apostados voltam todos a quem apostou.</li>
-          <li>Com {t.betBankerMinBettors} ou mais apostadores, a banca recebe uma comissão de +{t.betBankerFee} ☕, paga pelo Cofre.</li>
+          <li>Com {t.betBankerMinBettors} ou mais apostadores, a banca recebe uma comissão de até {t.betBankerFee} ☕, tirada da parte da casa.</li>
           <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
           <li>Em caso de batota flagrante, o admin pode fechar, resolver ou anular qualquer aposta.</li>
           <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de 1, 2 ou 5 ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>

@@ -18,9 +18,13 @@ export async function spinSlot(bet: number): Promise<SpinResult> {
   }
   const reels = spinReels();
   const payout = bet * multiplier(reels);
-  await sql`
-    INSERT INTO slot_spins (user_id, bet, reels, payout)
-    VALUES (${user.id}, ${bet}, ${reels.join("")}, ${payout})
-  `;
+  await sql.transaction([
+    sql`INSERT INTO slot_spins (user_id, bet, reels, payout) VALUES (${user.id}, ${bet}, ${reels.join("")}, ${payout})`,
+    sql`
+      INSERT INTO ledger (user_id, amount, reason, kind)
+      SELECT ${user.id}, a, r, 'slot' FROM (VALUES (${-bet}::int, 'Slot machine: jogada'), (${payout}::int, 'Slot machine: prémio')) AS t(a, r)
+      WHERE a <> 0
+    `,
+  ]);
   return { ok: true, reels, payout, bet, balance: balance - bet + payout };
 }

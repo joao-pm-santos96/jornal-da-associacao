@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:init": "tsx scripts/db-init.mts",
     "create-user": "tsx scripts/create-user.mts",
+    "economia:abrir": "tsx scripts/abrir-economia.mts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -355,3 +355,110 @@ CREATE TABLE IF NOT EXISTS duels (
 );
 
 CREATE INDEX IF NOT EXISTS duels_opponent_idx ON duels (opponent_id, status);
+
+ALTER TABLE ledger ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT false;
+ALTER TABLE ledger ADD COLUMN IF NOT EXISTS kind text;
+CREATE INDEX IF NOT EXISTS ledger_live_user_idx ON ledger (user_id) WHERE NOT archived;
+
+ALTER TABLE duels DROP CONSTRAINT IF EXISTS duels_status_check;
+ALTER TABLE duels ADD CONSTRAINT duels_status_check CHECK (status IN ('pending', 'done', 'declined', 'expired', 'cancelled', 'void'));
+
+CREATE TABLE IF NOT EXISTS payrolls (
+  week_start date PRIMARY KEY CHECK (extract(isodow FROM week_start) = 1),
+  token text NOT NULL,
+  cofre_before integer NOT NULL,
+  budget integer NOT NULL,
+  total_points integer NOT NULL,
+  paid_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS payroll_lines (
+  week_start date NOT NULL REFERENCES payrolls(week_start) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  points integer NOT NULL,
+  grains integer NOT NULL,
+  PRIMARY KEY (week_start, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS payroll_extra_points (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  week_start date NOT NULL CHECK (extract(isodow FROM week_start) = 1),
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  points integer NOT NULL CHECK (points > 0),
+  reason text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bonus_payments (
+  key text PRIMARY KEY,
+  token text NOT NULL,
+  budget integer NOT NULL,
+  paid_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS subsidy_requests (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount integer NOT NULL CHECK (amount > 0),
+  reason text NOT NULL,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  decided_by integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  decided_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS post_highlights (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  post_id integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  buyer_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  until timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS nicknames (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  buyer_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  nickname text NOT NULL CHECK (length(nickname) BETWEEN 2 AND 30),
+  until timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE INDEX IF NOT EXISTS nicknames_user_until_idx ON nicknames (user_id, until);
+
+CREATE TABLE IF NOT EXISTS commissions (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  requester_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  theme text NOT NULL,
+  reward integer NOT NULL CHECK (reward > 0),
+  deadline timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'claimed', 'paid', 'refunded', 'cancelled')),
+  post_id integer REFERENCES posts(id) ON DELETE SET NULL,
+  author_id integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  resolved_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE OR REPLACE FUNCTION member_label(uid integer)
+RETURNS text
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(
+    (SELECT '🎭 ' || mu.name
+      FROM carnival_masks m JOIN users mu ON mu.id = m.mask_id
+      WHERE m.user_id = uid AND m.day = (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date),
+    (SELECT u.name || coalesce((
+        SELECT ' ' || string_agg(CASE o.office WHEN 'presidente' THEN '👑' WHEN 'tesoureiro' THEN '💰' END, '' ORDER BY array_position(ARRAY['presidente', 'tesoureiro'], o.office))
+        FROM offices o WHERE o.user_id = u.id
+      ), '') || coalesce((
+        SELECT ' «' || n.nickname || '»' FROM nicknames n
+        WHERE n.user_id = u.id AND n.until > jornal_now()
+        ORDER BY n.created_at DESC LIMIT 1
+      ), '')
+      FROM users u WHERE u.id = uid)
+  )
+$$;

@@ -53,3 +53,20 @@ const [row] = await sql`
   RETURNING id, (xmax = 0) AS created
 `;
 console.log(`${row.created ? "Criado" : "Atualizado"} utilizador #${row.id} (${name}${values.admin ? ", admin" : ""}).`);
+
+const WELCOME_KIT = 10;
+if (row.created) {
+  const [kit] = await sql`
+    WITH state AS (
+      SELECT (SELECT value FROM settings WHERE key = 'economia_massa')::int AS supply,
+        (SELECT coalesce(sum(greatest(b, 0)), 0) FROM (
+          SELECT sum(amount) AS b FROM ledger WHERE NOT archived GROUP BY user_id
+        ) x)::int AS held
+    )
+    INSERT INTO ledger (user_id, amount, reason, kind, simulated)
+    SELECT ${row.id}, ${WELCOME_KIT}, 'Kit de boas-vindas', 'kit', false FROM state
+    WHERE EXISTS (SELECT 1 FROM settings WHERE key = 'economia_inicio') AND state.supply - state.held >= ${WELCOME_KIT}
+    RETURNING id
+  `;
+  if (kit) console.log(`Kit de boas-vindas: +${WELCOME_KIT} ☕, pago pelo Cofre.`);
+}

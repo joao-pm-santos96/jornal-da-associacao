@@ -1,19 +1,43 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { getBalances, listMovements, treasury, GRAOS } from "@/lib/economy";
+import { sql } from "@/lib/db";
+import { GRAOS, getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
+import { getNow } from "@/lib/seasons";
+import { decideSubsidy } from "@/app/governo-actions";
 import { MovementForm } from "./MovementForm";
+import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
 
 function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
 
+type SubsidyRequest = { id: number; name: string; amount: number; reason: string; created_at: Date };
+
 export default async function TreasuryPage() {
   const user = await requireUser();
-  const [balances, movements, offices] = await Promise.all([getBalances(), listMovements(), getOffices()]);
+  const now = await getNow();
+  const week = weekOf(now);
+  const [economy, movements, offices] = await Promise.all([getEconomy(), listMovements(), getOffices()]);
   const isTreasurer = offices.tesoureiro?.user_id === user.id;
-  const cofre = treasury(balances);
+  const isPresident = offices.presidente?.user_id === user.id;
+
+  const weekStart = lisbonMidnight(week);
+  const points =
+    economy.open && economy.start ? await weekPoints(week, economy.start > weekStart ? economy.start : weekStart, now) : [];
+  const budget = payrollBudget(economy.available);
+  const estimate = splitByPoints(budget, new Map(points.map((p) => [p.user_id, p.points])), () => 0.5);
+  const mine = points.find((p) => p.user_id === user.id);
+  const myBalance = economy.balances.find((b) => b.user_id === user.id)?.balance ?? 0;
+  const requests = isPresident
+    ? ((await sql`
+        SELECT r.id, member_label(r.user_id) AS name, r.amount, r.reason, r.created_at
+        FROM subsidy_requests r WHERE r.status = 'pending' ORDER BY r.created_at
+      `) as SubsidyRequest[])
+    : [];
+  const members = economy.balances.map((b) => ({ id: b.user_id, name: b.name })).sort((a, b) => a.name.localeCompare(b.name));
+  const debtors = economy.balances.filter((b) => b.balance < 0).map((b) => ({ id: b.user_id, name: b.name, balance: b.balance }));
 
   return (
     <div className="space-y-10">
@@ -25,72 +49,167 @@ export default async function TreasuryPage() {
         </p>
       </header>
 
-      <section className="border-2 border-ink bg-flash p-6 text-center">
-        <p className="text-xs font-black uppercase tracking-widest">Saldo do Cofre</p>
-        <p className="font-display text-6xl font-black">{cofre} ☕</p>
-        <p className="text-sm">cotas + multas − subsídios − prémios e bónus das festas</p>
-        <Link href="/cofre/livro" className="mt-3 inline-block border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
-          📒 Ver o Livro do Cofre
-        </Link>
-      </section>
-
-      <section>
-        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Carteiras</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted">
-              <tr>
-                <th className="py-2 pr-2">Sócio</th>
-                <th className="py-2 pr-2 text-right">Ganhos</th>
-                <th className="py-2 pr-2 text-right">Cotas</th>
-                <th className="py-2 pr-2 text-right">Faltas</th>
-                <th className="py-2 pr-2 text-right">Bónus</th>
-                <th className="py-2 pr-2 text-right">Livro</th>
-                <th className="py-2 text-right">Saldo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-rule">
-              {balances.map((b) => (
-                <tr key={b.user_id} className={b.user_id === user.id ? "bg-white font-semibold" : ""}>
-                  <td className="py-2 pr-2">
-                    <Link href={`/cofre/socio/${b.user_id}`} className="underline decoration-rule underline-offset-2 hover:text-scoop" title="Ver extrato">
-                      {b.name}
-                    </Link>
-                    {b.frozen && (
-                      <span className="ml-2 bg-ink px-1.5 py-0.5 text-[10px] font-black uppercase text-white">
-                        🧊 Congelado
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 pr-2 text-right">{signed(b.earned)}</td>
-                  <td className="py-2 pr-2 text-right">{signed(-b.fees)}</td>
-                  <td className="py-2 pr-2 text-right">{b.fines ? signed(-b.fines) : "—"}</td>
-                  <td className="py-2 pr-2 text-right">{b.bonuses ? signed(b.bonuses) : "—"}</td>
-                  <td className="py-2 pr-2 text-right">{b.manual + b.slots + b.scratch ? signed(b.manual + b.slots + b.scratch) : "—"}</td>
-                  <td className={`py-2 text-right font-display text-lg font-black ${b.balance < 0 ? "text-scoop" : ""}`}>
-                    {b.balance} ☕
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-2 text-xs text-muted">
-          Toca num nome para veres o extrato. Abaixo de {GRAOS.freezeBelow} ☕ a conta fica congelada: só se pode reagir com 🧂.
-        </p>
-      </section>
-
-      {isTreasurer && (
-        <section className="max-w-lg border-2 border-ink bg-white p-4">
-          <h2 className="mb-3 font-display text-2xl font-black">💰 Gabinete do Tesoureiro</h2>
-          <MovementForm members={balances.map((b) => ({ id: b.user_id, name: b.name }))} />
+      {!economy.open ? (
+        <section className="border-2 border-ink bg-flash p-6 text-center">
+          <p className="font-display text-3xl font-black">🚧 Cofre fechado para obras</p>
+          <p className="mt-2 text-sm">A economia nova abre em breve. Até lá não se gastam nem se ganham grãos.</p>
         </section>
+      ) : (
+        <>
+          <section className="border-2 border-ink bg-flash p-6 text-center">
+            <p className="text-xs font-black uppercase tracking-widest">Disponível no Cofre</p>
+            <p className="font-display text-6xl font-black">{economy.available} ☕</p>
+            <p className="mt-1 text-sm">
+              {economy.escrow > 0 && <>+{economy.escrow} ☕ em jogo (apostas, duelos e encomendas) · </>}
+              {economy.debts > 0 ? <>{economy.debts} ☕ em dívidas a receber · </> : null}
+              {economy.supply} ☕ em circulação no total
+            </p>
+            <p className="mt-2 text-sm">
+              Na segunda-feira, o ordenado distribui <strong>{GRAOS.payrollPct}%</strong> do disponível: cerca de{" "}
+              <strong>{budget} ☕</strong> se nada mudar.
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <Link href="/cofre/livro" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
+                📒 Livro do Cofre
+              </Link>
+              <Link href="/cofre/encomendas" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
+                ✍️ Encomendas de posts
+              </Link>
+            </div>
+          </section>
+
+          {mine && (
+            <section className="border-2 border-ink bg-white p-4">
+              <h2 className="font-display text-2xl font-black">A tua semana</h2>
+              <p className="mt-1">
+                <strong>{mine.points} pontos</strong> até agora
+                {mine.rota === "pending" && " (estás na escala: publica até domingo)"}
+                {mine.rota === "pardoned" && " (indultado da escala)"}. Ordenado estimado na segunda-feira:{" "}
+                <strong>{estimate.get(user.id) ?? 0} ☕</strong>, menos a cota de {GRAOS.weeklyFee} ☕.
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Post {GRAOS.post} · comentário {GRAOS.comment} (até {GRAOS.commentCap} por semana) · 😂 recebido {GRAOS.laugh} (um por sócio por dia, até {GRAOS.laughCap}) · escala cumprida {GRAOS.rotaDone}.
+                A estimativa muda com o que os outros fizerem até domingo.
+              </p>
+            </section>
+          )}
+
+          <section>
+            <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Carteiras</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[30rem] text-left text-sm">
+                <thead className="text-xs uppercase tracking-wider text-muted">
+                  <tr>
+                    <th className="py-2 pr-2">Sócio</th>
+                    <th className="py-2 pr-2 text-right">Pontos da semana</th>
+                    <th className="py-2 pr-2 text-right">Ordenado estimado</th>
+                    <th className="py-2 text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {economy.balances.map((b) => {
+                    const p = points.find((x) => x.user_id === b.user_id);
+                    return (
+                      <tr key={b.user_id} className={b.user_id === user.id ? "bg-white font-semibold" : ""}>
+                        <td className="py-2 pr-2">
+                          <Link href={`/cofre/socio/${b.user_id}`} className="underline decoration-rule underline-offset-2 hover:text-scoop" title="Ver extrato">
+                            {b.name}
+                          </Link>
+                          {b.frozen ? (
+                            <span className="ml-2 bg-ink px-1.5 py-0.5 text-[10px] font-black uppercase text-white">🧊 Congelado</span>
+                          ) : b.balance < 0 ? (
+                            <span className="ml-2 bg-scoop px-1.5 py-0.5 text-[10px] font-black uppercase text-white">Em dívida</span>
+                          ) : null}
+                        </td>
+                        <td className="py-2 pr-2 text-right">{p?.points ?? 0}</td>
+                        <td className="py-2 pr-2 text-right">{estimate.get(b.user_id) ?? 0} ☕</td>
+                        <td className={`py-2 text-right font-display text-lg font-black ${b.balance < 0 ? "text-scoop" : ""}`}>
+                          {b.balance} ☕
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              Toca num nome para veres o extrato. Quem está em dívida não aposta, não dá gorjetas nem compra na loja; o ordenado paga a dívida primeiro.
+              A {GRAOS.debtFloor} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
+            </p>
+          </section>
+
+          <section className="space-y-4 border-2 border-ink bg-white p-4">
+            <h2 className="font-display text-2xl font-black">🛒 Loja do Cofre</h2>
+            <p className="text-sm text-muted">Tens {myBalance} ☕. O que se compra aqui vai para o Cofre e volta a todos no ordenado.</p>
+            <div>
+              <h3 className="font-bold">📌 Destacar um post ({GRAOS.highlight} ☕, {GRAOS.highlightHours} h)</h3>
+              <p className="text-sm text-muted">Usa o botão «Destacar» na página de qualquer post.</p>
+            </div>
+            <div>
+              <h3 className="font-bold">🙏 Indulto da escala ({GRAOS.pardon} ☕)</h3>
+              <p className="mb-2 text-sm text-muted">Só na tua semana da escala, antes de publicares e antes de domingo acabar. Evita a multa de {GRAOS.rotaMissedFine} ☕.</p>
+              {mine?.rota === "pending" ? <PardonButton price={GRAOS.pardon} /> : <p className="text-sm">Não estás na escala por cumprir esta semana.</p>}
+            </div>
+            <div>
+              <h3 className="font-bold">🏷️ Alcunha durante {GRAOS.nicknameDays} dias ({GRAOS.nickname} ☕)</h3>
+              <p className="mb-2 text-sm text-muted">Aparece junto ao nome em todo o jornal. Podes dá-la a ti ou a outro sócio.</p>
+              <NicknameForm members={members} price={GRAOS.nickname} days={GRAOS.nicknameDays} />
+            </div>
+          </section>
+
+          {isTreasurer && (
+            <section className="max-w-lg border-2 border-ink bg-white p-4">
+              <h2 className="mb-3 font-display text-2xl font-black">💰 Gabinete do Tesoureiro</h2>
+              <p className="mb-3 text-sm text-muted">
+                Subsídios até ao disponível ({Math.max(economy.available, 0)} ☕). Um subsídio a ti próprio precisa do aval do Presidente.
+              </p>
+              <MovementForm members={members} />
+            </section>
+          )}
+
+          {isPresident && (
+            <section className="max-w-lg space-y-4 border-2 border-ink bg-white p-4">
+              <h2 className="font-display text-2xl font-black">👑 Gabinete do Presidente</h2>
+              {requests.length > 0 && (
+                <div>
+                  <h3 className="font-bold">Pedidos de aval do Tesoureiro</h3>
+                  <ul className="divide-y divide-rule">
+                    {requests.map((r) => (
+                      <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                        <span>
+                          <strong>{r.name}</strong> pede <strong>{r.amount} ☕</strong> · {r.reason}
+                          <span className="block text-xs text-muted">{formatDateTime(r.created_at)}</span>
+                        </span>
+                        <span className="flex gap-2">
+                          <form action={decideSubsidy.bind(null, r.id, true)}>
+                            <button className="bg-ink px-3 py-1 text-xs font-bold uppercase text-white">Dar aval</button>
+                          </form>
+                          <form action={decideSubsidy.bind(null, r.id, false)}>
+                            <button className="border-2 border-ink px-3 py-1 text-xs font-bold uppercase">Recusar</button>
+                          </form>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div>
+                <h3 className="font-bold">🕊️ Amnistia</h3>
+                {debtors.length === 0 ? (
+                  <p className="text-sm text-muted">Ninguém deve nada ao Cofre.</p>
+                ) : (
+                  <AmnestyForm debtors={debtors} />
+                )}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       <section>
-        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Movimentos manuais e apostas</h2>
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">Últimos movimentos</h2>
         {movements.length === 0 ? (
-          <p className="mt-2 text-muted">Ainda nenhum movimento. O Tesoureiro anda distraído.</p>
+          <p className="mt-2 text-muted">Ainda nenhum movimento.</p>
         ) : (
           <ul className="divide-y divide-rule">
             {movements.map((m) => (

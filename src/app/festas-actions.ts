@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { field, type FormState } from "@/lib/form";
-import { GRAOS } from "@/lib/economy";
+import { GRAOS, loadEconomy } from "@/lib/economy";
 import { getNow, getSeason, lisbon } from "@/lib/seasons";
 import { adventDay, adventSurprise, santaRevealed } from "@/lib/festas/natal";
 import { resolutionYear, resolutionsRevealed } from "@/lib/festas/anonovo";
@@ -38,7 +38,11 @@ export async function openAdventDoor(door: number): Promise<void> {
   const others = ((await sql`SELECT name FROM users WHERE id <> ${user.id} ORDER BY id`) as { name: string }[]).map(
     (u) => u.name,
   );
-  const surprise = adventSurprise(year, door, user.id, others);
+  const drawn = adventSurprise(year, door, user.id, others);
+  const funded = drawn.kind !== "graos" || (await loadEconomy()).available >= GRAOS.adventPrize;
+  const surprise = funded
+    ? drawn
+    : { kind: "piada" as const, payload: "Havia grãos de café no sapatinho, mas o Cofre está vazio. Fica a intenção. 🧦" };
   const inserted = await sql`
     INSERT INTO advent_doors (year, door, user_id, kind, payload)
     VALUES (${year}, ${door}, ${user.id}, ${surprise.kind}, ${surprise.payload})
@@ -46,8 +50,8 @@ export async function openAdventDoor(door: number): Promise<void> {
   `;
   if (inserted.length > 0 && surprise.kind === "graos") {
     await sql`
-      INSERT INTO ledger (user_id, amount, reason)
-      VALUES (${user.id}, ${GRAOS.adventPrize}, ${`Calendário do Advento: porta ${door}`})
+      INSERT INTO ledger (user_id, amount, reason, kind)
+      VALUES (${user.id}, ${GRAOS.adventPrize}, ${`Calendário do Advento: porta ${door}`}, 'festa')
     `;
   }
   revalidatePath("/natal");
@@ -94,7 +98,12 @@ export async function collectEgg(egg: number): Promise<{ found: boolean }> {
     ON CONFLICT DO NOTHING RETURNING egg
   `;
   if (inserted.length === 0) return { found: false };
-  await sql`INSERT INTO ledger (user_id, amount, reason) VALUES (${user.id}, ${GRAOS.egg}, ${`Ovo da Páscoa n.º ${egg}`})`;
+  if ((await loadEconomy()).available >= GRAOS.egg) {
+    await sql`
+      INSERT INTO ledger (user_id, amount, reason, kind)
+      VALUES (${user.id}, ${GRAOS.egg}, ${`Ovo da Páscoa n.º ${egg}`}, 'festa')
+    `;
+  }
   return { found: true };
 }
 
@@ -119,6 +128,12 @@ export async function setFakeNow(_prev: FormState, form: FormData): Promise<Form
       sql`DELETE FROM duck_bets WHERE simulated RETURNING id`,
       sql`DELETE FROM duck_races WHERE simulated RETURNING id`,
       sql`DELETE FROM duels WHERE simulated RETURNING id`,
+      sql`DELETE FROM payrolls WHERE simulated RETURNING week_start`,
+      sql`DELETE FROM bonus_payments WHERE simulated RETURNING key`,
+      sql`DELETE FROM subsidy_requests WHERE simulated RETURNING id`,
+      sql`DELETE FROM post_highlights WHERE simulated RETURNING id`,
+      sql`DELETE FROM nicknames WHERE simulated RETURNING id`,
+      sql`DELETE FROM commissions WHERE simulated RETURNING id`,
       sql`DELETE FROM settings WHERE key = 'fake_now'`,
     ]);
     const removed = (purged as unknown[][]).slice(0, -1).reduce((n, rows) => n + rows.length, 0);

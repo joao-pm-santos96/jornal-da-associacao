@@ -170,3 +170,15 @@ export function excerpt(md: string, length = 180): string {
     .trim();
   return text.length > length ? `${text.slice(0, length).trimEnd()}…` : text;
 }
+
+export type Highlight = { id: number; title: string; author: string; until: Date };
+
+export async function listHighlights(): Promise<Highlight[]> {
+  return (await sql`
+    SELECT p.id, p.title, member_label(p.author_id) AS author, max(h.until) AS until
+    FROM post_highlights h JOIN visible_posts p ON p.id = h.post_id
+    WHERE h.until > now()
+    GROUP BY p.id, p.title, p.author_id
+    ORDER BY max(h.until) DESC
+  `) as Highlight[];
+}
