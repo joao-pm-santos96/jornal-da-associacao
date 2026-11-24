@@ -295,7 +295,7 @@ ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presi
 CREATE TABLE IF NOT EXISTS slot_spins (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  bet integer NOT NULL CHECK (bet IN (1, 2, 5)),
+  bet integer NOT NULL CONSTRAINT slot_spins_bet_check CHECK (bet > 0),
   reels text NOT NULL,
   payout integer NOT NULL CHECK (payout >= 0),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -469,3 +469,15 @@ CREATE TABLE IF NOT EXISTS supply_changes (
   reason text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS economy_rules (
+  key text PRIMARY KEY,
+  value integer NOT NULL,
+  updated_by integer REFERENCES users(id) ON DELETE SET NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE decrees ADD COLUMN IF NOT EXISTS office text NOT NULL DEFAULT 'presidente';
+
+ALTER TABLE slot_spins DROP CONSTRAINT IF EXISTS slot_spins_bet_check;
+ALTER TABLE slot_spins ADD CONSTRAINT slot_spins_bet_check CHECK (bet > 0);

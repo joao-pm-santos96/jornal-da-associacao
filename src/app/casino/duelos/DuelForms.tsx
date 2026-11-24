@@ -33,10 +33,10 @@ function MovePicker({ value, onChange }: { value: Move | null; onChange: (m: Mov
   );
 }
 
-export function ChallengeForm({ members, balance }: { members: { id: number; name: string }[]; balance: number }) {
+export function ChallengeForm({ members, balance, min }: { members: { id: number; name: string }[]; balance: number; min: number }) {
   const [state, action, pending] = useActionState(challenge, {});
   const [move, setMove] = useState<Move | null>(null);
-  if (balance < 2) return <p className="text-sm">Um duelo é de pelo menos 2 ☕ e tens {balance} ☕.</p>;
+  if (balance < min) return <p className="text-sm">Um duelo é de pelo menos {min} ☕ e tens {balance} ☕.</p>;
   return (
     <form action={action} className="space-y-3">
       <Feedback state={state} />
@@ -49,7 +49,7 @@ export function ChallengeForm({ members, balance }: { members: { id: number; nam
         </div>
         <div>
           <label htmlFor="duel-stake" className="block text-xs font-semibold">Grãos em jogo (tens {balance} ☕)</label>
-          <input id="duel-stake" name="stake" type="number" min={2} max={balance} step={1} required defaultValue={Math.min(5, balance)}
+          <input id="duel-stake" name="stake" type="number" min={min} max={balance} step={1} required defaultValue={Math.max(min, Math.min(5, balance))}
             className="w-28 border-2 border-ink bg-white p-1.5 text-ink" />
         </div>
       </div>

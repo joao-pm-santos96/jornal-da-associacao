@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { GRAOS, getEconomy } from "@/lib/economy";
+import { getEconomy } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { formatDateTime } from "@/lib/dates";
 import { cancelCommission, decideCommission } from "@/app/economia-actions";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -30,6 +31,7 @@ const STATUS: Record<Commission["status"], string> = {
 };
 
 export default async function CommissionsPage() {
+  const R = await getRules();
   const user = await requireUser();
   const [economy, commissionRows, postRows] = await Promise.all([
     getEconomy(),
@@ -68,7 +70,7 @@ export default async function CommissionsPage() {
       {economy.open && (
         <section className="border-2 border-ink bg-white p-4">
           <h2 className="mb-3 font-display text-2xl font-black">Nova encomenda</h2>
-          <NewCommissionForm balance={balance} maxDays={GRAOS.commissionMaxDays} />
+          <NewCommissionForm balance={balance} maxDays={R.commissionMaxDays} />
         </section>
       )}
 

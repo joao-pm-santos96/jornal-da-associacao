@@ -2,11 +2,13 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listBets, STATUS_LABEL } from "@/lib/bets";
 import { formatSchedule } from "@/lib/dates";
-import { GRAOS, getBalances } from "@/lib/economy";
+import { getBalances } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { NewBetForm } from "./BetForms";
 import { Disclaimer, Marquee, Sticker, felt, gold } from "./Decor";
 
 export default async function CasinoPage() {
+  const R = await getRules();
   const user = await requireUser();
   const [bets, balances] = await Promise.all([listBets(), getBalances()]);
   const balance = balances.find((b) => b.user_id === user.id)?.balance ?? 0;
@@ -18,24 +20,24 @@ export default async function CasinoPage() {
       <Marquee />
 
       <p className="text-center text-sm">
-        A casa fica com <strong className={gold}>{GRAOS.betHouseCutPct}%</strong> de cada pote. Abrir uma mesa custa{" "}
-        <strong className={gold}>{GRAOS.betOpenFee} ☕</strong> de licença.{" "}
+        A casa fica com <strong className={gold}>{R.betHouseCutPct}%</strong> de cada pote. Abrir uma mesa custa{" "}
+        <strong className={gold}>{R.betOpenFee} ☕</strong> de licença.{" "}
         <Link href="/regras#casino" className="underline">Regulamento</Link>
       </p>
 
       <details className="mx-auto max-w-2xl border-4 border-double border-[#f2c230] bg-[#08502b]">
         <summary className="cursor-pointer list-none p-4 text-center font-display text-2xl font-black">
-          🎰 Abrir uma mesa <Sticker className="ml-1 align-middle">licença {GRAOS.betOpenFee} ☕</Sticker>
+          🎰 Abrir uma mesa <Sticker className="ml-1 align-middle">licença {R.betOpenFee} ☕</Sticker>
         </summary>
         <div className="border-t-2 border-dashed border-[#f2c230] p-4">
-          <NewBetForm balance={balance} fee={GRAOS.betOpenFee} />
+          <NewBetForm balance={balance} fee={R.betOpenFee} />
         </div>
       </details>
 
       <section className="mx-auto grid max-w-2xl grid-cols-2 gap-4">
         {[
           { href: "/casino/slot", icon: "🦆☕🐕", title: "Slot machine", sub: "Jackpot ×100", rot: "-rotate-1" },
-          { href: "/casino/raspadinha", icon: "🎟️", title: "Raspadinha", sub: "Raspa o Bacalhau · 2 ☕", rot: "rotate-1" },
+          { href: "/casino/raspadinha", icon: "🎟️", title: "Raspadinha", sub: `Raspa o Bacalhau · ${R.scratchCost} ☕`, rot: "rotate-1" },
           { href: "/casino/patos", icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
           { href: "/casino/duelos", icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
         ].map((g) => (

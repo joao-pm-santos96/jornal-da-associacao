@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { SCRATCH_COST, SCRATCH_ODDS_BASE, SCRATCH_PRIZES, scratchReturn, scratchWinChance } from "@/lib/scratch-table";
+import { SCRATCH_ODDS_BASE, SCRATCH_PRIZES, scratchReturn, scratchWinChance } from "@/lib/scratch-table";
+import { getRules } from "@/lib/rules";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
 import { ScratchCard } from "./ScratchCard";
 import type { Ticket } from "./actions";
 
 export default async function ScratchPage() {
   const user = await requireUser();
+  const { scratchCost } = await getRules();
   const [pending] = (await sql`
-    SELECT id, cells, prize FROM scratch_tickets
+    SELECT id, cells, prize, cost FROM scratch_tickets
     WHERE user_id = ${user.id} AND scratched_at IS NULL
     ORDER BY id DESC LIMIT 1
-  `) as { id: number; cells: string; prize: number }[];
-  const initial: Ticket | null = pending ? { id: pending.id, cells: pending.cells.split(","), prize: pending.prize } : null;
+  `) as { id: number; cells: string; prize: number; cost: number }[];
+  const initial: Ticket | null = pending ? { id: pending.id, cells: pending.cells.split(","), prize: pending.prize, cost: pending.cost } : null;
 
   return (
     <div className={`-mx-4 -my-6 space-y-8 px-4 py-6 sm:mx-0 sm:border-4 sm:border-[#141414] ${felt}`}>
@@ -22,7 +24,7 @@ export default async function ScratchPage() {
         <Link href="/casino" className="underline">← Voltar às mesas</Link>
       </p>
 
-      <ScratchCard initial={initial} />
+      <ScratchCard initial={initial} price={scratchCost} />
 
       <section className="mx-auto max-w-sm">
         <h2 className={`border-b-2 border-dashed border-[#f2c230] pb-1 text-center font-display text-2xl font-black uppercase ${gold}`}>
@@ -34,7 +36,7 @@ export default async function ScratchPage() {
               <span className="text-xl tracking-widest">{p.emoji.repeat(3)}</span>
               <span className="opacity-80">1 em {Math.round(SCRATCH_ODDS_BASE / p.chances)}</span>
               <span className={`font-display text-lg font-black ${gold}`}>
-                {p.multiplier === 1 ? "devolve" : `${SCRATCH_COST * p.multiplier} ☕`}
+                {p.multiplier === 1 ? "devolve" : `${scratchCost * p.multiplier} ☕`}
               </span>
             </li>
           ))}

@@ -11,11 +11,13 @@ import { ReactionBar } from "@/components/ReactionBar";
 import { ViewTracker } from "@/components/ViewTracker";
 import { getPostReactions, reactionOptions } from "@/lib/reactions";
 import { getSeason } from "@/lib/seasons";
-import { GRAOS, getBalances } from "@/lib/economy";
+import { getBalances } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { HighlightButton, TipButton } from "@/components/TipButton";
 import { addComment, deleteComment, deletePost, editComment } from "@/app/actions";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
+  const R = await getRules();
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
   const [user, post] = await Promise.all([requireUser(), getPost(Number(id))]);
@@ -79,8 +81,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         <div className="mt-8 space-y-2">
           <ReactionBar kind="post" targetId={post.id} reactions={reactions.post} frozen={frozen} options={options} />
           <div className="flex flex-wrap items-center gap-2">
-            {!isAuthor && <TipButton kind="post" targetId={post.id} />}
-            <HighlightButton postId={post.id} price={GRAOS.highlight} hours={GRAOS.highlightHours} />
+            {!isAuthor && <TipButton kind="post" targetId={post.id} vatPct={R.tipVatPct} />}
+            <HighlightButton postId={post.id} price={R.highlight} hours={R.highlightHours} />
           </div>
         </div>
       )}
@@ -135,7 +137,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                   )}
                   {reactions && c.author_id !== user.id && (
                     <div className="mt-1">
-                      <TipButton kind="comment" targetId={c.id} />
+                      <TipButton kind="comment" targetId={c.id} vatPct={R.tipVatPct} />
                     </div>
                   )}
                   <div className="mt-1 flex gap-3 text-xs">

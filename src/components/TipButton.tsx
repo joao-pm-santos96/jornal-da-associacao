@@ -5,7 +5,7 @@ import { buyHighlight, tip } from "@/app/economia-actions";
 
 const OPTIONS = [1, 2, 5, 10];
 
-export function TipButton({ kind, targetId }: { kind: "post" | "comment"; targetId: number }) {
+export function TipButton({ kind, targetId, vatPct }: { kind: "post" | "comment"; targetId: number; vatPct: number }) {
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const [pending, start] = useTransition();
   return (
@@ -14,7 +14,7 @@ export function TipButton({ kind, targetId }: { kind: "post" | "comment"; target
         ☕ Pagar um café
       </summary>
       <div className="absolute z-10 mt-1 w-56 space-y-2 border-2 border-ink bg-white p-2">
-        <p className="text-muted">Quantos grãos? 10% de IVA para o Cofre.</p>
+        <p className="text-muted">Quantos grãos? {vatPct}% de IVA para o Cofre.</p>
         <div className="flex gap-1">
           {OPTIONS.map((n) => (
             <button

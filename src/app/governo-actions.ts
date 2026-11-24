@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { notifyDecree, notifyMovement, pushToUsers } from "@/lib/push";
-import { GRAOS, debit, getBalances, getEconomy } from "@/lib/economy";
+import { debit, getBalances, getEconomy } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { requireUser } from "@/lib/auth";
 import { getOffices, holds, OFFICES, type Office } from "@/lib/offices";
 import { field, type FormState } from "@/lib/form";
@@ -14,6 +15,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_AMOUNT = 2_147_483_647;
 
 export async function applyMovement(_prev: FormState, form: FormData): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   if (!(await holds("tesoureiro", user.id))) return { error: "Só o Tesoureiro mexe no Cofre." };
   const economy = await getEconomy();
@@ -31,8 +33,8 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
   if (!member) return { error: "Esse sócio não existe." };
 
   if (kind === "multa") {
-    const fined = debit(member.balance, amount);
-    if (fined === 0) return { error: `${member.name} já está no teto da dívida (${grains(GRAOS.debtFloor)} ☕). Não há mais por onde multar.` };
+    const fined = debit(member.balance, amount, R.debtFloor);
+    if (fined === 0) return { error: `${member.name} já está no teto da dívida (${grains(R.debtFloor)} ☕). Não há mais por onde multar.` };
     await sql`
       INSERT INTO ledger (user_id, amount, reason, created_by, kind)
       VALUES (${target}, ${-fined}, ${reason}, ${user.id}, 'multa')
@@ -41,7 +43,7 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
     revalidatePath("/cofre");
     return {
       ok: fined < amount
-        ? `Multa de ${fined} ☕ aplicada: o resto passava o teto da dívida (${grains(GRAOS.debtFloor)} ☕).`
+        ? `Multa de ${fined} ☕ aplicada: o resto passava o teto da dívida (${grains(R.debtFloor)} ☕).`
         : "Multa aplicada. A justiça foi feita.",
     };
   }
@@ -145,7 +147,7 @@ export async function createDecree(_prev: FormState, form: FormData): Promise<Fo
 export async function revokeDecree(decreeId: number): Promise<void> {
   const user = await requireUser();
   if (!(await holds("presidente", user.id))) return;
-  await sql`UPDATE decrees SET revoked_at = now() WHERE id = ${decreeId} AND revoked_at IS NULL`;
+  await sql`UPDATE decrees SET revoked_at = now() WHERE id = ${decreeId} AND office = 'presidente' AND revoked_at IS NULL`;
   revalidatePath("/", "layout");
 }
 

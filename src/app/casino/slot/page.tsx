@@ -4,6 +4,7 @@ import { getBalances } from "@/lib/economy";
 import { SLOT_SYMBOLS, expectedReturn } from "@/lib/slot-table";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
 import { SlotMachine } from "./SlotMachine";
+import { getRules, slotBets } from "@/lib/rules";
 
 export default async function SlotPage() {
   const user = await requireUser();
@@ -17,7 +18,7 @@ export default async function SlotPage() {
         <Link href="/casino" className="underline">← Voltar às mesas</Link>
       </p>
 
-      <SlotMachine initialBalance={balance} />
+      <SlotMachine initialBalance={balance} bets={slotBets(await getRules())} />
 
       <section className="mx-auto max-w-sm">
         <h2 className={`border-b-2 border-dashed border-[#f2c230] pb-1 text-center font-display text-2xl font-black uppercase ${gold}`}>

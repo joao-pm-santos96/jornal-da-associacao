@@ -1,6 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { SCRATCH_COST, SCRATCH_FILLERS, SCRATCH_ODDS_BASE, SCRATCH_PRIZES } from "./scratch-table";
+import { SCRATCH_FILLERS, SCRATCH_ODDS_BASE, SCRATCH_PRIZES } from "./scratch-table";
 
 const ALL_SYMBOLS = [...SCRATCH_PRIZES.map((p) => p.emoji), ...SCRATCH_FILLERS];
 
@@ -29,11 +29,11 @@ function fillers(count: number, exclude: string | null): string[] {
   return out;
 }
 
-export function drawTicket(): { cells: string[]; prize: number } {
+export function drawTicket(cost: number): { cells: string[]; prize: number } {
   let roll = randomInt(SCRATCH_ODDS_BASE);
   for (const p of SCRATCH_PRIZES) {
     if (roll < p.chances) {
-      return { cells: shuffle([p.emoji, p.emoji, p.emoji, ...fillers(3, p.emoji)]), prize: SCRATCH_COST * p.multiplier };
+      return { cells: shuffle([p.emoji, p.emoji, p.emoji, ...fillers(3, p.emoji)]), prize: cost * p.multiplier };
     }
     roll -= p.chances;
   }

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { GRAOS, getBalances } from "@/lib/economy";
+import { getBalances } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { notifyBetResult, notifyNewBet } from "@/lib/push";
 
@@ -17,6 +18,7 @@ function refresh(betId?: number): void {
 }
 
 export async function createBet(_prev: FormState, form: FormData): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   const title = field(form, "title");
   const description = field(form, "description");
@@ -32,22 +34,22 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
   if (new Set(labels.map((l) => l.toLowerCase())).size !== labels.length) return { error: "Há opções repetidas." };
   if (!LOCAL_DATETIME_RE.test(local)) return { error: "Escolhe a data e hora de fecho." };
   const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
-  if (balance < GRAOS.betOpenFee) {
-    return { error: `A licença para abrir uma aposta custa ${GRAOS.betOpenFee} ☕ e só tens ${balance} ☕.` };
+  if (balance < R.betOpenFee) {
+    return { error: `A licença para abrir uma aposta custa ${R.betOpenFee} ☕ e só tens ${balance} ☕.` };
   }
 
   const [row] = (await sql`
     WITH b AS (
       INSERT INTO bets (created_by, title, description, closes_at, closing_notified_at)
       SELECT ${user.id}, ${title}, ${description}, t.closes_at,
-        CASE WHEN t.closes_at <= now() + make_interval(hours => ${GRAOS.betClosingWarningHours}) THEN now() END
+        CASE WHEN t.closes_at <= now() + make_interval(hours => ${R.betClosingWarningHours}) THEN now() END
       FROM (SELECT ${local}::timestamp AT TIME ZONE 'Europe/Lisbon' AS closes_at) t
       WHERE t.closes_at > now() + interval '5 minutes'
       RETURNING id
     ),
     fee AS (
       INSERT INTO ledger (user_id, amount, reason, created_by)
-      SELECT ${user.id}, ${-GRAOS.betOpenFee}, 'Casino: licença da aposta n.º ' || b.id, ${user.id} FROM b
+      SELECT ${user.id}, ${-R.betOpenFee}, 'Casino: licença da aposta n.º ' || b.id, ${user.id} FROM b
     ),
     o AS (
       INSERT INTO bet_options (bet_id, position, label)
@@ -103,6 +105,7 @@ export async function closeBetNow(betId: number): Promise<void> {
 }
 
 export async function resolveBet(betId: number, _prev: FormState, form: FormData): Promise<FormState> {
+  const R = await getRules();
   const user = await requireUser();
   const optionId = Number(field(form, "option_id"));
   if (!Number.isInteger(optionId) || optionId <= 0) return { error: "Escolhe a opção vencedora." };
@@ -124,7 +127,7 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
     ),
     pay AS (
       SELECT w.user_id,
-        floor(sum(w.amount) * (tot.pot - ceil(tot.pot * ${GRAOS.betHouseCutPct}::numeric / 100)) / tot.win)::int AS prize
+        floor(sum(w.amount) * (tot.pot - ceil(tot.pot * ${R.betHouseCutPct}::numeric / 100)) / tot.win)::int AS prize
       FROM w, tot WHERE w.option_id = ${optionId}
       GROUP BY w.user_id, tot.pot, tot.win
     ),
@@ -136,9 +139,9 @@ export async function resolveBet(betId: number, _prev: FormState, form: FormData
       INSERT INTO ledger (user_id, amount, reason, created_by)
       SELECT b.created_by, x.fee, ${`Aposta n.º ${betId}: comissão da banca (da parte da casa)`}, ${user.id}
       FROM tot, b, LATERAL (
-        SELECT least(${GRAOS.betBankerFee}, (tot.pot - coalesce((SELECT sum(prize) FROM pay WHERE prize > 0), 0))::int) AS fee
+        SELECT least(${R.betBankerFee}, (tot.pot - coalesce((SELECT sum(prize) FROM pay WHERE prize > 0), 0))::int) AS fee
       ) x
-      WHERE tot.bettors >= ${GRAOS.betBankerMinBettors} AND b.created_by IS NOT NULL AND x.fee > 0
+      WHERE tot.bettors >= ${R.betBankerMinBettors} AND b.created_by IS NOT NULL AND x.fee > 0
     )
     SELECT (SELECT count(*) FROM b)::int AS resolved, (SELECT label FROM bet_options WHERE id = ${optionId}) AS label
   `) as { resolved: number; label: string | null }[];

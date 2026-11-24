@@ -11,7 +11,8 @@ import { EDITION_RE } from "@/lib/dates";
 import { field, type FormState } from "@/lib/form";
 import { isKnownEmoji, reactionOptions } from "@/lib/reactions";
 import { getSeason } from "@/lib/seasons";
-import { GRAOS, balanceOf, debit, getBalances } from "@/lib/economy";
+import { balanceOf, debit, getBalances } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 
 const DUMMY_HASH = "$2b$12$WBGkbrX6t1WgfJf4VEnO7O9cK.zOonkD1jusOwwfScTp1cGR3ToLO";
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -122,9 +123,10 @@ export async function savePost(postId: number | null, _prev: FormState, form: Fo
 }
 
 export async function deletePost(postId: number): Promise<void> {
+  const R = await getRules();
   const user = await requireUser();
   const [paid] = (await sql`
-    SELECT p.author_id, p.title, round(${GRAOS.post}::numeric * pr.budget / pr.total_points)::int AS grains
+    SELECT p.author_id, p.title, round(${R.post}::numeric * pr.budget / pr.total_points)::int AS grains
     FROM visible_posts p
     JOIN payrolls pr ON pr.week_start = date_trunc('week', p.publish_at AT TIME ZONE 'Europe/Lisbon')::date
     JOIN payroll_lines pl ON pl.week_start = pr.week_start AND pl.user_id = p.author_id AND pl.grains > 0
@@ -133,7 +135,7 @@ export async function deletePost(postId: number): Promise<void> {
   `) as { author_id: number; title: string; grains: number }[];
   await sql`DELETE FROM posts WHERE id = ${postId} AND (author_id = ${user.id} OR ${user.is_admin})`;
   if (paid && paid.grains > 0) {
-    const charged = debit(await balanceOf(paid.author_id), paid.grains);
+    const charged = debit(await balanceOf(paid.author_id), paid.grains, R.debtFloor);
     if (charged > 0) {
       await sql`
         INSERT INTO ledger (user_id, amount, reason, kind)

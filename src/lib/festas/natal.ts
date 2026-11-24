@@ -1,7 +1,6 @@
 import "server-only";
 import { sql } from "../db";
 import { derangement, lisbon, seededRandom } from "../seasons";
-import { GRAOS } from "../economy";
 
 export function santaRevealed(year: number, now: Date): boolean {
   const t = lisbon(now);
@@ -89,12 +88,12 @@ const JOKES = [
 
 export type AdventSurprise = { kind: "graos" | "manchete" | "profecia" | "piada"; payload: string };
 
-export function adventSurprise(year: number, door: number, userId: number, others: string[]): AdventSurprise {
+export function adventSurprise(year: number, door: number, userId: number, others: string[], prize: number): AdventSurprise {
   const random = seededRandom(`advento:${year}:${door}:${userId}`);
   const roll = random();
   const pick = <T,>(items: T[]) => items[Math.floor(random() * items.length)];
   if (roll < 0.3) {
-    return { kind: "graos", payload: `Encontraste grãos de café no sapatinho! +${GRAOS.adventPrize} ☕` };
+    return { kind: "graos", payload: `Encontraste grãos de café no sapatinho! +${prize} ☕` };
   }
   if (roll < 0.55 && others.length > 0) {
     return { kind: "manchete", payload: pick(HEADLINES).replace("{nome}", pick(others)) };

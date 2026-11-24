@@ -1,7 +1,8 @@
 import "server-only";
 import { randomBytes, randomInt } from "node:crypto";
 import { sql } from "./db";
-import { DUCKS, RACE_HOUSE_CUT_PCT, duckName } from "./ducks-table";
+import { DUCKS, duckName } from "./ducks-table";
+import { getRules } from "./rules";
 
 export type Race = { id: number; race_at: Date; status: "open" | "finished"; winner: number | null; seed: string | null };
 
@@ -26,6 +27,7 @@ export async function ensureOpenRace(): Promise<Race> {
 }
 
 export async function resolveDueRaces(): Promise<RaceResult[]> {
+  const { raceHouseCutPct } = await getRules();
   const due = (await sql`SELECT id FROM duck_races WHERE status = 'open' AND race_at <= now() ORDER BY race_at`) as {
     id: number;
   }[];
@@ -47,7 +49,7 @@ export async function resolveDueRaces(): Promise<RaceResult[]> {
       ),
       pay AS (
         SELECT b.user_id,
-          floor(sum(b.amount) * (tot.pot - ceil(tot.pot * ${RACE_HOUSE_CUT_PCT}::numeric / 100)) / tot.win)::int AS prize
+          floor(sum(b.amount) * (tot.pot - ceil(tot.pot * ${raceHouseCutPct}::numeric / 100)) / tot.win)::int AS prize
         FROM b, tot WHERE b.duck = ${winner}
         GROUP BY b.user_id, tot.pot, tot.win
       ),

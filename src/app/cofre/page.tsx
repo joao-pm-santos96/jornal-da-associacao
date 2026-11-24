@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { GRAOS, getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
+import { getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
+import { getRules } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
 import { getNow } from "@/lib/seasons";
@@ -17,6 +18,7 @@ function signed(n: number): string {
 type SubsidyRequest = { id: number; name: string; amount: number; reason: string; created_at: Date };
 
 export default async function TreasuryPage() {
+  const R = await getRules();
   const user = await requireUser();
   const now = await getNow();
   const week = weekOf(now);
@@ -27,7 +29,7 @@ export default async function TreasuryPage() {
   const weekStart = lisbonMidnight(week);
   const points =
     economy.open && economy.start ? await weekPoints(week, economy.start > weekStart ? economy.start : weekStart, now) : [];
-  const budget = payrollBudget(economy.available);
+  const budget = payrollBudget(economy.available, R.payrollPct);
   const estimate = splitByPoints(budget, new Map(points.map((p) => [p.user_id, p.points])), () => 0.5);
   const mine = points.find((p) => p.user_id === user.id);
   const myBalance = economy.balances.find((b) => b.user_id === user.id)?.balance ?? 0;
@@ -66,7 +68,7 @@ export default async function TreasuryPage() {
               {economy.supply} ☕ em circulação no total
             </p>
             <p className="mt-2 text-sm">
-              Na segunda-feira, o ordenado distribui <strong>{GRAOS.payrollPct}%</strong> do disponível: cerca de{" "}
+              Na segunda-feira, o ordenado distribui <strong>{R.payrollPct}%</strong> do disponível: cerca de{" "}
               <strong>{budget} ☕</strong> se nada mudar.
             </p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -75,6 +77,9 @@ export default async function TreasuryPage() {
               </Link>
               <Link href="/cofre/encomendas" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
                 ✍️ Encomendas de posts
+              </Link>
+              <Link href="/cofre/tabela" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
+                📋 Preços e taxas
               </Link>
             </div>
           </section>
@@ -86,10 +91,10 @@ export default async function TreasuryPage() {
                 <strong>{mine.points} pontos</strong> até agora
                 {mine.rota === "pending" && " (estás na escala: publica até domingo)"}
                 {mine.rota === "pardoned" && " (indultado da escala)"}. Ordenado estimado na segunda-feira:{" "}
-                <strong>{estimate.get(user.id) ?? 0} ☕</strong>, menos a cota de {GRAOS.weeklyFee} ☕.
+                <strong>{estimate.get(user.id) ?? 0} ☕</strong>, menos a cota de {R.weeklyFee} ☕.
               </p>
               <p className="mt-1 text-xs text-muted">
-                Post {GRAOS.post} · comentário {GRAOS.comment} (até {GRAOS.commentCap} por semana) · 😂 recebido {GRAOS.laugh} (um por sócio por dia, até {GRAOS.laughCap}) · escala cumprida {GRAOS.rotaDone}.
+                Post {R.post} · comentário {R.comment} (até {R.commentCap} por semana) · 😂 recebido {R.laugh} (um por sócio por dia, até {R.laughCap}) · escala cumprida {R.rotaDone}.
                 A estimativa muda com o que os outros fizerem até domingo.
               </p>
             </section>
@@ -135,7 +140,7 @@ export default async function TreasuryPage() {
             </div>
             <p className="mt-2 text-xs text-muted">
               Toca num nome para veres o extrato. Quem está em dívida não aposta, não dá gorjetas nem compra na loja; o ordenado paga a dívida primeiro.
-              A {grains(GRAOS.debtFloor)} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
+              A {grains(R.debtFloor)} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
             </p>
           </section>
 
@@ -143,14 +148,14 @@ export default async function TreasuryPage() {
             <h2 className="font-display text-2xl font-black">🛒 Loja do Cofre</h2>
             <p className="text-sm text-muted">Tens {myBalance} ☕. O que se compra aqui vai para o Cofre e volta a todos no ordenado.</p>
             <div>
-              <h3 className="font-bold">📌 Destacar um post ({GRAOS.highlight} ☕, {GRAOS.highlightHours} h)</h3>
+              <h3 className="font-bold">📌 Destacar um post ({R.highlight} ☕, {R.highlightHours} h)</h3>
               <p className="text-sm text-muted">Usa o botão «Destacar» na página de qualquer post.</p>
             </div>
             <div>
-              <h3 className="font-bold">🙏 Indulto da escala ({GRAOS.pardon} ☕)</h3>
-              <p className="mb-2 text-sm text-muted">Só na tua semana da escala, antes de publicares e antes de domingo acabar. Evita a multa de {GRAOS.rotaMissedFine} ☕.</p>
+              <h3 className="font-bold">🙏 Indulto da escala ({R.pardon} ☕)</h3>
+              <p className="mb-2 text-sm text-muted">Só na tua semana da escala, antes de publicares e antes de domingo acabar. Evita a multa de {R.rotaMissedFine} ☕.</p>
               {mine?.rota === "pending" ? (
-                <PardonButton price={GRAOS.pardon} />
+                <PardonButton price={R.pardon} />
               ) : mine?.rota === "pardoned" ? (
                 <p className="text-sm font-semibold">Esta semana estás indultado: não há multa nem pontos da escala.</p>
               ) : (
@@ -158,9 +163,9 @@ export default async function TreasuryPage() {
               )}
             </div>
             <div>
-              <h3 className="font-bold">🏷️ Alcunha durante {GRAOS.nicknameDays} dias ({GRAOS.nickname} ☕)</h3>
+              <h3 className="font-bold">🏷️ Alcunha durante {R.nicknameDays} dias ({R.nickname} ☕)</h3>
               <p className="mb-2 text-sm text-muted">Aparece junto ao nome em todo o jornal. Podes dá-la a ti ou a outro sócio.</p>
-              <NicknameForm members={members} price={GRAOS.nickname} days={GRAOS.nicknameDays} />
+              <NicknameForm members={members} price={R.nickname} days={R.nicknameDays} />
             </div>
           </section>
 
@@ -171,6 +176,10 @@ export default async function TreasuryPage() {
                 Subsídios até ao disponível ({Math.max(economy.available, 0)} ☕). Um subsídio a ti próprio precisa do aval do Presidente.
               </p>
               <MovementForm members={members} />
+              <p className="mt-4 border-t-2 border-dashed border-ink pt-3 text-sm">
+                <Link href="/cofre/tabela" className="font-bold underline hover:text-scoop">⚙️ Mudar preços, taxas e percentagens →</Link>
+                <span className="block text-xs text-muted">Tudo menos o total de grãos em circulação. Entra em vigor de imediato e sai num despacho.</span>
+              </p>
             </section>
           )}
 

@@ -2,38 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { sql } from "./db";
 import { lisbon } from "./seasons";
+import { getRules, loadRules } from "./rules";
 
-export const GRAOS = {
-  post: 5,
-  comment: 1,
-  commentCap: 5,
-  laugh: 1,
-  laughCap: 10,
-  rotaDone: 10,
-  weeklyFee: 2,
-  rotaMissedFine: 20,
-  debtFloor: -50,
-  payrollPct: 15,
-  xmasPct: 30,
-  folarPct: 15,
-  adventPrize: 2,
-  egg: 1,
-  openingBalance: 10,
-  openingCofre: 100,
-  welcomeKit: 10,
-  tipVatPct: 10,
-  highlight: 10,
-  highlightHours: 24,
-  pardon: 15,
-  nickname: 5,
-  nicknameDays: 7,
-  commissionMaxDays: 28,
-  betOpenFee: 5,
-  betHouseCutPct: 10,
-  betBankerFee: 2,
-  betBankerMinBettors: 3,
-  betClosingWarningHours: 2,
-} as const;
+export { GRAOS } from "./graos";
 
 export const TIP_OPTIONS = [1, 2, 5, 10] as const;
 
@@ -59,7 +30,7 @@ export type Economy = {
 type EconomyRow = { start: string | null; supply: string | null; escrow: number };
 
 export async function loadEconomy(): Promise<Economy> {
-  const [stateRows, balanceRows] = await Promise.all([
+  const [stateRows, balanceRows, rules] = await Promise.all([
     sql`
       SELECT
         (SELECT value FROM settings WHERE key = 'economia_inicio') AS start,
@@ -79,12 +50,13 @@ export async function loadEconomy(): Promise<Economy> {
         END::int AS balance
       FROM users u
     `,
+    loadRules(),
   ]);
   const [state] = stateRows as EconomyRow[];
   const rows = balanceRows as Omit<Balance, "frozen">[];
   const open = state.start !== null;
   const balances = rows
-    .map((r) => ({ ...r, frozen: open && r.balance <= GRAOS.debtFloor }))
+    .map((r) => ({ ...r, frozen: open && r.balance <= rules.debtFloor }))
     .sort((a, b) => b.balance - a.balance);
   const supply = Number(state.supply ?? 0);
   const cofre = open ? supply - balances.reduce((sum, b) => sum + Math.max(b.balance, 0), 0) : 0;
@@ -111,8 +83,8 @@ export async function balanceOf(userId: number): Promise<number> {
   return (await getBalances()).find((b) => b.user_id === userId)?.balance ?? 0;
 }
 
-export function debit(balance: number, amount: number): number {
-  return Math.max(0, Math.min(amount, balance - GRAOS.debtFloor));
+export function debit(balance: number, amount: number, floor: number): number {
+  return Math.max(0, Math.min(amount, balance - floor));
 }
 
 export function splitByPoints(budget: number, points: ReadonlyMap<number, number>, random: () => number): Map<number, number> {
@@ -172,6 +144,7 @@ export type WeekPoints = {
 type WeekRow = Omit<WeekPoints, "points" | "rota"> & { rota_status: WeekPoints["rota"] };
 
 export async function weekPoints(weekStart: string, from: Date, to: Date): Promise<WeekPoints[]> {
+  const R = await getRules();
   const rows = (await sql`
     WITH bounds AS (
       SELECT ${from.toISOString()}::timestamptz AS lo, ${to.toISOString()}::timestamptz AS hi,
@@ -215,16 +188,16 @@ export async function weekPoints(weekStart: string, from: Date, to: Date): Promi
     points:
       rota_status === "missed"
         ? 0
-        : r.posts * GRAOS.post +
-          Math.min(r.comments, GRAOS.commentCap) * GRAOS.comment +
-          Math.min(r.laughs, GRAOS.laughCap) * GRAOS.laugh +
-          (rota_status === "done" && r.rota_points ? GRAOS.rotaDone : 0) +
+        : r.posts * R.post +
+          Math.min(r.comments, R.commentCap) * R.comment +
+          Math.min(r.laughs, R.laughCap) * R.laugh +
+          (rota_status === "done" && r.rota_points ? R.rotaDone : 0) +
           r.extra,
   }));
 }
 
-export function payrollBudget(available: number): number {
-  return Math.floor((Math.max(available, 0) * GRAOS.payrollPct) / 100);
+export function payrollBudget(available: number, pct: number): number {
+  return Math.floor((Math.max(available, 0) * pct) / 100);
 }
 
 export type Movement = { id: number; name: string; amount: number; reason: string; by: string | null; created_at: Date };

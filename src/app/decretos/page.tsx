@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { listDecrees } from "@/lib/decrees";
+import { decreeKind, listDecrees } from "@/lib/decrees";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -14,9 +14,9 @@ export default async function DecreesPage() {
   return (
     <div className="space-y-10">
       <header>
-        <h1 className="font-display text-4xl font-black sm:text-5xl">Decretos Presidenciais</h1>
+        <h1 className="font-display text-4xl font-black sm:text-5xl">Decretos e despachos</h1>
         <p className="text-muted">
-          Presidente em funções: <strong>{offices.presidente?.name ?? "cargo vago"}</strong>. Cumpra-se.
+          Presidente em funções: <strong>{offices.presidente?.name ?? "cargo vago"}</strong>. Tesoureiro: <strong>{offices.tesoureiro?.name ?? "cargo vago"}</strong>. Cumpra-se.
         </p>
       </header>
 
@@ -37,13 +37,13 @@ export default async function DecreesPage() {
               </span>
             )}
             <p className="text-xs font-black uppercase tracking-widest text-scoop">
-              Decreto n.º {d.number}/{d.year} · {formatDateTime(d.created_at)}
+              {decreeKind(d.office)} n.º {d.number}/{d.year} · {formatDateTime(d.created_at)}
             </p>
             <h2 className="mt-1 font-display text-2xl font-black leading-tight">{d.title}</h2>
             <p className="mt-2 whitespace-pre-wrap">{d.body}</p>
             <div className="mt-3 flex items-center justify-between text-xs text-muted">
               <span>Assinado: {d.author}</span>
-              {isPresident && !d.revoked_at && (
+              {isPresident && d.office === "presidente" && !d.revoked_at && (
                 <form action={revokeDecree.bind(null, d.id)}>
                   <ConfirmButton message="Revogar este decreto?" className="text-scoop underline">Revogar</ConfirmButton>
                 </form>

@@ -1,5 +1,3 @@
-export const DUEL_HOUSE_CUT_PCT = 10;
-export const DUEL_EXPIRY_HOURS = 48;
 
 export type Move = "pedra" | "papel" | "tesoura";
 
@@ -20,9 +18,9 @@ export function outcome(challenger: Move, opponent: Move): "challenger" | "oppon
   return BEATS[challenger] === opponent ? "challenger" : "opponent";
 }
 
-export function duelPrize(stake: number): number {
+export function duelPrize(stake: number, cutPct: number): number {
   const pot = stake * 2;
-  return pot - Math.ceil((pot * DUEL_HOUSE_CUT_PCT) / 100);
+  return pot - Math.ceil((pot * cutPct) / 100);
 }
 
 export function moveEmoji(move: string | null): string {
