@@ -2,6 +2,7 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { sql } from "./db";
 import { GRAOS, addDays, debit, weekOf } from "./economy";
+import { getRules } from "./rules";
 
 export const EXCUSES = [
   "Almoço com investidores",
@@ -109,7 +110,8 @@ export async function bust(
   const [member] = (await sql`
     SELECT coalesce(sum(amount), 0)::int AS balance FROM ledger WHERE user_id = ${culprit.owner_id} AND NOT archived
   `) as { balance: number }[];
-  const fine = debit(member.balance, Math.ceil((culprit.balance * GRAOS.slushFinePct) / 100));
+  const { debtFloor } = await getRules();
+  const fine = debit(member.balance, Math.ceil((culprit.balance * GRAOS.slushFinePct) / 100), debtFloor);
   const queries = [
     sql`
       INSERT INTO slush_moves (owner_id, amount, kind, reason, week_start)

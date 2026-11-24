@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
+import { GRAOS, getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";

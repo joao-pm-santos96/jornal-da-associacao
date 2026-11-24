@@ -214,6 +214,7 @@ export async function appointTreasurer(_prev: FormState, form: FormData): Promis
       ON CONFLICT (office) DO UPDATE SET user_id = EXCLUDED.user_id
     `;
     title = `Nomeação do Tesoureiro: ${member.name}`;
+    after(() => pushToUsers([target], LETTER_PUSH));
     body = current
       ? `Por decreto presidencial, ${current.name} é exonerado e ${member.name} passa a Tesoureiro, com efeito imediato.`
       : `Por decreto presidencial, ${member.name} é nomeado Tesoureiro, com efeito imediato.`;
