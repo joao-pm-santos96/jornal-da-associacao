@@ -96,6 +96,17 @@ export async function removeRotaSlot(weekStart: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
+export async function sendAnnouncement(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!user.is_admin) return { error: "Sem permissões." };
+  const title = field(form, "title");
+  const body = field(form, "body");
+  if (title.length < 3 || title.length > 80) return { error: "O título precisa de 3 a 80 caracteres." };
+  if (body.length < 3 || body.length > 300) return { error: "O texto precisa de 3 a 300 caracteres." };
+  await pushToAllExcept(0, { title, body, url: "/novidades" });
+  return { ok: "Aviso enviado a todos os sócios." };
+}
+
 export async function setModuleOpen(module: string, open: boolean): Promise<void> {
   const user = await requireAdmin();
   if (!isModule(module) || (await isOpen(module)) === open) return;

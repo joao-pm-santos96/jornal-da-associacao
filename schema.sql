@@ -521,3 +521,15 @@ CREATE TABLE IF NOT EXISTS office_letters (
   PRIMARY KEY (user_id, office)
 );
 DELETE FROM economy_rules WHERE key = 'betOpenFee';
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  body text NOT NULL,
+  url text NOT NULL,
+  read_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);

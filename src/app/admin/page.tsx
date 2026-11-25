@@ -8,6 +8,7 @@ import { RotaForm } from "./RotaForm";
 import { OfficeForm } from "./OfficeForm";
 import { TimeMachineForm } from "./TimeMachineForm";
 import { ResetRulesForm } from "./ResetRulesForm";
+import { AnnouncementForm } from "./AnnouncementForm";
 import { RULE_KEYS, defaultRules, getRules } from "@/lib/rules";
 import { getFakeNow } from "@/lib/seasons";
 import { getOffices } from "@/lib/offices";
@@ -58,6 +59,11 @@ export default async function AdminPage() {
             apostas: offices.apostas?.user_id,
           }}
         />
+      </section>
+      <section className="space-y-3">
+        <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">📣 Aviso a todos</h2>
+        <p className="text-sm text-muted">Vai por notificação a todos os sócios (tu incluído) e fica nas Novidades de cada um durante 30 dias.</p>
+        <AnnouncementForm />
       </section>
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">🛠️ Regras da economia</h2>
