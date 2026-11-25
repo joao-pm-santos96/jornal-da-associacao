@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MODULES, isOpen } from "@/lib/modules";
+import { SoundToggle } from "./SoundToggle";
 
 export default async function CasinoLayout({ children }: { children: ReactNode }) {
   const open = await isOpen("casino");
@@ -11,6 +12,7 @@ export default async function CasinoLayout({ children }: { children: ReactNode }
         </p>
       )}
       {children}
+      <SoundToggle />
     </>
   );
 }

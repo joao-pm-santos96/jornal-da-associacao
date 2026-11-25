@@ -8,7 +8,7 @@ import { timeAgo } from "@/lib/dates";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
 import { cancelDuel, declineDuel } from "./actions";
-import { ChallengeForm, RespondForm } from "./DuelForms";
+import { ChallengeForm, DuelResultSound, RespondForm } from "./DuelForms";
 
 const VERBS = ["esmagou", "humilhou", "despachou", "deu uma lição a", "mandou para casa"];
 
@@ -39,6 +39,7 @@ export default async function DuelsPage({ searchParams }: { searchParams: Promis
         </p>
       </header>
 
+      {just && <DuelResultSound duelId={just.id} result={justWon ? "win" : justTie ? "tie" : "loss"} />}
       {just && (
         <section
           className={`mx-auto max-w-xl border-4 border-[#141414] p-4 text-center shadow-[6px_6px_0_#141414] ${

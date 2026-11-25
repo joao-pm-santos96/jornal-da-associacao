@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { MOVES, type Move } from "@/lib/duels-table";
 import type { FormState } from "@/lib/form";
+import { sons } from "@/lib/sons";
 import { challenge, respondDuel } from "./actions";
 
 function Feedback({ state }: { state: FormState }) {
@@ -33,6 +34,15 @@ function MovePicker({ value, onChange }: { value: Move | null; onChange: (m: Mov
   );
 }
 
+export function DuelResultSound({ duelId, result }: { duelId: number; result: "win" | "tie" | "loss" }) {
+  useEffect(() => {
+    const play = result === "win" ? sons.win : result === "tie" ? sons.tie : sons.lose;
+    const timer = setTimeout(play, 150);
+    return () => clearTimeout(timer);
+  }, [duelId, result]);
+  return null;
+}
+
 export function ChallengeForm({ members, balance, min }: { members: { id: number; name: string }[]; balance: number; min: number }) {
   const [state, action, pending] = useActionState(challenge, {});
   const [move, setMove] = useState<Move | null>(null);
@@ -55,7 +65,7 @@ export function ChallengeForm({ members, balance, min }: { members: { id: number
       </div>
       <input type="hidden" name="move" value={move ?? ""} />
       <MovePicker value={move} onChange={setMove} />
-      <button disabled={pending || !move} className="w-full border-2 border-ink bg-scoop py-2 text-sm font-black uppercase text-white shadow-[3px_3px_0_#141414] disabled:opacity-50">
+      <button disabled={pending || !move} onClick={sons.swoosh} className="w-full border-2 border-ink bg-scoop py-2 text-sm font-black uppercase text-white shadow-[3px_3px_0_#141414] disabled:opacity-50">
         ⚔️ Lançar o desafio
       </button>
     </form>
@@ -72,7 +82,7 @@ export function RespondForm({ duelId }: { duelId: number }) {
         <>
           <input type="hidden" name="move" value={move ?? ""} />
           <MovePicker value={move} onChange={setMove} />
-          <button disabled={pending || !move} className="w-full border-2 border-ink bg-ink py-2 text-sm font-black uppercase text-white disabled:opacity-50">
+          <button disabled={pending || !move} onClick={sons.swoosh} className="w-full border-2 border-ink bg-ink py-2 text-sm font-black uppercase text-white disabled:opacity-50">
             Aceitar e jogar
           </button>
         </>

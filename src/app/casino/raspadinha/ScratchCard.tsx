@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { winningSymbol } from "@/lib/scratch-table";
+import { sons } from "@/lib/sons";
 import { buyTicket, markScratched, type Ticket } from "./actions";
 
 const REVEAL_AT = 0.55;
@@ -57,6 +58,9 @@ export function ScratchCard({ initial, price }: { initial: Ticket | null; price:
   function reveal() {
     if (!ticket || revealed) return;
     setRevealed(true);
+    if (ticket.prize > ticket.cost) sons.win(ticket.prize / ticket.cost);
+    else if (ticket.prize === ticket.cost) sons.coin();
+    else sons.lose();
     markScratched(ticket.id).finally(() => router.refresh());
   }
 
@@ -71,12 +75,14 @@ export function ScratchCard({ initial, price }: { initial: Ticket | null; price:
     ctx.arc((e.clientX - rect.left) * dpr, (e.clientY - rect.top) * dpr, 22 * dpr, 0, Math.PI * 2);
     ctx.fill();
     moves.current++;
+    if (moves.current % 3 === 1) sons.scratch();
     if (moves.current % 10 === 0 && scratchedFraction(canvas) >= REVEAL_AT) reveal();
   }
 
   async function buy() {
     setBusy(true);
     setError(null);
+    sons.buy();
     const result = await buyTicket().catch(() => null);
     setBusy(false);
     if (!result) return setError("A máquina dos bilhetes encravou. Tenta outra vez.");
