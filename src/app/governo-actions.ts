@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
-import { notifyDecree, notifyMovement, pushToUsers } from "@/lib/push";
+import { notifyDecree, notifyMovement, pushToAllExcept, pushToUsers } from "@/lib/push";
 import { debit, getBalances, getEconomy } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { requireUser } from "@/lib/auth";
@@ -69,6 +69,41 @@ export async function applyMovement(_prev: FormState, form: FormData): Promise<F
   if (target !== user.id) after(() => notifyMovement(target, amount, reason));
   revalidatePath("/cofre");
   return { ok: "Subsídio atribuído." };
+}
+
+export async function redistribute(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!(await holds("tesoureiro", user.id))) return { error: "Só o Tesoureiro distribui o Cofre." };
+  const economy = await getEconomy();
+  if (!economy.open) return { error: "O Cofre está fechado para obras." };
+  const mode = field(form, "mode");
+  const value = Number(field(form, "value"));
+  const reason = field(form, "reason");
+  if (mode !== "pct" && mode !== "total") return { error: "Escolhe percentagem ou valor." };
+  if (!Number.isInteger(value) || value < 1) return { error: "O valor tem de ser um número inteiro positivo." };
+  if (mode === "pct" && value > 100) return { error: "A percentagem vai de 1 a 100." };
+  if (reason.length < 3 || reason.length > 140) return { error: "Indica o motivo (3 a 140 caracteres)." };
+  const available = Math.max(economy.available, 0);
+  const total = mode === "pct" ? Math.floor((available * value) / 100) : value;
+  if (total > available) return { error: `O Cofre só tem ${available} ☕ disponíveis.` };
+  const members = economy.balances.map((b) => b.user_id);
+  const share = Math.floor(total / members.length);
+  if (share < 1) return { error: `${total} ☕ não chega para dar pelo menos 1 ☕ a cada um dos ${members.length} sócios.` };
+  const paid = share * members.length;
+  const title = `Distribuição do Cofre: +${share} ☕ a cada sócio`;
+  const body = `Por despacho do Tesoureiro, saem do Cofre ${paid} ☕, repartidos por igual pelos ${members.length} sócios (${share} ☕ cada).
+
+Motivo: ${reason}`;
+  await sql.transaction([
+    sql`
+      INSERT INTO ledger (user_id, amount, reason, created_by, kind)
+      SELECT unnest(${members}::int[]), ${share}, ${`Distribuição do Cofre: ${reason}`}, ${user.id}, 'distribuicao'
+    `,
+    sql`INSERT INTO decrees (author_id, title, body, office) VALUES (${user.id}, ${title}, ${body}, 'tesoureiro')`,
+  ]);
+  after(() => pushToAllExcept(0, { title: `💰 ${title}`, body: reason, url: "/cofre" }));
+  revalidatePath("/", "layout");
+  return { ok: `Distribuídos ${paid} ☕: ${share} ☕ a cada sócio, tu incluído. Saiu o despacho.` };
 }
 
 export async function decideSubsidy(requestId: number, approve: boolean): Promise<void> {
