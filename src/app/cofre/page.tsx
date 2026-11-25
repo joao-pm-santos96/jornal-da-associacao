@@ -9,6 +9,7 @@ import { getNow } from "@/lib/seasons";
 import { decideSubsidy } from "@/app/governo-actions";
 import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
+import { RedistributeForm } from "./RedistributeForm";
 import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
 import { RepresentationForm } from "./RepresentationForms";
 import { EXCUSE_MAX, hasSlushHistory, readLetters, slushState, type SlushState } from "@/lib/slush";
@@ -210,6 +211,13 @@ export default async function TreasuryPage() {
                 Subsídios até ao disponível ({Math.max(economy.available, 0)} ☕). Um subsídio a ti próprio precisa do aval do Presidente.
               </p>
               <MovementForm members={members} />
+              <div className="mt-4 space-y-2 border-t-2 border-dashed border-ink pt-3">
+                <h3 className="font-bold">🤝 Distribuir pelos sócios</h3>
+                <p className="text-sm text-muted">
+                  Reparte uma parte do Cofre por igual pelos {economy.balances.length} sócios, tu incluído. Os grãos que não dividam certo ficam no Cofre. Sai um despacho público.
+                </p>
+                <RedistributeForm available={Math.max(economy.available, 0)} members={economy.balances.length} />
+              </div>
               <p className="mt-4 border-t-2 border-dashed border-ink pt-3 text-sm">
                 <Link href="/cofre/tabela" className="font-bold underline hover:text-scoop">⚙️ Mudar preços, taxas e percentagens →</Link>
                 <span className="block text-xs text-muted">Tudo menos o total de grãos em circulação. Entra em vigor de imediato e sai num despacho.</span>
