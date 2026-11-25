@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DUCKS, positionAt, racePlan } from "@/lib/ducks-table";
+import { COUNTDOWN_MS, sons, soundOn } from "@/lib/sons";
 
 const SECONDS_PER_UNIT = 0.6;
 
@@ -11,25 +12,48 @@ export function RaceTrack({ seed, winner }: { seed: string; winner: number }) {
   const [elapsed, setElapsed] = useState(finish);
   const [playing, setPlaying] = useState(false);
   const frame = useRef<number | null>(null);
+  const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const strokes = useRef(0);
 
   useEffect(() => () => {
     if (frame.current) cancelAnimationFrame(frame.current);
+    if (delay.current) clearTimeout(delay.current);
   }, []);
 
-  function play() {
-    if (frame.current) cancelAnimationFrame(frame.current);
+  function run() {
     const start = performance.now();
-    setPlaying(true);
+    strokes.current = 0;
+    sons.quack();
     const tick = (now: number) => {
-      const t = (now - start) / 1000 / SECONDS_PER_UNIT;
+      const seconds = (now - start) / 1000;
+      const t = seconds / SECONDS_PER_UNIT;
       setElapsed(Math.min(t, finish));
+      if (Math.floor(seconds * 4) > strokes.current) {
+        strokes.current = Math.floor(seconds * 4);
+        sons.paddle();
+      }
       if (t < finish) {
         frame.current = requestAnimationFrame(tick);
       } else {
         setPlaying(false);
+        sons.win(6);
+        setTimeout(sons.quack, 700);
       }
     };
     frame.current = requestAnimationFrame(tick);
+  }
+
+  function play() {
+    if (frame.current) cancelAnimationFrame(frame.current);
+    if (delay.current) clearTimeout(delay.current);
+    setPlaying(true);
+    setElapsed(0);
+    if (soundOn()) {
+      sons.countdown();
+      delay.current = setTimeout(run, COUNTDOWN_MS);
+    } else {
+      run();
+    }
   }
 
   const done = elapsed >= finish;

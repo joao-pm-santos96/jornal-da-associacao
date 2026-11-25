@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SLOT_SYMBOLS } from "@/lib/slot-table";
+import { sons } from "@/lib/sons";
 import { spinSlot } from "../slot-actions";
 
 const LOSSES = [
@@ -38,8 +39,11 @@ export function SlotMachine({ initialBalance, bets }: { initialBalance: number; 
     if (busy) return;
     setBusy(true);
     setMessage(null);
+    sons.lever();
     spinning.current = [true, true, true];
     timer.current = setInterval(() => {
+      const turning = spinning.current.filter(Boolean).length;
+      if (turning > 0) sons.reelTick(turning);
       setReels((current) => current.map((s, i) => (spinning.current[i] ? randomSymbol() : s)));
     }, 70);
 
@@ -65,15 +69,20 @@ export function SlotMachine({ initialBalance, bets }: { initialBalance: number; 
       setTimeout(() => {
         spinning.current[i] = false;
         setReels((current) => current.map((s, j) => (j === i ? symbol : s)));
+        sons.reelStop(i);
         if (i === 2) {
           setBalance(result.balance);
           if (result.reels.every((s) => s === "☕")) {
+            setTimeout(sons.jackpot, 150);
             finish({ text: `☕☕☕ JACKPOT! Ganhaste ${result.payout} ☕!`, tone: "win" });
           } else if (result.payout > result.bet) {
+            setTimeout(() => sons.win(result.payout / result.bet), 150);
             finish({ text: `🎉 Ganhaste ${result.payout} ☕!`, tone: "win" });
           } else if (result.payout === result.bet) {
+            setTimeout(sons.coin, 150);
             finish({ text: "Par: recuperas a aposta.", tone: "even" });
           } else {
+            setTimeout(sons.lose, 150);
             finish({ text: LOSSES[Math.floor(Math.random() * LOSSES.length)], tone: "loss" });
           }
         }
