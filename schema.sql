@@ -288,9 +288,8 @@ CREATE INDEX IF NOT EXISTS bet_options_bet_id_idx ON bet_options (bet_id);
 
 ALTER TABLE ledger ADD COLUMN IF NOT EXISTS bet_id integer REFERENCES bets(id) ON DELETE CASCADE;
 
-DELETE FROM offices WHERE office = 'apostas';
 ALTER TABLE offices DROP CONSTRAINT IF EXISTS offices_office_check;
-ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presidente', 'tesoureiro'));
+ALTER TABLE offices ADD CONSTRAINT offices_office_check CHECK (office IN ('presidente', 'tesoureiro', 'apostas'));
 
 CREATE TABLE IF NOT EXISTS slot_spins (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -452,7 +451,7 @@ LANGUAGE sql STABLE AS $$
       FROM carnival_masks m JOIN users mu ON mu.id = m.mask_id
       WHERE m.user_id = uid AND m.day = (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date),
     (SELECT u.name || coalesce((
-        SELECT ' ' || string_agg(CASE o.office WHEN 'presidente' THEN '👑' WHEN 'tesoureiro' THEN '💰' END, '' ORDER BY array_position(ARRAY['presidente', 'tesoureiro'], o.office))
+        SELECT ' ' || string_agg(CASE o.office WHEN 'presidente' THEN '👑' WHEN 'tesoureiro' THEN '💰' WHEN 'apostas' THEN '🎲' END, '' ORDER BY array_position(ARRAY['presidente', 'tesoureiro', 'apostas'], o.office))
         FROM offices o WHERE o.user_id = u.id
       ), '') || coalesce((
         SELECT ' «' || n.nickname || '»' FROM nicknames n
@@ -521,3 +520,4 @@ CREATE TABLE IF NOT EXISTS office_letters (
   read_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, office)
 );
+DELETE FROM economy_rules WHERE key = 'betOpenFee';

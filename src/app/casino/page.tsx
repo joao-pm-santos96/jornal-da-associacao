@@ -2,16 +2,16 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listBets, STATUS_LABEL } from "@/lib/bets";
 import { formatSchedule } from "@/lib/dates";
-import { getBalances } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
+import { getOffices } from "@/lib/offices";
 import { NewBetForm } from "./BetForms";
-import { Disclaimer, Marquee, Sticker, felt, gold } from "./Decor";
+import { Disclaimer, Marquee, felt, gold } from "./Decor";
 
 export default async function CasinoPage() {
   const R = await getRules();
   const user = await requireUser();
-  const [bets, balances] = await Promise.all([listBets(), getBalances()]);
-  const balance = balances.find((b) => b.user_id === user.id)?.balance ?? 0;
+  const [bets, offices] = await Promise.all([listBets(), getOffices()]);
+  const bookie = offices.apostas;
   const open = bets.filter((b) => b.status === "open" || b.status === "closed");
   const past = bets.filter((b) => b.status === "resolved" || b.status === "void");
 
@@ -20,19 +20,27 @@ export default async function CasinoPage() {
       <Marquee />
 
       <p className="text-center text-sm">
-        A casa fica com <strong className={gold}>{R.betHouseCutPct}%</strong> de cada pote. Abrir uma mesa custa{" "}
-        <strong className={gold}>{R.betOpenFee} ☕</strong> de licença.{" "}
+        A casa fica com <strong className={gold}>{R.betHouseCutPct}%</strong> de cada pote. As mesas são abertas pelo Gestor de Apostas,{" "}
+        <strong className={gold}>{bookie?.name ?? "cargo vago"}</strong>, sem custos.{" "}
         <Link href="/regras#casino" className="underline">Regulamento</Link>
       </p>
 
-      <details className="mx-auto max-w-2xl border-4 border-double border-[#f2c230] bg-[#08502b]">
-        <summary className="cursor-pointer list-none p-4 text-center font-display text-2xl font-black">
-          🎰 Abrir uma mesa <Sticker className="ml-1 align-middle">licença {R.betOpenFee} ☕</Sticker>
-        </summary>
-        <div className="border-t-2 border-dashed border-[#f2c230] p-4">
-          <NewBetForm balance={balance} fee={R.betOpenFee} />
-        </div>
-      </details>
+      {bookie?.user_id === user.id ? (
+        <details className="mx-auto max-w-2xl border-4 border-double border-[#f2c230] bg-[#08502b]">
+          <summary className="cursor-pointer list-none p-4 text-center font-display text-2xl font-black">
+            🎲 Abrir uma mesa
+          </summary>
+          <div className="border-t-2 border-dashed border-[#f2c230] p-4">
+            <NewBetForm />
+          </div>
+        </details>
+      ) : (
+        <p className="mx-auto max-w-2xl border-4 border-double border-[#f2c230] bg-[#08502b] p-4 text-center text-sm">
+          {bookie
+            ? <>🎲 Queres uma aposta? Fala com o Gestor de Apostas, <strong className={gold}>{bookie.name}</strong>, que é quem abre as mesas.</>
+            : <>🎲 O cargo de Gestor de Apostas está vago: por agora não abrem mesas novas.</>}
+        </p>
+      )}
 
       <section className="mx-auto grid max-w-2xl grid-cols-2 gap-4">
         {[

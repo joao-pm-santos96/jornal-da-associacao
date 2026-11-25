@@ -55,6 +55,7 @@ export default async function AdminPage() {
           current={{
             presidente: offices.presidente?.user_id,
             tesoureiro: offices.tesoureiro?.user_id,
+            apostas: offices.apostas?.user_id,
           }}
         />
       </section>

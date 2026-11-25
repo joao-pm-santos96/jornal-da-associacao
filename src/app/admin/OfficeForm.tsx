@@ -7,6 +7,7 @@ import { sendOfficeLetter } from "@/app/representacao-actions";
 const OFFICES = [
   { office: "presidente", label: "👑 Presidente" },
   { office: "tesoureiro", label: "💰 Tesoureiro" },
+  { office: "apostas", label: "🎲 Gestor de Apostas" },
 ] as const;
 
 type Office = (typeof OFFICES)[number]["office"];
@@ -43,10 +44,12 @@ export function OfficeForm({ users, current }: Props) {
           <button disabled={pending} className="bg-ink px-3 py-2 text-sm font-bold uppercase text-white disabled:opacity-50">
             Nomear
           </button>
-          <button formAction={sendAction} disabled={sending || !current[office]} title="Envia ao titular um push a dizer que tem correspondência no gabinete"
-            className="border-2 border-ink px-3 py-1.5 text-sm font-bold uppercase disabled:opacity-50">
-            📨 Avisar da carta
-          </button>
+          {office !== "apostas" && (
+            <button formAction={sendAction} disabled={sending || !current[office]} title="Envia ao titular um push a dizer que tem correspondência no gabinete"
+              className="border-2 border-ink px-3 py-1.5 text-sm font-bold uppercase disabled:opacity-50">
+              📨 Avisar da carta
+            </button>
+          )}
         </form>
       ))}
     </div>
