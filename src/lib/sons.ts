@@ -116,9 +116,25 @@ function coinNotes(count: number, from: number): Note[] {
   ]).flat();
 }
 
+export function userHasInteracted(): boolean {
+  return typeof navigator !== "undefined" && (navigator.userActivation?.hasBeenActive ?? false);
+}
+
 export const sons = {
   unlock: () => {
     if (soundOn()) Speaker.get();
+  },
+  entrance: () => {
+    play([
+      ...run([NOTE.G4, NOTE.C5, NOTE.E5, NOTE.G5], 0.08, 0.1),
+      { freq: NOTE.C6, at: 0.32, dur: 0.18 },
+      { freq: NOTE.G5, at: 0.5, dur: 0.1 },
+      { freq: NOTE.C6, at: 0.6, dur: 0.5, vibrato: 10 },
+      ...run([NOTE.C4, NOTE.G4, NOTE.C5], 0.2, 0.18, { wave: "triangle", gain: 0.18 }),
+      { freq: NOTE.E6, at: 1.05, dur: 0.6, wave: "sine", gain: 0.08 },
+      { freq: NOTE.G6, at: 1.05, dur: 0.6, wave: "sine", gain: 0.05 },
+      ...coinNotes(5, 1.15),
+    ]);
   },
   lever: () => {
     play([
