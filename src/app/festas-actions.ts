@@ -141,6 +141,7 @@ export async function setFakeNow(_prev: FormState, form: FormData): Promise<Form
       sql`DELETE FROM slush_moves WHERE simulated RETURNING id`,
       sql`DELETE FROM audits WHERE simulated RETURNING id`,
       sql`DELETE FROM scandals WHERE simulated RETURNING id`,
+      sql`DELETE FROM notifications WHERE simulated RETURNING id`,
       sql`DELETE FROM settings WHERE key = 'fake_now'`,
     ]);
     const removed = (purged as unknown[][]).slice(0, -1).reduce((n, rows) => n + rows.length, 0);

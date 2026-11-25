@@ -33,5 +33,6 @@ export async function sendTestPush(): Promise<number> {
     title: "🔔 Notificações ligadas",
     body: "Se estás a ler isto, o Jornal já te consegue chatear. Bom café! ☕",
     url: "/conta",
+    inbox: false,
   });
 }

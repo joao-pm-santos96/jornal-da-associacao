@@ -9,8 +9,9 @@ import { expireDuels } from "./duels";
 import { runBonuses, runPayrolls, settleCommissions } from "./payroll";
 import { runPrescriptions } from "./slush";
 import { getNow } from "./seasons";
+import { purgeOldNotices, storeNotice } from "./notifications";
 
-export type PushPayload = { title: string; body: string; url: string; tag?: string };
+export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
 
 type StoredSubscription = { endpoint: string; p256dh: string; auth: string };
 
@@ -26,12 +27,15 @@ function vapidDetails(): { publicKey: string; privateKey: string; subject: strin
 }
 
 export async function pushToUsers(userIds: number[], payload: PushPayload): Promise<number> {
+  if (userIds.length === 0) return 0;
+  const { inbox, ...message } = payload;
+  if (inbox !== false) await storeNotice(userIds, message);
   const details = vapidDetails();
-  if (!details || userIds.length === 0) return 0;
+  if (!details) return 0;
   const subs = (await sql`
     SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ANY(${userIds}::int[])
   `) as StoredSubscription[];
-  const body = JSON.stringify(payload);
+  const body = JSON.stringify(message);
   const gone: string[] = [];
   let sent = 0;
   await Promise.all(
@@ -141,6 +145,7 @@ export async function flushDueNotifications(): Promise<void> {
   const R = await getRules();
   await settleEconomy();
   await settleRaces();
+  await purgeOldNotices();
   const expired = await expireDuels();
   await Promise.all(
     expired.map((d) =>
@@ -203,6 +208,7 @@ export async function flushDueNotifications(): Promise<void> {
           body: p.title,
           url: `/post/${p.id}`,
           tag: `post-${p.id}`,
+          inbox: false,
         }),
       ),
     ...slots
@@ -233,6 +239,7 @@ export async function notifyComment(postId: number, commenterId: number, body: s
     body: snippet(body),
     url: `/post/${postId}`,
     tag: `comentarios-${postId}`,
+    inbox: false,
   });
 }
 

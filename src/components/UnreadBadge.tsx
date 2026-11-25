@@ -35,7 +35,7 @@ export function UnreadBadge({ initial }: { initial: number }) {
   return (
     <>
       <title>{count > 0 ? `(${count}) ${TITLE}` : TITLE}</title>
-      <Link href="/#por-ler" className="hover:text-scoop" aria-label={count === 1 ? "1 novidade por ler" : `${count} novidades por ler`}>
+      <Link href="/novidades" className="hover:text-scoop" aria-label={count === 1 ? "1 novidade por ler" : `${count} novidades por ler`}>
       🔔
       {count > 0 && (
         <span className="ml-0.5 rounded-full bg-scoop px-1.5 py-0.5 text-[10px] font-black text-white">{count}</span>

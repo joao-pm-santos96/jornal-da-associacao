@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Inter, Playfair_Display } from "next/font/google";
 import { getUser } from "@/lib/auth";
-import { countUnread } from "@/lib/posts";
+import { countNews } from "@/lib/notifications";
 import { UnreadBadge } from "@/components/UnreadBadge";
 import { Masthead } from "@/components/Masthead";
 import { getBalances } from "@/lib/economy";
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const season = await getSeason();
   const lisbonNow = lisbon(now);
   if (season === "carnaval") await ensureMasks(lisbonNow.date);
-  const [unread, balances] = user ? await Promise.all([countUnread(user.id), getBalances()]) : [0, []];
+  const [unread, balances] = user ? await Promise.all([countNews(user.id), getBalances()]) : [0, []];
   const myBalance = user ? balances.find((b) => b.user_id === user.id)?.balance ?? 0 : 0;
   return (
     <html lang="pt-PT" data-tema={season ?? undefined} className={`${playfair.variable} ${inter.variable} antialiased`}>

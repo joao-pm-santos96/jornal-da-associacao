@@ -81,6 +81,7 @@ function announce(busted: Busted[], denounced: boolean) {
         title: denounced ? "🚨 Foste denunciado" : "🚨 A auditoria apanhou-te",
         body: `O teu saco azul (${b.recovered} ☕) voltou ao Cofre${b.fine > 0 ? ` e pagas ${b.fine} ☕ de multa` : ""}.`,
         url: "/",
+        inbox: false,
       }),
       pushToAllExcept(b.culprit_id, {
         title: "🚨 Escândalo no Cofre",
@@ -132,6 +133,7 @@ export async function requestAudit(): Promise<FormState> {
         title: "🕵️ Alguém anda a fazer perguntas",
         body: "Houve uma auditoria às contas do governo. Desta vez escapaste.",
         url: "/cofre/saco-azul",
+        inbox: false,
       }),
     );
     return { ok: `A auditoria não encontrou nada. Os ${GRAOS.auditCost} ☕ ficam no Cofre.` };
