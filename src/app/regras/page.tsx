@@ -20,6 +20,7 @@ export default async function RulesPage() {
   const offices = await getOffices();
   const president = offices.presidente?.name ?? "cargo vago";
   const treasurer = offices.tesoureiro?.name ?? "cargo vago";
+  const bookie = offices.apostas?.name ?? "cargo vago";
   const t = await getRules();
 
   return (
@@ -149,7 +150,7 @@ export default async function RulesPage() {
       <Article id="casino" n={7} title="O Casino 🎰">
         <p>No <Link href="/casino" className="underline hover:text-scoop">Casino da Associação</Link> aposta-se em grãos de café, com <strong>apostas mútuas</strong>: o pote é de quem acerta.</p>
         <ul className="list-disc space-y-1 pl-6">
-          <li>Qualquer sócio pode abrir uma aposta, pagando uma <strong>licença de {t.betOpenFee} ☕</strong> ao Cofre. A licença não é devolvida, nem se a aposta for anulada.</li>
+          <li>Só o <strong>Gestor de Apostas 🎲</strong> ({bookie}) pode abrir apostas, e abrir uma aposta é grátis. Quem quiser uma aposta pede-lha.</li>
           <li>Quem abre a aposta fica com a <strong>banca</strong>: decide quando fecha, declara o resultado e pode anulá-la. Não pode apostar na sua própria aposta. A palavra da banca é final.</li>
           <li>Cada aposta tem entre 2 e 6 opções e uma hora de fecho. Até lá, qualquer sócio pode apostar as vezes que quiser.</li>
           <li>Os grãos apostados saem logo do saldo. Só aposta quem tem saldo positivo, e no máximo o que tem.</li>

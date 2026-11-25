@@ -7,7 +7,7 @@ import { notifyDecree, notifyMovement, pushToUsers } from "@/lib/push";
 import { debit, getBalances, getEconomy } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { requireUser } from "@/lib/auth";
-import { getOffices, holds, LETTER_PUSH, OFFICES, type Office } from "@/lib/offices";
+import { BOOKIE_PUSH, GOVERNMENT, getOffices, holds, LETTER_PUSH, OFFICES, type Office } from "@/lib/offices";
 import { field, type FormState } from "@/lib/form";
 import { grains } from "@/lib/grains";
 
@@ -185,7 +185,7 @@ export async function setOffice(_prev: FormState, form: FormData): Promise<FormS
       ON CONFLICT (office) DO UPDATE SET user_id = EXCLUDED.user_id
       RETURNING user_id, (SELECT user_id FROM prev) IS DISTINCT FROM user_id AS changed
     `) as { user_id: number; changed: boolean }[];
-    if (row.changed) after(() => pushToUsers([row.user_id], LETTER_PUSH));
+    if (row.changed) after(() => pushToUsers([row.user_id], GOVERNMENT.includes(office) ? LETTER_PUSH : BOOKIE_PUSH));
   }
   revalidatePath("/", "layout");
   return { ok: "Cargo atualizado." };

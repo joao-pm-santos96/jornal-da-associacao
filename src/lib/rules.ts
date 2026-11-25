@@ -32,7 +32,6 @@ export const RULE_DEFS = {
   adventPrize: { group: "Festas", label: "Prémio das portas do Advento", unit: "☕", min: 0, max: MAX },
   egg: { group: "Festas", label: "Ovo da Páscoa", unit: "☕", min: 0, max: MAX },
   welcomeKit: { group: "Festas", label: "Kit de boas-vindas a sócios novos", unit: "☕", min: 0, max: MAX },
-  betOpenFee: { group: "Casino", label: "Licença para abrir uma aposta", unit: "☕", min: 0, max: MAX },
   betHouseCutPct: { group: "Casino", label: "Parte da casa nas apostas", unit: "%", min: 0, max: 100 },
   betBankerFee: { group: "Casino", label: "Comissão máxima da banca", unit: "☕", min: 0, max: MAX },
   betBankerMinBettors: { group: "Casino", label: "Apostadores para a banca receber comissão", unit: "apostadores", min: 0, max: MAX },

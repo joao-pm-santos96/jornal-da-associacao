@@ -13,11 +13,8 @@ function Feedback({ state }: { state: FormState }) {
   return null;
 }
 
-export function NewBetForm({ balance, fee }: { balance: number; fee: number }) {
+export function NewBetForm() {
   const [state, action, pending] = useActionState(createBet, {});
-  if (balance < fee) {
-    return <p className="text-sm">A licença custa {fee} ☕ e tens {balance} ☕. Volta quando tiveres grãos.</p>;
-  }
   return (
     <form
       className="space-y-3"
@@ -47,7 +44,7 @@ export function NewBetForm({ balance, fee }: { balance: number; fee: number }) {
           <input id="bet-closes" name="closes_at" type="datetime-local" required className={input} />
         </div>
       </div>
-      <button disabled={pending} className={button}>🎰 Abrir mesa (−{fee} ☕)</button>
+      <button disabled={pending} className={button}>🎰 Abrir mesa</button>
     </form>
   );
 }

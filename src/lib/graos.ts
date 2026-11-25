@@ -23,7 +23,6 @@ export const GRAOS = {
   nickname: 5,
   nicknameDays: 7,
   commissionMaxDays: 28,
-  betOpenFee: 5,
   betHouseCutPct: 10,
   betBankerFee: 2,
   betBankerMinBettors: 3,

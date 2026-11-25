@@ -10,6 +10,7 @@ import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { notifyBetResult, notifyNewBet } from "@/lib/push";
 import { MODULES, isOpen } from "@/lib/modules";
+import { holds } from "@/lib/offices";
 
 const LOCAL_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -22,6 +23,7 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
   const R = await getRules();
   const user = await requireUser();
   if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
+  if (!(await holds("apostas", user.id))) return { error: "Só o Gestor de Apostas abre mesas no Casino." };
   const title = field(form, "title");
   const description = field(form, "description");
   const local = field(form, "closes_at");
@@ -35,10 +37,6 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
   if (labels.some((l) => l.length > 60)) return { error: "Cada opção tem no máximo 60 caracteres." };
   if (new Set(labels.map((l) => l.toLowerCase())).size !== labels.length) return { error: "Há opções repetidas." };
   if (!LOCAL_DATETIME_RE.test(local)) return { error: "Escolhe a data e hora de fecho." };
-  const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
-  if (balance < R.betOpenFee) {
-    return { error: `A licença para abrir uma aposta custa ${R.betOpenFee} ☕ e só tens ${balance} ☕.` };
-  }
 
   const [row] = (await sql`
     WITH b AS (
@@ -48,10 +46,6 @@ export async function createBet(_prev: FormState, form: FormData): Promise<FormS
       FROM (SELECT ${local}::timestamp AT TIME ZONE 'Europe/Lisbon' AS closes_at) t
       WHERE t.closes_at > now() + interval '5 minutes'
       RETURNING id
-    ),
-    fee AS (
-      INSERT INTO ledger (user_id, amount, reason, created_by)
-      SELECT ${user.id}, ${-R.betOpenFee}, 'Casino: licença da aposta n.º ' || b.id, ${user.id} FROM b
     ),
     o AS (
       INSERT INTO bet_options (bet_id, position, label)

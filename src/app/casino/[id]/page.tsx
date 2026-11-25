@@ -141,7 +141,7 @@ export default async function BetPage({ params }: { params: Promise<{ id: string
                 </form>
               )}
               <form action={voidBet.bind(null, bet.id)}>
-                <ConfirmButton message="Anular a aposta e devolver os grãos apostados? A licença não é devolvida." className="text-scoop underline">
+                <ConfirmButton message="Anular a aposta e devolver os grãos apostados?" className="text-scoop underline">
                   Anular e devolver as apostas
                 </ConfirmButton>
               </form>
