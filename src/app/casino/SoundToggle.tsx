@@ -1,7 +1,16 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { SOUND_EVENT, setSoundOn, sons, soundOn } from "@/lib/sons";
+import { useEffect, useSyncExternalStore } from "react";
+import { SOUND_EVENT, setSoundOn, sons, soundOn, userHasInteracted } from "@/lib/sons";
+
+export function CasinoEntrance() {
+  useEffect(() => {
+    if (!userHasInteracted()) return;
+    const timer = setTimeout(sons.entrance, 200);
+    return () => clearTimeout(timer);
+  }, []);
+  return null;
+}
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener(SOUND_EVENT, onChange);

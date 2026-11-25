@@ -15,6 +15,7 @@ import { ServiceWorker } from "@/components/ServiceWorker";
 import { formatDateTime } from "@/lib/dates";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BottomNav } from "@/components/BottomNav";
+import { AudioUnlock } from "@/components/AudioUnlock";
 import "./globals.css";
 
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["700", "800", "900"] });
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="text-muted first-letter:uppercase">{today.format(now)}</span>
             {user && (
               <div className="flex items-center gap-4 font-semibold">
+                <AudioUnlock />
                 <UnreadBadge initial={unread} />
                 <Link href="/cofre" className="hidden hover:text-scoop md:inline" title="O teu saldo no Cofre">☕ {myBalance}</Link>
                 <span className="hidden md:inline"><AccountMenu isAdmin={user.is_admin} /></span>
