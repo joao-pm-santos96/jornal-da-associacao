@@ -6,11 +6,11 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { GRAOS, getEconomy, weekOf } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
-import { LETTER_PUSH, OFFICES, getOffices, holds, type Office } from "@/lib/offices";
+import { GOVERNMENT, LETTER_PUSH, getOffices, holds, type Office } from "@/lib/offices";
 import { pushToAllExcept, pushToUsers } from "@/lib/push";
 import { getNow } from "@/lib/seasons";
 import { grains } from "@/lib/grains";
-import { EXCUSES, REPRESENTATION, bust, representationTotal, rollCaught, slushHolders, slushState, type Busted } from "@/lib/slush";
+import { EXCUSE_MAX, REPRESENTATION, bust, representationTotal, rollCaught, slushHolders, slushState, type Busted } from "@/lib/slush";
 
 async function inOffice(userId: number): Promise<boolean> {
   return (await holds("tesoureiro", userId)) || (await holds("presidente", userId));
@@ -22,9 +22,10 @@ export async function spendRepresentation(_prev: FormState, form: FormData): Pro
   const economy = await getEconomy();
   if (!economy.open) return { error: "O Cofre está fechado para obras." };
   const amount = Number(field(form, "amount"));
-  const excuse = field(form, "excuse");
+  const excuse = field(form, "excuse").replace(/\s+/g, " ").trim();
   const max = Math.floor((Math.max(economy.available, 0) * GRAOS.slushPct) / 100);
-  if (!(EXCUSES as readonly string[]).includes(excuse)) return { error: "Escolhe a justificação." };
+  if (excuse.length < 3) return { error: "Escreve a justificação da despesa." };
+  if (excuse.length > EXCUSE_MAX) return { error: `A justificação tem no máximo ${EXCUSE_MAX} caracteres.` };
   if (max < 1) return { error: "O Cofre está tão magro que nem dá para um almoço." };
   if (!Number.isInteger(amount) || amount < 1 || amount > max) return { error: `O valor tem de ser entre 1 e ${max} ☕.` };
   const week = weekOf(await getNow());
@@ -171,7 +172,7 @@ export async function denounce(): Promise<FormState> {
 
 export async function markLetterRead(office: Office): Promise<void> {
   const user = await requireUser();
-  if (!OFFICES.includes(office) || !(await holds(office, user.id))) return;
+  if (!GOVERNMENT.includes(office) || !(await holds(office, user.id))) return;
   await sql`INSERT INTO office_letters (user_id, office) VALUES (${user.id}, ${office}) ON CONFLICT DO NOTHING`;
 }
 
@@ -179,7 +180,7 @@ export async function sendOfficeLetter(_prev: FormState, form: FormData): Promis
   const user = await requireUser();
   if (!user.is_admin) return { error: "Sem permissões." };
   const office = field(form, "office") as Office;
-  if (!OFFICES.includes(office)) return { error: "Cargo inválido." };
+  if (!GOVERNMENT.includes(office)) return { error: "Este cargo não tem carta." };
   const holder = (await getOffices())[office];
   if (!holder) return { error: "O cargo está vago." };
   await pushToUsers([holder.user_id], LETTER_PUSH);

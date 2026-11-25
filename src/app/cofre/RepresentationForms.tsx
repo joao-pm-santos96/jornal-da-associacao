@@ -12,7 +12,7 @@ function Feedback({ state }: { state: FormState }) {
   return null;
 }
 
-export function RepresentationForm({ excuses, max, done }: { excuses: readonly string[]; max: number; done: boolean }) {
+export function RepresentationForm({ max, excuseMax, done }: { max: number; excuseMax: number; done: boolean }) {
   const [state, action, pending] = useActionState(spendRepresentation, {});
   if (done) return state.ok ? <Feedback state={state} /> : <p className="text-sm font-semibold">Já justificaste uma despesa esta semana.</p>;
   return (
@@ -26,9 +26,8 @@ export function RepresentationForm({ excuses, max, done }: { excuses: readonly s
         </div>
         <div className="min-w-0 flex-1">
           <label htmlFor="rep-excuse" className="block text-xs font-semibold">Justificação</label>
-          <select id="rep-excuse" name="excuse" className={`${input} w-full`}>
-            {excuses.map((e) => <option key={e}>{e}</option>)}
-          </select>
+          <input id="rep-excuse" name="excuse" required minLength={3} maxLength={excuseMax}
+            placeholder="ex.: Almoço com investidores" className={`${input} w-full`} />
         </div>
       </div>
       <button disabled={pending} className="bg-ink px-4 py-2 text-sm font-bold uppercase text-white disabled:opacity-50">

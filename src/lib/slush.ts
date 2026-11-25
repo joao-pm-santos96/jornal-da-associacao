@@ -4,14 +4,7 @@ import { sql } from "./db";
 import { GRAOS, addDays, debit, weekOf } from "./economy";
 import { getRules } from "./rules";
 
-export const EXCUSES = [
-  "Almoço com investidores",
-  "Deslocação oficial",
-  "Material de escritório",
-  "Estudo de viabilidade",
-  "Formação em liderança",
-  "Ofertas institucionais",
-] as const;
+export const EXCUSE_MAX = 120;
 
 export const REPRESENTATION = "Despesas de representação";
 

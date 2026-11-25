@@ -11,7 +11,7 @@ import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
 import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
 import { RepresentationForm } from "./RepresentationForms";
-import { EXCUSES, hasSlushHistory, readLetters, slushState, type SlushState } from "@/lib/slush";
+import { EXCUSE_MAX, hasSlushHistory, readLetters, slushState, type SlushState } from "@/lib/slush";
 import { ConfidentialLetter } from "./ConfidentialLetter";
 import { LetterBody } from "./LetterBody";
 
@@ -26,7 +26,7 @@ function Representation({ slush, max }: { slush: SlushState; max: number }) {
       <p className="text-sm text-muted">
         Uma por semana, até {GRAOS.slushPct}% do disponível ({max} ☕). Aparece no livro do Cofre com a justificação; o destino é confidencial.
       </p>
-      <RepresentationForm excuses={EXCUSES} max={max} done={slush.desviou} />
+      <RepresentationForm max={max} excuseMax={EXCUSE_MAX} done={slush.desviou} />
       <p className="text-sm">
         <Link href="/cofre/saco-azul" className="underline hover:text-scoop">Ver o teu saco azul ({slush.balance} ☕) →</Link>
       </p>
