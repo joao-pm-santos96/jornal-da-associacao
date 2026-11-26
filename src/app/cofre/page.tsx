@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { GRAOS, getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
+import { GIFT_REASON_MAX, GRAOS, getEconomy, listMovements, payrollBudget, splitByPoints, weekOf, weekPoints, lisbonMidnight } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
 import { formatDateTime } from "@/lib/dates";
@@ -10,7 +10,7 @@ import { decideSubsidy } from "@/app/governo-actions";
 import { grains } from "@/lib/grains";
 import { MovementForm } from "./MovementForm";
 import { RedistributeForm } from "./RedistributeForm";
-import { AmnestyForm, NicknameForm, PardonButton } from "./EconomyForms";
+import { AmnestyForm, GiftForm, NicknameForm, PardonButton } from "./EconomyForms";
 import { RepresentationForm } from "./RepresentationForms";
 import { EXCUSE_MAX, hasSlushHistory, readLetters, slushState, type SlushState } from "@/lib/slush";
 import { ConfidentialLetter } from "./ConfidentialLetter";
@@ -163,9 +163,15 @@ export default async function TreasuryPage() {
               </table>
             </div>
             <p className="mt-2 text-xs text-muted">
-              Toca num nome para veres o extrato. Quem está em dívida não aposta, não dá gorjetas nem compra na loja; o ordenado paga a dívida primeiro.
+              Toca num nome para veres o extrato. Quem está em dívida não aposta, não dá gorjetas nem grãos, nem compra na loja; o ordenado paga a dívida primeiro.
               A {grains(R.debtFloor)} ☕ a conta congela (só se reage com 🧂) e a dívida deixa de crescer.
             </p>
+          </section>
+
+          <section className="space-y-2 border-2 border-ink bg-white p-4">
+            <h2 className="font-display text-2xl font-black">💸 Dar grãos</h2>
+            <p className="text-sm text-muted">Passa grãos teus a outro sócio, sem IVA nem taxas. O motivo fica nos extratos dos dois.</p>
+            <GiftForm members={members.filter((m) => m.id !== user.id)} balance={myBalance} reasonMax={GIFT_REASON_MAX} />
           </section>
 
           <section className="space-y-4 border-2 border-ink bg-white p-4">

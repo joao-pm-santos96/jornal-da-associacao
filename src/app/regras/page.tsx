@@ -114,13 +114,14 @@ export default async function RulesPage() {
         <h3 className="font-bold">Dívidas</h3>
         <ul className="list-disc space-y-1 pl-6">
           <li>Quem não tem saldo para a cota ou uma multa fica a dever ao Cofre. O ordenado paga a dívida primeiro.</li>
-          <li>Quem está em dívida não aposta, não dá gorjetas, não compra na loja nem encomenda posts.</li>
+          <li>Quem está em dívida não aposta, não dá gorjetas nem grãos, não compra na loja nem encomenda posts.</li>
           <li>A dívida deixa de crescer aos <strong>{grains(t.debtFloor)} ☕</strong>, quando a conta fica <strong>congelada 🧊</strong>: só se pode reagir com 🧂.</li>
           <li>O Presidente pode decretar amnistias. Não custam nada ao Cofre, porque esses grãos nunca lá entraram.</li>
         </ul>
         <h3 className="font-bold">Para que serve o grão</h3>
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Gorjetas:</strong> «pagar um café» a um post ou comentário de que gostaste, com {t.tipVatPct}% de IVA para o Cofre.</li>
+          <li><strong>Ofertas:</strong> dar grãos a outro sócio, no Cofre, com um motivo à escolha. Não há IVA nem taxas, e fica nos extratos dos dois.</li>
           <li><strong>Encomendas:</strong> oferecer grãos a quem escrever sobre um tema. Ficam retidos até alguém entregar; se ninguém pegar até ao prazo, voltam.</li>
           <li><strong>Loja do Cofre:</strong> destacar um post na primeira página durante {t.highlightHours} h ({t.highlight} ☕), indulto da escala ({t.pardon} ☕, na tua semana, antes de publicares) e alcunha durante {t.nicknameDays} dias ({t.nickname} ☕).</li>
           <li>E o <Link href="/casino" className="underline hover:text-scoop">Casino</Link>, claro.</li>

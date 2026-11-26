@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { TIP_OPTIONS, getEconomy, weekOf } from "@/lib/economy";
+import { GIFT_REASON_MAX, TIP_OPTIONS, getEconomy, weekOf } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { field, type FormState } from "@/lib/form";
 import { pushToUsers } from "@/lib/push";
@@ -251,4 +251,42 @@ export async function decideCommission(id: number, accept: boolean): Promise<voi
     );
   }
   revalidatePath("/cofre/encomendas");
+}
+
+export async function giveGrains(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const target = Number(field(form, "user_id"));
+  const amount = Number(field(form, "amount"));
+  const reason = field(form, "reason").replace(/\s+/g, " ");
+  if (!Number.isInteger(target) || target <= 0) return { error: "Escolhe o sócio." };
+  if (target === user.id) return { error: "Dar grãos a ti próprio não conta." };
+  if (!Number.isInteger(amount) || amount <= 0) return { error: "A quantia tem de ser um número inteiro de grãos." };
+  if (reason.length < 2 || reason.length > GIFT_REASON_MAX) return { error: `Escreve o motivo (até ${GIFT_REASON_MAX} caracteres).` };
+  const economy = await getEconomy();
+  if (!economy.open) return { error: "O Cofre está fechado para obras." };
+  const balance = economy.balances.find((b) => b.user_id === user.id)?.balance ?? 0;
+  if (balance < amount) return { error: `Tens ${balance} ☕, não chega para dar ${amount} ☕.` };
+  const [row] = (await sql`
+    WITH u AS (
+      SELECT id, name FROM users WHERE id = ${target}
+        AND (SELECT coalesce(sum(amount), 0) FROM ledger WHERE user_id = ${user.id} AND NOT archived) >= ${amount}
+    ),
+    l AS (
+      INSERT INTO ledger (user_id, amount, reason, kind)
+      SELECT ${user.id}::int, ${-amount}::int, 'Oferta a ' || member_label(u.id) || ': ' || ${reason}, 'oferta' FROM u
+      UNION ALL
+      SELECT u.id, ${amount}::int, 'Oferta de ' || member_label(${user.id}) || ': ' || ${reason}, 'oferta' FROM u
+    )
+    SELECT u.name FROM u
+  `) as { name: string }[];
+  if (!row) return { error: "Não foi possível: confirma o sócio e o teu saldo." };
+  after(() =>
+    pushToUsers([target], {
+      title: `💸 ${user.name} deu-te ${amount} ☕`,
+      body: reason,
+      url: "/cofre",
+    }),
+  );
+  revalidatePath("/", "layout");
+  return { ok: `Deste ${amount} ☕ a ${row.name}.` };
 }

@@ -13,6 +13,7 @@ const ICON: Record<string, string> = {
   amnistia: "🕊️",
   estorno: "↩️",
   gorjeta: "☕",
+  oferta: "💸",
   loja: "🛒",
   encomenda: "✍️",
   slot: "🎰",

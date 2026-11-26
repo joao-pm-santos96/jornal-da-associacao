@@ -7,6 +7,7 @@ import { getRules, loadRules } from "./rules";
 export { GRAOS } from "./graos";
 
 export const TIP_OPTIONS = [1, 2, 5, 10] as const;
+export const GIFT_REASON_MAX = 140;
 
 export type Balance = {
   user_id: number;
