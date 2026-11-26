@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listBets, STATUS_LABEL } from "@/lib/bets";
 import { formatSchedule } from "@/lib/dates";
-import { getRules } from "@/lib/rules";
+import { getRules, slotPaytable } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
 import { NewBetForm } from "./BetForms";
 import { Disclaimer, Marquee, felt, gold } from "./Decor";
@@ -44,7 +44,7 @@ export default async function CasinoPage() {
 
       <section className="mx-auto grid max-w-2xl grid-cols-2 gap-4">
         {[
-          { href: "/casino/slot", icon: "🦆☕🐕", title: "Slot machine", sub: "Jackpot ×100", rot: "-rotate-1" },
+          { href: "/casino/slot", icon: "🦆☕🐕", title: "Slot machine", sub: `Jackpot ×${slotPaytable(R).find((s) => s.emoji === "☕")?.triple ?? 0}`, rot: "-rotate-1" },
           { href: "/casino/raspadinha", icon: "🎟️", title: "Raspadinha", sub: `Raspa o Bacalhau · ${R.scratchCost} ☕`, rot: "rotate-1" },
           { href: "/casino/patos", icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
           { href: "/casino/duelos", icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },

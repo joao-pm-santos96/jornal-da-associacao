@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { field, type FormState } from "@/lib/form";
 import { holds } from "@/lib/offices";
 import { pushToAllExcept } from "@/lib/push";
-import { RULE_DEFS, RULE_KEYS, defaultRules, formatRule, loadRules, type RuleKey } from "@/lib/rules";
+import { RULE_DEFS, RULE_KEYS, defaultRules, formatRule, loadRules, rulesProblem, type RuleKey } from "@/lib/rules";
 
 type Change = { key: RuleKey; from: number; to: number };
 
@@ -31,6 +31,8 @@ export async function updateRules(_prev: FormState, form: FormData): Promise<For
     if (value !== current[key]) changes.push({ key, from: current[key], to: value });
   }
   if (changes.length === 0) return { error: "Não mudaste nenhum valor." };
+  const problem = rulesProblem({ ...current, ...Object.fromEntries(changes.map((c) => [c.key, c.to])) });
+  if (problem) return { error: problem };
   const reason = field(form, "reason");
   if (reason.length > 1000) return { error: "A justificação tem no máximo 1000 caracteres." };
 

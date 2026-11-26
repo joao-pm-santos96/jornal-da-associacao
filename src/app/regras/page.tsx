@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
-import { getRules, slotBets } from "@/lib/rules";
+import { getRules, scratchPrizes, slotBets, slotPaytable } from "@/lib/rules";
+import { scratchReturn, scratchWinChance } from "@/lib/scratch-table";
+import { expectedReturn } from "@/lib/slot-table";
 import { grains } from "@/lib/grains";
 
 function Article({ id, n, title, children }: { id?: string; n: number; title: string; children: React.ReactNode }) {
@@ -160,8 +162,8 @@ export default async function RulesPage() {
           <li>Com {t.betBankerMinBettors} ou mais apostadores, a banca recebe uma comissão de até {t.betBankerFee} ☕, tirada da parte da casa.</li>
           <li>Enquanto a aposta está aberta só se vêem os totais por opção. Quem apostou em quê revela-se quando fecha.</li>
           <li>Em caso de batota flagrante, o admin pode fechar, resolver ou anular qualquer aposta.</li>
-          <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de {slotBets(t).join(", ").replace(/, (\d+)$/, " ou $1")} ☕. Paga até ×100 e devolve, em média, menos do que recebe: a diferença vai para o Cofre.</li>
-          <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa {t.scratchCost} ☕ por bilhete; três símbolos iguais ganham. Também devolve, em média, menos do que custa.</li>
+          <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de {slotBets(t).join(", ").replace(/, (\d+)$/, " ou $1")} ☕. Paga até ×{Math.max(...slotPaytable(t).map((s) => s.triple))}, com multiplicadores e probabilidades decididos pelo Tesoureiro, e devolve em média {Math.round(expectedReturn(slotPaytable(t)) * 100)}% do que recebe. A diferença é do Cofre.</li>
+          <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa {t.scratchCost} ☕ por bilhete; três símbolos iguais ganham. Sai prémio em {Math.round(scratchWinChance(scratchPrizes(t)) * 100)}% dos bilhetes e, em média, devolve {Math.round(scratchReturn(scratchPrizes(t)) * 100)}% do que custa.</li>
           <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é todos os domingos às 21h. As apostas são mútuas, a casa fica com {t.raceHouseCutPct}% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
           <li>Nos <Link href="/casino/duelos" className="underline hover:text-scoop">Duelos</Link> desafia-se outro sócio para pedra, papel ou tesoura. Quem ganha leva o pote menos {t.duelHouseCutPct}%; em caso de empate, cada um fica com o seu. O mínimo é {t.duelMinStake} ☕ e um desafio sem resposta em {t.duelExpiryHours}h expira e os grãos voltam.</li>
         </ul>

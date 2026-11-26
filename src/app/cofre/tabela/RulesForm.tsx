@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { updateRules } from "@/app/regras-economia-actions";
 
 export type RuleItem = { key: string; label: string; unit: string; value: number; min: number; max: number };
-export type RuleGroup = { group: string; items: RuleItem[] };
+export type RuleGroup = { group: string; items: RuleItem[]; note?: string };
 
 export function RulesForm({ groups }: { groups: RuleGroup[] }) {
   const [state, action, pending] = useActionState(updateRules, {});
@@ -13,6 +13,7 @@ export function RulesForm({ groups }: { groups: RuleGroup[] }) {
       {groups.map((g) => (
         <fieldset key={g.group} className="border-2 border-ink bg-white p-4">
           <legend className="px-1 font-display text-xl font-black">{g.group}</legend>
+          {g.note && <p className="mb-2 text-sm text-muted">{g.note}</p>}
           <div className="divide-y divide-rule">
             {g.items.map((r) => (
               <label key={r.key} className="flex items-center justify-between gap-3 py-2 text-sm">
