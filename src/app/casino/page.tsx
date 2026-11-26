@@ -4,13 +4,14 @@ import { listBets, STATUS_LABEL } from "@/lib/bets";
 import { formatSchedule } from "@/lib/dates";
 import { getRules, slotPaytable } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
+import { getClosedModules, type CasinoGame } from "@/lib/modules";
 import { NewBetForm } from "./BetForms";
 import { Disclaimer, Marquee, felt, gold } from "./Decor";
 
 export default async function CasinoPage() {
   const R = await getRules();
   const user = await requireUser();
-  const [bets, offices] = await Promise.all([listBets(), getOffices()]);
+  const [bets, offices, closedModules] = await Promise.all([listBets(), getOffices(), getClosedModules()]);
   const bookie = offices.apostas;
   const open = bets.filter((b) => b.status === "open" || b.status === "closed");
   const past = bets.filter((b) => b.status === "resolved" || b.status === "void");
@@ -44,24 +45,27 @@ export default async function CasinoPage() {
 
       <section className="mx-auto grid max-w-2xl grid-cols-2 gap-4">
         {[
-          { href: "/casino/slot", icon: "🦆☕🐕", title: "Slot machine", sub: `Jackpot ×${slotPaytable(R).find((s) => s.emoji === "☕")?.triple ?? 0}`, rot: "-rotate-1" },
-          { href: "/casino/raspadinha", icon: "🎟️", title: "Raspadinha", sub: `Raspa o Bacalhau · ${R.scratchCost} ☕`, rot: "rotate-1" },
-          { href: "/casino/patos", icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
-          { href: "/casino/duelos", icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
-          { href: "/casino/bilhar", icon: "🎱", title: "Bilhar", sub: "8 bolas, por turnos", rot: "rotate-1" },
-          { href: "/casino/gatilho", icon: "⚡", title: "Gatilho", sub: "Quem toca primeiro", rot: "-rotate-1" },
-          { href: "/casino/alto-baixo", icon: "🃏", title: "Alto ou Baixo", sub: `Adivinha a próxima carta · desde ${R.hiloMinBet} ☕`, rot: "rotate-1" },
-        ].map((g) => (
-          <Link
-            key={g.href}
-            href={g.href}
-            className={`block ${g.rot} border-4 border-[#141414] bg-[#e10600] p-3 text-center shadow-[5px_5px_0_#141414] transition hover:rotate-0`}
-          >
-            <span className="block text-3xl tracking-widest" aria-hidden="true">{g.icon}</span>
-            <span className="block font-display text-xl font-black uppercase leading-tight text-[#f2c230] [text-shadow:2px_2px_0_#141414]">{g.title}</span>
-            <span className="block text-xs font-bold text-white">{g.sub}</span>
-          </Link>
-        ))}
+          { href: "/casino/slot", game: "slot" as CasinoGame, icon: "🦆☕🐕", title: "Slot machine", sub: `Jackpot ×${slotPaytable(R).find((s) => s.emoji === "☕")?.triple ?? 0}`, rot: "-rotate-1" },
+          { href: "/casino/raspadinha", game: "raspadinha" as CasinoGame, icon: "🎟️", title: "Raspadinha", sub: `Raspa o Bacalhau · ${R.scratchCost} ☕`, rot: "rotate-1" },
+          { href: "/casino/patos", game: "patos" as CasinoGame, icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
+          { href: "/casino/duelos", game: "duelos" as CasinoGame, icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
+          { href: "/casino/bilhar", game: "bilhar" as CasinoGame, icon: "🎱", title: "Bilhar", sub: "8 bolas, por turnos", rot: "rotate-1" },
+          { href: "/casino/gatilho", game: "gatilho" as CasinoGame, icon: "⚡", title: "Gatilho", sub: "Quem toca primeiro", rot: "-rotate-1" },
+          { href: "/casino/alto-baixo", game: "altobaixo" as CasinoGame, icon: "🃏", title: "Alto ou Baixo", sub: `Adivinha a próxima carta · desde ${R.hiloMinBet} ☕`, rot: "rotate-1" },
+        ].map((g) => {
+          const shut = closedModules.has(g.game);
+          return (
+            <Link
+              key={g.href}
+              href={g.href}
+              className={`relative block ${g.rot} border-4 border-[#141414] bg-[#e10600] p-3 text-center shadow-[5px_5px_0_#141414] transition hover:rotate-0 ${shut ? "opacity-60 grayscale" : ""}`}
+            >
+              <span className="block text-3xl tracking-widest" aria-hidden="true">{g.icon}</span>
+              <span className="block font-display text-xl font-black uppercase leading-tight text-[#f2c230] [text-shadow:2px_2px_0_#141414]">{g.title}</span>
+              <span className="block text-xs font-bold text-white">{shut ? "🔒 Fechado" : g.sub}</span>
+            </Link>
+          );
+        })}
       </section>
 
       <section className="space-y-3">

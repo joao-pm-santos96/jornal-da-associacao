@@ -9,7 +9,7 @@ import { getBalances } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
 import { getRules, type Rules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, reflexPrize } from "@/lib/reflex";
 import { getReflexGame, timesOf, type ReflexGame } from "@/lib/reflex-games";
 
@@ -24,7 +24,8 @@ function refresh(id?: number): void {
 
 export async function challengeReflex(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
+  const closed = await gameClosed("gatilho");
+  if (closed) return { error: closed };
   const R = await getRules();
   const opponentId = Number(field(form, "opponent_id"));
   const stake = Number(field(form, "stake") || "0");
@@ -94,7 +95,7 @@ export async function respondReflex(gameId: number, accept: boolean): Promise<vo
     refresh(gameId);
     return;
   }
-  if (!(await isOpen("casino"))) return;
+  if (await gameClosed("gatilho")) return;
   if (game.stake > 0 && (await balanceOf(user.id)) < game.stake) return;
   const [row] = (await sql`
     WITH g AS (

@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 import { DECK_SIZE, beats, compound, hiloPayout, stepMultiplier, type Guess } from "@/lib/hilo";
 import { activeHilo, toState, type HiloRow, type HiloState } from "@/lib/hilo-games";
 
@@ -17,7 +17,8 @@ async function balanceOf(userId: number): Promise<number> {
 
 export async function startHilo(stake: number): Promise<HiloResult> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { ok: false, error: MODULES.casino.closed };
+  const closed = await gameClosed("altobaixo");
+  if (closed) return { ok: false, error: closed };
   const R = await getRules();
   if (!Number.isInteger(stake) || stake < R.hiloMinBet || stake > R.hiloMaxBet) {
     return { ok: false, error: `A aposta tem de ser entre ${R.hiloMinBet} e ${R.hiloMaxBet} ☕.` };

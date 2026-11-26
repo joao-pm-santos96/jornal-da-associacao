@@ -5,13 +5,14 @@ import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { drawTicket } from "@/lib/scratch";
 import { getRules, scratchPrizes } from "@/lib/rules";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 
 export type Ticket = { id: number; cells: string[]; prize: number; cost: number };
 
 export async function buyTicket(): Promise<{ ok: true; ticket: Ticket } | { ok: false; error: string }> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { ok: false, error: MODULES.casino.closed };
+  const closed = await gameClosed("raspadinha");
+  if (closed) return { ok: false, error: closed };
   const [pending] = (await sql`
     SELECT id FROM scratch_tickets WHERE user_id = ${user.id} AND scratched_at IS NULL LIMIT 1
   `) as { id: number }[];
