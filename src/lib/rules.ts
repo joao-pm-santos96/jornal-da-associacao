@@ -80,6 +80,10 @@ export const RULE_DEFS = {
   duelHouseCutPct: { group: "Casino", label: "Duelos: parte da casa", unit: "%", min: 0, max: 100 },
   duelMinStake: { group: "Casino", label: "Duelos: aposta mínima", unit: "☕", min: 1, max: MAX },
   duelExpiryHours: { group: "Casino", label: "Duelos: prazo para responder", unit: "h", min: 1, max: 720 },
+  poolHouseCutPct: { group: "Casino", label: "Bilhar: parte da casa", unit: "%", min: 0, max: 100 },
+  poolMinStake: { group: "Casino", label: "Bilhar: aposta mínima (0 = partidas amigáveis)", unit: "☕", min: 0, max: MAX },
+  poolAcceptHours: { group: "Casino", label: "Bilhar: prazo para aceitar um desafio", unit: "h", min: 1, max: 720 },
+  poolTurnHours: { group: "Casino", label: "Bilhar: prazo para cada jogada", unit: "h", min: 1, max: 720 },
 } as const satisfies Record<string, RuleDef>;
 
 export type RuleKey = keyof typeof RULE_DEFS;

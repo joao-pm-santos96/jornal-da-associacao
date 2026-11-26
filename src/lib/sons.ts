@@ -191,6 +191,20 @@ export const sons = {
       { freq: NOTE.A5, at: 1.35, dur: 0.4 },
     ]),
   paddle: () => noise(0.04, 700 + Math.random() * 300, 0.07),
+  cue: (power: number) => {
+    noise(0.03, 1800, 0.08 + power * 0.25, { type: "highpass" });
+    play([{ freq: 220, at: 0, dur: 0.05, gain: 0.04 + power * 0.08, wave: "triangle" }]);
+  },
+  clack: (strength: number) => {
+    const s = Math.min(1, strength);
+    play([{ freq: 2600 + Math.random() * 500, at: 0, dur: 0.025, gain: 0.02 + s * 0.1, wave: "square" }]);
+    noise(0.02, 4000, 0.03 + s * 0.12, { type: "highpass" });
+  },
+  rail: (strength: number) => noise(0.05, 300, 0.04 + Math.min(1, strength) * 0.12),
+  pocket: () => {
+    noise(0.12, 180, 0.25, { sweepTo: 90 });
+    play([{ freq: 140, at: 0.02, dur: 0.18, gain: 0.12, slide: 70, wave: "triangle" }]);
+  },
   quack: () => {
     for (const at of [0, 0.15]) {
       play([
