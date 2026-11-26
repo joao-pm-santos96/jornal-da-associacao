@@ -7,6 +7,8 @@ import { recentScandals } from "@/lib/slush";
 import { editionLabel } from "@/lib/dates";
 import { Headline, PostCard } from "@/components/PostCard";
 import { ActivityBox } from "@/components/ActivityBox";
+import { AssemblyBanner } from "@/components/AssemblyBanner";
+import { listAssemblies } from "@/lib/assembly";
 import { RotaBanner } from "@/components/RotaBanner";
 import { getRota } from "@/lib/rota";
 import { latestDecree } from "@/lib/decrees";
@@ -20,7 +22,7 @@ import { BetBanner } from "@/components/BetBanner";
 
 export default async function Home() {
   const user = await requireUser();
-  const [editions, activity, rota, decree, offices, bet, highlights, scandals] = await Promise.all([
+  const [editions, activity, rota, decree, offices, bet, highlights, scandals, assemblies] = await Promise.all([
     listEditions(),
     listUnread(user.id),
     getRota(),
@@ -29,6 +31,7 @@ export default async function Home() {
     featuredBet(),
     listHighlights(),
     recentScandals(),
+    listAssemblies(user.id),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
   const now = await getNow();
@@ -40,6 +43,7 @@ export default async function Home() {
         <SeasonBanner season={season} extra={seasonExtra} />
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
+        <AssemblyBanner assemblies={assemblies} />
         <ScandalBox scandals={scandals} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <BetBanner bet={bet} />
@@ -62,6 +66,7 @@ export default async function Home() {
       <SeasonBanner season={season} extra={seasonExtra} />
         {isPresident && <PresidentShortcut />}
         <DecreeBanner decree={decree} />
+        <AssemblyBanner assemblies={assemblies} />
         <ScandalBox scandals={scandals} />
         <RotaBanner rota={rota} userId={user.id} isPresident={isPresident} />
         <BetBanner bet={bet} />
