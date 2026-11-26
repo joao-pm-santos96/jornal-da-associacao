@@ -19,6 +19,8 @@ import { getNow, getSeason } from "@/lib/seasons";
 import { reviewYear } from "@/lib/festas/anonovo";
 import { featuredBet } from "@/lib/bets";
 import { BetBanner } from "@/components/BetBanner";
+import { pendingComedyVote } from "@/lib/comedy";
+import { getRules } from "@/lib/rules";
 
 async function Edition({ edition, userId, hasArchive, narrow }: { edition: string; userId: number; hasArchive: boolean; narrow: boolean }) {
   const [headline, ...rest] = await listEditionPosts(edition, userId);
@@ -70,6 +72,7 @@ export default async function Home() {
     getSeason(),
   ]);
   const isPresident = offices.presidente?.user_id === user.id;
+  const comedy = await pendingComedyVote(now, await getRules(), user.id);
   const seasonExtra = season === "anonovo" ? [{ href: `/retrospetiva/${reviewYear(now)}`, label: `O ano de ${reviewYear(now)} em revista` }] : undefined;
   const votes = assemblies.filter((a) => a.status === "open" && !a.voted);
   const pending = assemblies.filter(pendingExecution);
@@ -79,7 +82,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-8">
-      <ForYouBox votes={votes} turn={myTurn(rota, user.id)} unread={activity.length} isPresident={isPresident} />
+      <ForYouBox votes={votes} turn={myTurn(rota, user.id)} unread={activity.length} isPresident={isPresident} comedy={comedy} />
       <div className={hasBriefs ? "grid gap-10 md:grid-cols-3 md:gap-8" : ""}>
         <div className="space-y-8 md:col-span-2">
           <HighlightBox highlights={highlights} />

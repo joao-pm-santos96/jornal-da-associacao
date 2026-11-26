@@ -603,3 +603,56 @@ CREATE TABLE IF NOT EXISTS pool_games (
   CHECK (challenger_id <> opponent_id)
 );
 CREATE INDEX IF NOT EXISTS pool_games_status_idx ON pool_games (status, deadline_at);
+
+CREATE TABLE IF NOT EXISTS comedy_jokes (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  week_start date NOT NULL,
+  author_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  UNIQUE (week_start, author_id)
+);
+
+CREATE TABLE IF NOT EXISTS comedy_votes (
+  week_start date NOT NULL,
+  voter_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joke_id integer NOT NULL REFERENCES comedy_jokes(id) ON DELETE CASCADE,
+  voted_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  PRIMARY KEY (week_start, voter_id)
+);
+
+CREATE TABLE IF NOT EXISTS comedy_weeks (
+  week_start date PRIMARY KEY,
+  voting_notified_at timestamptz,
+  closed_at timestamptz,
+  winner_joke_id integer REFERENCES comedy_jokes(id) ON DELETE SET NULL,
+  winner_id integer REFERENCES users(id) ON DELETE SET NULL,
+  prize integer NOT NULL DEFAULT 0,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE OR REPLACE FUNCTION member_label(uid integer)
+RETURNS text
+LANGUAGE sql STABLE AS $$
+  SELECT coalesce(
+    (SELECT '🎭 ' || mu.name
+      FROM carnival_masks m JOIN users mu ON mu.id = m.mask_id
+      WHERE m.user_id = uid AND m.day = (jornal_now() AT TIME ZONE 'Europe/Lisbon')::date),
+    (SELECT u.name || coalesce((
+        SELECT ' ' || string_agg(CASE o.office WHEN 'presidente' THEN '👑' WHEN 'tesoureiro' THEN '💰' WHEN 'apostas' THEN '🎲' END, '' ORDER BY array_position(ARRAY['presidente', 'tesoureiro', 'apostas'], o.office))
+        FROM offices o WHERE o.user_id = u.id
+      ), '') || coalesce((
+        SELECT ' 🤡' FROM comedy_weeks w
+        WHERE w.winner_id = u.id AND w.closed_at > jornal_now() - interval '7 days'
+        ORDER BY w.week_start DESC LIMIT 1
+      ), '') || coalesce((
+        SELECT ' «' || n.nickname || '»' FROM nicknames n
+        WHERE n.user_id = u.id AND n.until > jornal_now()
+        ORDER BY n.created_at DESC LIMIT 1
+      ), '')
+      FROM users u WHERE u.id = uid)
+  )
+$$;

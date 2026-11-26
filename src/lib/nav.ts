@@ -13,6 +13,7 @@ const SEASON_PAGES: Record<Season, NavEntry> = {
 
 export function navSections({ casinoOpen, season }: { casinoOpen: boolean; season: Season | null }): NavSection[] {
   const leisure: NavEntry[] = [
+    { href: "/comedy-club", label: "Comedy Club" },
     ...(casinoOpen ? [{ href: "/casino", label: "Casino" }] : []),
     ...(season ? [SEASON_PAGES[season]] : []),
   ];
@@ -38,7 +39,7 @@ export function navSections({ casinoOpen, season }: { casinoOpen: boolean; seaso
         { href: "/regras", label: "Constituição" },
       ],
     },
-    ...(leisure.length > 0 ? [{ title: "Lazer", entries: leisure }] : []),
+    { title: "Lazer", entries: leisure },
   ];
 }
 
