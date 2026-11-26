@@ -604,6 +604,28 @@ CREATE TABLE IF NOT EXISTS pool_games (
 );
 CREATE INDEX IF NOT EXISTS pool_games_status_idx ON pool_games (status, deadline_at);
 
+CREATE TABLE IF NOT EXISTS reflex_games (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  challenger_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  opponent_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stake integer NOT NULL DEFAULT 0 CHECK (stake >= 0),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'finished', 'declined', 'cancelled', 'expired')),
+  turn_id integer REFERENCES users(id) ON DELETE SET NULL,
+  challenger_times integer[] NOT NULL DEFAULT '{}',
+  opponent_times integer[] NOT NULL DEFAULT '{}',
+  attempt_issued_at timestamptz,
+  attempt_delay_ms integer,
+  winner_id integer REFERENCES users(id) ON DELETE SET NULL,
+  finish_reason text,
+  deadline_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  finished_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  CHECK (challenger_id <> opponent_id)
+);
+CREATE INDEX IF NOT EXISTS reflex_games_status_idx ON reflex_games (status, deadline_at);
+
 CREATE TABLE IF NOT EXISTS comedy_jokes (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   week_start date NOT NULL,

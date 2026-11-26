@@ -174,6 +174,11 @@ export default async function RulesPage() {
             São falta meter a branca, não tocar em nenhuma bola e tocar primeiro numa bola que não é tua; depois de uma falta, o adversário joga com a branca na mão. Ganha quem meter a preta depois de limpar as suas bolas; quem a meter antes de tempo, ou com falta, perde. A preta que entra na abertura volta à mesa.
             {t.poolMinStake > 0 ? `A aposta mínima é de ${t.poolMinStake} ☕` : "A aposta é opcional"} e quem ganha leva o pote menos {t.poolHouseCutPct}%. Um desafio sem resposta em {t.poolAcceptHours}h expira, e quem não jogar a sua vez em {t.poolTurnHours}h perde a partida.
           </li>
+          <li>
+            No <Link href="/casino/gatilho" className="underline hover:text-scoop">Gatilho</Link> ganha quem tem melhores reflexos. Quem desafia joga primeiro e o outro joga depois, cada um na sua vez: são 3 tentativas em que o ecrã fica vermelho e, ao fim de um tempo aleatório, verde. Conta o tempo até ao toque e ganha a média mais baixa.
+            Tocar antes do verde, demorar mais de 1 segundo ou deixar uma tentativa a meio conta como 1 segundo. Os tempos do adversário só se vêem no fim; em caso de empate, cada um fica com o seu.
+            {t.reflexMinStake > 0 ? ` A aposta mínima é de ${t.reflexMinStake} ☕` : " A aposta é opcional"} e quem ganha leva o pote menos {t.reflexHouseCutPct}%. Um desafio sem resposta em {t.reflexAcceptHours}h expira, e quem não jogar a sua vez em {t.reflexTurnHours}h perde.
+          </li>
         </ul>
       </Article>
 
