@@ -10,6 +10,7 @@ import { runBonuses, runPayrolls, settleCommissions } from "./payroll";
 import { runPrescriptions } from "./slush";
 import { getNow } from "./seasons";
 import { purgeOldNotices, storeNotice } from "./notifications";
+import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
 
@@ -146,6 +147,7 @@ export async function flushDueNotifications(): Promise<void> {
   await settleEconomy();
   await settleRaces();
   await purgeOldNotices();
+  await settleAssemblies();
   const expired = await expireDuels();
   await Promise.all(
     expired.map((d) =>
@@ -222,6 +224,63 @@ export async function flushDueNotifications(): Promise<void> {
         }),
       ),
   ]);
+}
+
+export async function notifyAssemblyResults(closed: ClosedAssembly[]): Promise<void> {
+  await Promise.all(
+    closed.map((a) =>
+      pushToAllExcept(0, {
+        title: `🗳️ Resultado: ${a.title}`,
+        body: `${outcomeLabel(a)}. A ata está na Assembleia.`,
+        url: `/assembleia/${a.id}`,
+        tag: `assembleia-${a.id}`,
+      }),
+    ),
+  );
+}
+
+export async function settleAssemblies(): Promise<void> {
+  const [closed, reminders] = await Promise.all([closeDueAssemblies(), dueReminders()]);
+  await Promise.all([
+    notifyAssemblyResults(closed),
+    ...reminders.map((r) =>
+      pushToUsers(r.missing, {
+        title: "⏰ Falta o teu voto na Assembleia",
+        body: r.title,
+        url: `/assembleia/${r.id}`,
+        tag: `assembleia-${r.id}`,
+      }),
+    ),
+  ]);
+}
+
+export async function notifyNewAssembly(id: number, creatorId: number, title: string): Promise<void> {
+  const [row] = (await sql`SELECT member_label(${creatorId}) AS who`) as { who: string }[];
+  await pushToAllExcept(creatorId, {
+    title: `🗳️ ${row.who} convocou a Assembleia`,
+    body: title,
+    url: `/assembleia/${id}`,
+    tag: `assembleia-${id}`,
+  });
+}
+
+export async function notifyAssemblyComment(id: number, commenterId: number, body: string): Promise<void> {
+  const [row] = (await sql`
+    SELECT a.title, member_label(${commenterId}) AS who,
+      array(
+        SELECT a.created_by WHERE a.created_by IS NOT NULL
+        UNION SELECT c.author_id FROM assembly_comments c WHERE c.assembly_id = a.id
+        EXCEPT SELECT ${commenterId}::int
+      ) AS targets
+    FROM assemblies a WHERE a.id = ${id}
+  `) as { title: string; who: string; targets: number[] }[];
+  if (!row) return;
+  await pushToUsers(row.targets, {
+    title: `🗳️ ${row.who} no debate «${snippet(row.title, 60)}»`,
+    body: snippet(body),
+    url: `/assembleia/${id}`,
+    tag: `assembleia-${id}`,
+  });
 }
 
 export async function notifyComment(postId: number, commenterId: number, body: string): Promise<void> {

@@ -22,6 +22,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
     title: "A associação",
     entries: [
       { href: "/regras", label: "Constituição" },
+      { href: "/assembleia", label: "Assembleia" },
       { href: "/decretos", label: "Decretos" },
       { href: "/cofre", label: "Cofre" },
       { href: "/casino", label: "Casino" },

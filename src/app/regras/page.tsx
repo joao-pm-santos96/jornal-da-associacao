@@ -167,7 +167,20 @@ export default async function RulesPage() {
         </ul>
       </Article>
 
-      <Article n={8} title="Disposições finais">
+      <Article id="assembleia" n={8} title="A Assembleia 🗳️">
+        <p>A <Link href="/assembleia" className="underline hover:text-scoop">Assembleia</Link> é o órgão soberano da Associação. Decide-se lá qualquer coisa, do sítio do jantar a mudanças à Constituição.</p>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>Qualquer sócio pode convocar uma votação, com uma de cada vez em aberto. Escolhe o formato (<strong>Sim / Não / Abstenção</strong> ou <strong>escolha entre 2 a 6 opções</strong>) e a duração, de 2 horas a 7 dias.</li>
+          <li>Todos os sócios votam, incluindo os que têm a conta congelada. Pode-se mudar o voto até fechar. Se todos votarem antes do prazo, a votação fecha mais cedo.</li>
+          <li>Não há quórum: decide a <strong>maioria de quem votou</strong>. As abstenções não contam para a maioria. Mudar a Constituição precisa de <strong>2/3</strong> dos votos sim ou não.</li>
+          <li>Em caso de empate, vale o <strong>voto de qualidade do Presidente</strong>, se tiver votado numa das opções empatadas. Se não, nada fica decidido.</li>
+          <li>No <strong>voto secreto</strong> só se conhecem os totais. No <strong>voto nominal</strong>, quem votou em quê revela-se quando a votação fecha. Enquanto está aberta, só se sabe quem já votou.</li>
+          <li>Uma votação pode ser <strong>consultiva</strong> (só opinião) ou <strong>vinculativa</strong>. As vinculativas aprovadas ficam na primeira página como «Por cumprir» até o Presidente ou o Tesoureiro as marcarem como cumpridas.</li>
+          <li>Cada votação tem o seu debate, e cada votação fechada fica arquivada como ata. Quem convoca pode anular a sua votação enquanto está aberta.</li>
+        </ul>
+      </Article>
+
+      <Article n={9} title="Disposições finais">
         <ul className="list-disc space-y-1 pl-6">
           <li>Tudo isto é para rir. Quem levar a mal paga a próxima rodada.</li>
           <li>Os conflitos institucionais resolvem-se no jantar seguinte.</li>

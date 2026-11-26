@@ -533,3 +533,52 @@ CREATE TABLE IF NOT EXISTS notifications (
   simulated boolean NOT NULL DEFAULT jornal_simulating()
 );
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS assemblies (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_by integer REFERENCES users(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  body text NOT NULL DEFAULT '',
+  kind text NOT NULL CHECK (kind IN ('sim_nao', 'opcoes')),
+  secret boolean NOT NULL DEFAULT false,
+  binding boolean NOT NULL DEFAULT false,
+  constitutional boolean NOT NULL DEFAULT false,
+  closes_at timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'void')),
+  closed_at timestamptz,
+  outcome text CHECK (outcome IN ('aprovada', 'rejeitada', 'escolhida', 'empate', 'sem_votos')),
+  winning_option integer,
+  casting boolean NOT NULL DEFAULT false,
+  done_at timestamptz,
+  done_by integer REFERENCES users(id) ON DELETE SET NULL,
+  reminder_notified_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+
+CREATE TABLE IF NOT EXISTS assembly_options (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  assembly_id integer NOT NULL REFERENCES assemblies(id) ON DELETE CASCADE,
+  position integer NOT NULL,
+  label text NOT NULL,
+  UNIQUE (assembly_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS assembly_votes (
+  assembly_id integer NOT NULL REFERENCES assemblies(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  option_id integer NOT NULL REFERENCES assembly_options(id) ON DELETE CASCADE,
+  voted_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  PRIMARY KEY (assembly_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS assembly_comments (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  assembly_id integer NOT NULL REFERENCES assemblies(id) ON DELETE CASCADE,
+  author_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+CREATE INDEX IF NOT EXISTS assembly_comments_idx ON assembly_comments (assembly_id, created_at);
