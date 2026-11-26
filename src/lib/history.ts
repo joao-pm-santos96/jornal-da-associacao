@@ -103,6 +103,13 @@ export async function treasuryStatement(): Promise<StatementLine[]> {
     const delta = Math.max(before, 0) - Math.max(after, 0) + (l.kind === "consultoria" ? l.amount : 0);
     if (delta === 0) continue;
     cofre += delta;
+    const prev = lines.at(-1);
+    if (l.kind === "oferta" && prev?.kind === "oferta" && prev.at.getTime() === l.at.getTime()) {
+      prev.amount += delta;
+      prev.balance = cofre;
+      if (prev.amount === 0) lines.pop();
+      continue;
+    }
     lines.push({ ...l, amount: delta, label: `${l.name}: ${l.label}`, balance: cofre });
   }
   return lines.reverse();
