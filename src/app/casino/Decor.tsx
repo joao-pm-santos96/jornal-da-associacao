@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isOpen } from "@/lib/modules";
 
 export const felt = "bg-[#0b6b3a] text-[#fff6d6]";
 export const gold = "text-[#f2c230]";
@@ -20,29 +21,53 @@ function Bulbs() {
   ));
 }
 
-export function Marquee({ small = false }: { small?: boolean }) {
+const HAZARD = "bg-[repeating-linear-gradient(-45deg,#fff_0_16px,#e10600_16px_32px)]";
+
+export async function Marquee({ small = false }: { small?: boolean }) {
+  const open = await isOpen("casino");
   return (
-    <div className="relative bg-[#141414] px-8 py-9 text-center">
-      <Bulbs />
-      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f2c230]">★ Aberto 24h · Fiado não ★</p>
-      <Link href="/casino" className="block">
-        <span
-          className={`inline-block -rotate-2 font-display font-black uppercase leading-none text-[#f2c230] [text-shadow:4px_4px_0_#e10600] ${
-            small ? "text-4xl" : "text-6xl sm:text-7xl"
-          }`}
-        >
-          Ca<span className="casino-dead-bulb">s</span>ino
-        </span>
-      </Link>
-      <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#fff6d6]">
-        da Associação · licença n.º 0 · fiscalizado por ninguém
-      </p>
-      <p className="mt-1 text-xl tracking-[0.5em]" aria-hidden="true">
-        <span className="text-[#fff6d6]">♠</span>
-        <span className="text-[#e10600]">♥</span>
-        <span className="text-[#e10600]">♦</span>
-        <span className="text-[#fff6d6]">♣</span>
-      </p>
+    <div className="relative overflow-hidden bg-[#141414] px-8 py-9 text-center">
+      {open && <Bulbs />}
+      <div className={open ? "" : "opacity-30 grayscale"} aria-hidden={!open}>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f2c230]">★ Aberto 24h · Fiado não ★</p>
+        <Link href="/casino" className="block" tabIndex={open ? undefined : -1}>
+          <span
+            className={`inline-block -rotate-2 font-display font-black uppercase leading-none text-[#f2c230] [text-shadow:4px_4px_0_#e10600] ${
+              small ? "text-4xl" : "text-6xl sm:text-7xl"
+            }`}
+          >
+            Ca<span className={open ? "casino-dead-bulb" : ""}>s</span>ino
+          </span>
+        </Link>
+        <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#fff6d6]">
+          da Associação · licença n.º 0 · fiscalizado por ninguém
+        </p>
+        <p className="mt-1 text-xl tracking-[0.5em]" aria-hidden="true">
+          <span className="text-[#fff6d6]">♠</span>
+          <span className="text-[#e10600]">♥</span>
+          <span className="text-[#e10600]">♦</span>
+          <span className="text-[#fff6d6]">♣</span>
+        </p>
+      </div>
+      {!open && <Sealed small={small} />}
+    </div>
+  );
+}
+
+function Sealed({ small }: { small: boolean }) {
+  return (
+    <div role="status" className="absolute inset-0 flex items-center justify-center">
+      <div aria-hidden="true" className={`absolute -inset-x-8 top-3 flex h-8 -rotate-[5deg] items-center justify-center ${HAZARD}`}>
+        <span className="bg-white px-2 text-sm font-black uppercase tracking-[0.3em] text-[#e10600]">Interdito</span>
+      </div>
+      <div aria-hidden="true" className={`absolute -inset-x-8 -bottom-1 h-6 rotate-[3deg] ${HAZARD}`} />
+      <div className={`relative mx-4 mt-6 max-w-xs rotate-[3deg] border-2 border-[#141414] bg-paper text-left text-ink shadow-[4px_4px_0_#e10600] ${small ? "px-3 py-1.5" : "px-4 py-3"}`}>
+        <p className="text-xs font-black uppercase tracking-wider">Auto de selagem n.º 0</p>
+        <p className={`leading-snug ${small ? "text-[11px]" : "text-xs"}`}>
+          Estabelecimento selado por ordem da Administração. Não violar. Não se aceitam apostas novas; o que já está em jogo resolve-se normalmente.
+        </p>
+        <span className="mt-1 inline-block -rotate-[8deg] border-2 border-[#e10600] px-1.5 text-xs font-black uppercase text-[#e10600]">Selado</span>
+      </div>
     </div>
   );
 }
