@@ -1,13 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { READ_EVENT } from "./ViewTracker";
 
 const TITLE = "Jornal da Associação";
 const POLL_MS = 5 * 60_000;
 
-export function UnreadBadge({ initial }: { initial: number }) {
+const UnreadContext = createContext(0);
+
+export function useUnread(): number {
+  return useContext(UnreadContext);
+}
+
+export function unreadLabel(count: number): string {
+  return count === 1 ? "1 novidade por ler" : `${count} novidades por ler`;
+}
+
+export function UnreadProvider({ initial, children }: { initial: number; children: React.ReactNode }) {
   const [count, setCount] = useState(initial);
 
   useEffect(() => {
@@ -33,14 +43,21 @@ export function UnreadBadge({ initial }: { initial: number }) {
   }, []);
 
   return (
-    <>
+    <UnreadContext value={count}>
       <title>{count > 0 ? `(${count}) ${TITLE}` : TITLE}</title>
-      <Link href="/novidades" className="hover:text-scoop" aria-label={count === 1 ? "1 novidade por ler" : `${count} novidades por ler`}>
+      {children}
+    </UnreadContext>
+  );
+}
+
+export function UnreadBadge() {
+  const count = useUnread();
+  return (
+    <Link href="/novidades" className="hover:text-scoop" aria-label={unreadLabel(count)}>
       🔔
       {count > 0 && (
         <span className="ml-0.5 rounded-full bg-scoop px-1.5 py-0.5 text-[10px] font-black text-white">{count}</span>
       )}
-      </Link>
-    </>
+    </Link>
   );
 }

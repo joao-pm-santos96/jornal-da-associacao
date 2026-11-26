@@ -33,9 +33,9 @@ export function SeasonBanner({ season, extra }: { season: Season | null; extra?:
   if (!season) return null;
   const b = BANNERS[season];
   return (
-    <aside className="border-2 border-ink bg-flash p-4">
-      <p className="font-display text-2xl font-black">{b.title}</p>
-      <p className="mt-1">{b.text}</p>
+    <aside className="border-2 border-ink bg-flash p-3">
+      <p className="font-display text-lg font-black leading-tight">{b.title}</p>
+      <p className="mt-1 text-sm">{b.text}</p>
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">
         {[...b.links, ...(extra ?? [])].map((l) => (
           <Link key={l.href} href={l.href} className="underline hover:text-scoop">{l.label} →</Link>

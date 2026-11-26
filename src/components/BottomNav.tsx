@@ -4,55 +4,38 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { logout } from "@/app/actions";
+import { isActive, type NavEntry, type NavSection } from "@/lib/nav";
+import { unreadLabel, useUnread } from "./UnreadBadge";
 
-type Entry = { href: string; label: string };
+const TAB = "flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-bold uppercase tracking-wide";
 
-const SECTIONS: { title: string; entries: Entry[] }[] = [
-  {
-    title: "O jornal",
-    entries: [
-      { href: "/", label: "Primeira página" },
-      { href: "/novo", label: "Escrever" },
-      { href: "/meus", label: "Os meus posts" },
-      { href: "/quadro", label: "Quadro" },
-      { href: "/horoscopo", label: "Horóscopo" },
-    ],
-  },
-  {
-    title: "A associação",
-    entries: [
-      { href: "/regras", label: "Constituição" },
-      { href: "/assembleia", label: "Assembleia" },
-      { href: "/decretos", label: "Decretos" },
-      { href: "/cofre", label: "Cofre" },
-      { href: "/casino", label: "Casino" },
-    ],
-  },
-];
-
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function Tab({ href, label, icon, active }: { href: string; label: string; icon: string; active: boolean }) {
+function Tab({ href, label, icon, active, badge, ariaLabel }: {
+  href: string;
+  label: string;
+  icon: string;
+  active: boolean;
+  badge?: number;
+  ariaLabel?: string;
+}) {
   return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={`flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-bold uppercase tracking-wide ${
-        active ? "text-scoop" : "text-ink"
-      }`}
-    >
-      <span className="text-xl leading-none" aria-hidden="true">{icon}</span>
+    <Link href={href} aria-current={active ? "page" : undefined} aria-label={ariaLabel} className={`${TAB} ${active ? "text-scoop" : "text-ink"}`}>
+      <span className="relative text-xl leading-none" aria-hidden="true">
+        {icon}
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -right-3 -top-1.5 min-w-4 rounded-full bg-scoop px-1 text-center font-sans text-[10px] font-black leading-4 text-white">
+            {badge}
+          </span>
+        )}
+      </span>
       {label}
     </Link>
   );
 }
 
-function IndexSheet({ isAdmin, onClose }: { isAdmin: boolean; onClose: () => void }) {
+function IndexSheet({ sections, isAdmin, onClose }: { sections: NavSection[]; isAdmin: boolean; onClose: () => void }) {
   const pathname = usePathname();
   let page = 0;
-  const row = (e: Entry) => {
+  const row = (e: NavEntry) => {
     page++;
     return (
       <li key={e.href}>
@@ -79,7 +62,7 @@ function IndexSheet({ isAdmin, onClose }: { isAdmin: boolean; onClose: () => voi
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4">
         <p className="font-display text-xl font-black italic">Neste número</p>
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <section key={s.title} className="mt-5">
             <h2 className="border-b-2 border-ink pb-1 text-xs font-black uppercase tracking-widest text-scoop">{s.title}</h2>
             <ul>{s.entries.map(row)}</ul>
@@ -102,8 +85,9 @@ function IndexSheet({ isAdmin, onClose }: { isAdmin: boolean; onClose: () => voi
   );
 }
 
-export function BottomNav({ balance, isAdmin }: { balance: number; isAdmin: boolean }) {
+export function BottomNav({ sections, balance, isAdmin }: { sections: NavSection[]; balance: number; isAdmin: boolean }) {
   const pathname = usePathname();
+  const unread = useUnread();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -119,20 +103,23 @@ export function BottomNav({ balance, isAdmin }: { balance: number; isAdmin: bool
 
   return (
     <>
-      {open && <IndexSheet isAdmin={isAdmin} onClose={() => setOpen(false)} />}
+      {open && <IndexSheet sections={sections} isAdmin={isAdmin} onClose={() => setOpen(false)} />}
       <nav
         className="fixed inset-x-0 bottom-0 z-40 flex border-t-4 border-ink bg-paper pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label="Navegação principal"
       >
         <Tab href="/" label="Início" icon="📰" active={isActive(pathname, "/")} />
         <Tab href="/novo" label="Escrever" icon="✍️" active={isActive(pathname, "/novo")} />
-        <Tab href="/casino" label="Casino" icon="🎰" active={isActive(pathname, "/casino")} />
-        <Tab href="/cofre" label={`${balance}`} icon="☕" active={isActive(pathname, "/cofre")} />
-        <button
-          onClick={() => setOpen(true)}
-          aria-expanded={open}
-          className="flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-ink"
-        >
+        <Tab
+          href="/novidades"
+          label="Novidades"
+          icon="🔔"
+          badge={unread}
+          ariaLabel={unreadLabel(unread)}
+          active={isActive(pathname, "/novidades")}
+        />
+        <Tab href="/cofre" label={`${balance}`} icon="☕" ariaLabel={`Cofre: ${balance} grãos`} active={isActive(pathname, "/cofre")} />
+        <button onClick={() => setOpen(true)} aria-expanded={open} className={`${TAB} text-ink`}>
           <span className="text-xl leading-none" aria-hidden="true">☰</span>
           Mais
         </button>
