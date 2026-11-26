@@ -88,6 +88,10 @@ export const RULE_DEFS = {
   reflexMinStake: { group: "Casino", label: "Gatilho: aposta mínima (0 = partidas amigáveis)", unit: "☕", min: 0, max: MAX },
   reflexAcceptHours: { group: "Casino", label: "Gatilho: prazo para aceitar um desafio", unit: "h", min: 1, max: 720 },
   reflexTurnHours: { group: "Casino", label: "Gatilho: prazo para jogar a sua vez", unit: "h", min: 1, max: 720 },
+  hiloMinBet: { group: "Casino", label: "Alto ou Baixo: aposta mínima", unit: "☕", min: 1, max: MAX },
+  hiloMaxBet: { group: "Casino", label: "Alto ou Baixo: aposta máxima", unit: "☕", min: 1, max: MAX },
+  hiloEdgePct: { group: "Casino", label: "Alto ou Baixo: margem da casa em cada carta", unit: "%", min: 0, max: 50 },
+  hiloMaxMult: { group: "Casino", label: "Alto ou Baixo: multiplicador máximo (recolhe sozinho)", unit: "×", min: 2, max: 10_000 },
   comedyPrize: { group: "Comedy Club", label: "Prémio do palhaço da semana (pago pelo Cofre)", unit: "☕", min: 0, max: MAX },
 } as const satisfies Record<string, RuleDef>;
 
@@ -161,6 +165,7 @@ export function scratchPrizes(rules: Rules): ScratchPrize[] {
 export function rulesProblem(rules: Rules): string | null {
   if (totalWeight(slotPaytable(rules)) < 1) return "A slot precisa de pelo menos um símbolo com peso acima de 0.";
   const chances = scratchPrizes(rules).reduce((sum, p) => sum + p.chances, 0);
+  if (rules.hiloMinBet > rules.hiloMaxBet) return "No Alto ou Baixo, a aposta mínima não pode ser maior do que a máxima.";
   if (chances > SCRATCH_ODDS_BASE) return `Os bilhetes premiados da raspadinha somam ${chances} em ${SCRATCH_ODDS_BASE}: não podem passar de ${SCRATCH_ODDS_BASE}.`;
   return null;
 }

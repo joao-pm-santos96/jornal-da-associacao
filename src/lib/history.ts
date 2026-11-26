@@ -22,6 +22,7 @@ async function ledgerLines(userId: number | null): Promise<LedgerLine[]> {
       CASE
         WHEN l.bet_id IS NOT NULL THEN '/casino/' || l.bet_id
         WHEN l.kind IN ('slot') THEN '/casino/slot'
+        WHEN l.kind = 'altobaixo' THEN '/casino/alto-baixo'
         WHEN l.kind IN ('raspadinha') THEN '/casino/raspadinha'
         WHEN l.kind = 'encomenda' THEN '/cofre/encomendas'
       END AS href

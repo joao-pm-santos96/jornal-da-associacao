@@ -626,6 +626,20 @@ CREATE TABLE IF NOT EXISTS reflex_games (
 );
 CREATE INDEX IF NOT EXISTS reflex_games_status_idx ON reflex_games (status, deadline_at);
 
+CREATE TABLE IF NOT EXISTS hilo_games (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stake integer NOT NULL CHECK (stake > 0),
+  cards integer[] NOT NULL,
+  multiplier numeric(12, 2) NOT NULL DEFAULT 1,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'lost', 'cashed')),
+  payout integer NOT NULL DEFAULT 0 CHECK (payout >= 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  finished_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hilo_games_active_idx ON hilo_games (user_id) WHERE status = 'active';
+
 CREATE TABLE IF NOT EXISTS comedy_jokes (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   week_start date NOT NULL,
