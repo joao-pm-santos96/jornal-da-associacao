@@ -7,6 +7,7 @@ import { closeDueAssemblies, getAssembly, outcomeLabel, pendingExecution } from 
 import { getOffices } from "@/lib/offices";
 import { notifyAssemblyResults } from "@/lib/push";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { LiveRefresh } from "@/components/LiveRefresh";
 import { AssemblyCommentForm, VoteForm } from "../AssemblyForms";
 import { markDone, voidAssembly } from "../actions";
 
@@ -20,12 +21,14 @@ export default async function AssemblyDetailPage({ params }: { params: Promise<{
   if (!a) notFound();
   const open = a.status === "open";
   const total = a.options.reduce((s, o) => s + o.votes, 0);
+  const missing = a.members - a.votes.length;
   const government = user.is_admin || offices.presidente?.user_id === user.id || offices.tesoureiro?.user_id === user.id;
   const canVoid = open && (a.created_by === user.id || user.is_admin);
   const won = (optionId: number) => a.status === "closed" && (a.outcome === "escolhida" ? a.options.find((o) => o.label === a.winner)?.id === optionId : false);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
+      {open && <LiveRefresh ms={10_000} />}
       <p className="text-sm">
         <Link href="/assembleia" className="underline hover:text-scoop">← Assembleia</Link>
       </p>
@@ -64,16 +67,27 @@ export default async function AssemblyDetailPage({ params }: { params: Promise<{
 
       <section className="space-y-3">
         <h2 className="border-b-2 border-ink pb-1 font-display text-2xl font-black">{open ? "O teu voto" : "Votos"}</h2>
-        {open ? (
+        {open && (
           <>
             <VoteForm id={a.id} options={a.options.map((o) => ({ id: o.id, label: o.label }))} mine={a.mine} />
             <p className="text-sm text-muted">
-              Os totais só se conhecem quando a votação fechar. Já {a.votes.length === 1 ? "votou" : "votaram"} {a.votes.length} de {a.members}
-              {a.votes.length > 0 && `: ${a.votes.map((v) => v.name).join(", ")}`}.
+              {a.secret ? (
+                <>
+                  Os totais só se conhecem quando a votação fechar. Já {a.votes.length === 1 ? "votou" : "votaram"} {a.votes.length} de {a.members}
+                  {a.votes.length > 0 && `: ${a.votes.map((v) => v.name).join(", ")}`}.
+                </>
+              ) : (
+                <>
+                  Voto nominal: toda a gente vê o teu voto no instante em que votas. Já {a.votes.length === 1 ? "votou" : "votaram"} {a.votes.length} de {a.members}.
+                  {missing > 0 && ` Falta${missing === 1 ? "" : "m"} ${missing}.`}
+                </>
+              )}
             </p>
           </>
-        ) : (
-          a.status === "closed" && (
+        )}
+        {(a.status === "closed" || (open && !a.secret)) && (
+          <>
+            {open && <h3 className="pt-2 font-display text-xl font-black">🔴 Contagem ao vivo</h3>}
             <ul className="space-y-2">
               {a.options.map((o) => {
                 const pct = total > 0 ? Math.round((o.votes * 100) / total) : 0;
@@ -90,7 +104,7 @@ export default async function AssemblyDetailPage({ params }: { params: Promise<{
                 );
               })}
             </ul>
-          )
+          </>
         )}
         {canVoid && (
           <form action={voidAssembly.bind(null, a.id)}>

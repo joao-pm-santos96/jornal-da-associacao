@@ -61,7 +61,7 @@ export function ConveneForm({ durations }: { durations: readonly { hours: number
       <fieldset className="space-y-1 text-sm">
         <label className="flex items-start gap-2">
           <input type="checkbox" name="secret" className="mt-1" />
-          <span><strong>Voto secreto</strong>: só se conhecem os totais. Sem isto, quem votou em quê revela-se quando fechar.</span>
+          <span><strong>Voto secreto</strong>: só se conhecem os totais, e só quando fechar. Sem isto, quem votou em quê vê-se em tempo real.</span>
         </label>
         <label className="flex items-start gap-2">
           <input type="checkbox" name="binding" checked={binding || constitutional} disabled={constitutional} onChange={(e) => setBinding(e.target.checked)} className="mt-1" />
