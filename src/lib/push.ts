@@ -1,7 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { sql } from "./db";
-import { getRules } from "./rules";
+import { getRules, type Rules } from "./rules";
 import { betResults } from "./bets";
 import { resolveDueRaces, type RaceResult } from "./ducks";
 import { duckName } from "./ducks-table";
@@ -12,6 +12,7 @@ import { getNow } from "./seasons";
 import { purgeOldNotices, storeNotice } from "./notifications";
 import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
 import { settlePoolGames } from "./pool-games";
+import { closeDueWeeks, openVoting, type ClosedComedy } from "./comedy";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
 
@@ -143,6 +144,38 @@ async function settleEconomy(): Promise<void> {
   ]);
 }
 
+export async function notifyComedy(opened: { week: string; jokes: number } | null, closed: ClosedComedy[], R: Rules): Promise<void> {
+  await Promise.all([
+    ...(opened
+      ? [
+          pushToAllExcept(0, {
+            title: "🎤 Abriu a votação do Comedy Club",
+            body: `${opened.jokes === 1 ? "Há 1 piada" : `Há ${opened.jokes} piadas`} a concurso. Vota na melhor até às ${R.comedyVoteClosesHour}h.`,
+            url: "/comedy-club",
+            tag: `comedy-${opened.week}`,
+          }),
+        ]
+      : []),
+    ...closed
+      .filter((c) => c.winner_id !== null)
+      .map((c) =>
+        pushToAllExcept(0, {
+          title: `🤡 ${c.winner} é o palhaço da semana`,
+          body: `${c.body ? `«${snippet(c.body, 90)}» · ` : ""}${c.votes} ${c.votes === 1 ? "voto" : "votos"}${c.prize > 0 ? ` · +${c.prize} ☕` : ""}`,
+          url: "/comedy-club",
+          tag: `comedy-${c.week}`,
+        }),
+      ),
+  ]);
+}
+
+async function settleComedy(): Promise<void> {
+  const [now, R] = await Promise.all([getNow(), getRules()]);
+  const closed = await closeDueWeeks(now, R);
+  const opened = await openVoting(now, R);
+  await notifyComedy(opened, closed, R);
+}
+
 async function settlePool(): Promise<void> {
   const { expired, timedOut } = await settlePoolGames();
   await Promise.all([
@@ -178,6 +211,7 @@ export async function flushDueNotifications(): Promise<void> {
   await purgeOldNotices();
   await settleAssemblies();
   await settlePool();
+  await settleComedy();
   const expired = await expireDuels();
   await Promise.all(
     expired.map((d) =>

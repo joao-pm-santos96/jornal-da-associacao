@@ -84,6 +84,9 @@ export const RULE_DEFS = {
   poolMinStake: { group: "Casino", label: "Bilhar: aposta mínima (0 = partidas amigáveis)", unit: "☕", min: 0, max: MAX },
   poolAcceptHours: { group: "Casino", label: "Bilhar: prazo para aceitar um desafio", unit: "h", min: 1, max: 720 },
   poolTurnHours: { group: "Casino", label: "Bilhar: prazo para cada jogada", unit: "h", min: 1, max: 720 },
+  comedyPrize: { group: "Comedy Club", label: "Prémio do palhaço da semana (pago pelo Cofre)", unit: "☕", min: 0, max: MAX },
+  comedyVoteOpensHour: { group: "Comedy Club", label: "Hora a que abre a votação, à sexta", unit: "h", min: 0, max: 23 },
+  comedyVoteClosesHour: { group: "Comedy Club", label: "Hora a que fecha a votação, à sexta", unit: "h", min: 1, max: 24 },
 } as const satisfies Record<string, RuleDef>;
 
 export type RuleKey = keyof typeof RULE_DEFS;
@@ -157,6 +160,7 @@ export function rulesProblem(rules: Rules): string | null {
   if (totalWeight(slotPaytable(rules)) < 1) return "A slot precisa de pelo menos um símbolo com peso acima de 0.";
   const chances = scratchPrizes(rules).reduce((sum, p) => sum + p.chances, 0);
   if (chances > SCRATCH_ODDS_BASE) return `Os bilhetes premiados da raspadinha somam ${chances} em ${SCRATCH_ODDS_BASE}: não podem passar de ${SCRATCH_ODDS_BASE}.`;
+  if (rules.comedyVoteClosesHour <= rules.comedyVoteOpensHour) return "A votação do Comedy Club tem de fechar depois de abrir.";
   return null;
 }
 

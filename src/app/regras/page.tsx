@@ -187,7 +187,18 @@ export default async function RulesPage() {
         </ul>
       </Article>
 
-      <Article n={9} title="Disposições finais">
+      <Article id="comedy" n={9} title="O Comedy Club 🎤">
+        <p>No <Link href="/comedy-club" className="underline hover:text-scoop">Comedy Club</Link> escolhe-se, todas as semanas, a melhor piada da Associação. Participar e votar é opcional e de borla.</p>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>Cada sócio entrega no máximo <strong>uma piada por semana</strong>. Até abrir a votação pode mudá-la ou retirá-la, e ninguém a vê.</li>
+          <li>A votação é à <strong>sexta-feira, das {t.comedyVoteOpensHour}h às {t.comedyVoteClosesHour}h</strong>. As piadas aparecem sem nome; cada sócio vota numa (na sua não pode) e pode mudar o voto até fechar.</li>
+          <li>Ganha a piada mais votada; em caso de empate, a que foi entregue primeiro. Se ninguém votar, não há vencedor.</li>
+          <li>O vencedor recebe <strong>{t.comedyPrize} ☕</strong> do Cofre (ou o que houver disponível) e o título de <strong>palhaço da semana 🤡</strong>, que aparece junto ao nome durante uma semana.</li>
+          <li>Piadas entregues depois de a votação fechar contam para a semana seguinte.</li>
+        </ul>
+      </Article>
+
+      <Article n={10} title="Disposições finais">
         <ul className="list-disc space-y-1 pl-6">
           <li>Tudo isto é para rir. Quem levar a mal paga a próxima rodada.</li>
           <li>Os conflitos institucionais resolvem-se no jantar seguinte.</li>
