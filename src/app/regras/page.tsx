@@ -176,7 +176,7 @@ export default async function RulesPage() {
           <li>Todos os sócios votam, incluindo os que têm a conta congelada. Pode-se mudar o voto até fechar. Se todos votarem antes do prazo, a votação fecha mais cedo.</li>
           <li>Não há quórum: decide a <strong>maioria de quem votou</strong>. As abstenções não contam para a maioria. Mudar a Constituição precisa de <strong>2/3</strong> dos votos sim ou não.</li>
           <li>Em caso de empate, vale o <strong>voto de qualidade do Presidente</strong>, se tiver votado numa das opções empatadas. Se não, nada fica decidido.</li>
-          <li>No <strong>voto secreto</strong> só se conhecem os totais. No <strong>voto nominal</strong>, quem votou em quê revela-se quando a votação fecha. Enquanto está aberta, só se sabe quem já votou.</li>
+          <li>No <strong>voto secreto</strong> só se conhecem os totais, quando a votação fecha; enquanto está aberta, só se sabe quem já votou. No <strong>voto nominal</strong>, quem votou em quê vê-se em tempo real, incluindo quem muda de voto.</li>
           <li>Uma votação pode ser <strong>consultiva</strong> (só opinião) ou <strong>vinculativa</strong>. As vinculativas aprovadas ficam na primeira página como «Por cumprir» até o Presidente ou o Tesoureiro as marcarem como cumpridas.</li>
           <li>Cada votação tem o seu debate, e cada votação fechada fica arquivada como ata. Quem convoca pode anular a sua votação enquanto está aberta.</li>
         </ul>
