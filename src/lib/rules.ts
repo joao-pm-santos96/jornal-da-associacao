@@ -84,6 +84,10 @@ export const RULE_DEFS = {
   poolMinStake: { group: "Casino", label: "Bilhar: aposta mínima (0 = partidas amigáveis)", unit: "☕", min: 0, max: MAX },
   poolAcceptHours: { group: "Casino", label: "Bilhar: prazo para aceitar um desafio", unit: "h", min: 1, max: 720 },
   poolTurnHours: { group: "Casino", label: "Bilhar: prazo para cada jogada", unit: "h", min: 1, max: 720 },
+  reflexHouseCutPct: { group: "Casino", label: "Gatilho: parte da casa", unit: "%", min: 0, max: 100 },
+  reflexMinStake: { group: "Casino", label: "Gatilho: aposta mínima (0 = partidas amigáveis)", unit: "☕", min: 0, max: MAX },
+  reflexAcceptHours: { group: "Casino", label: "Gatilho: prazo para aceitar um desafio", unit: "h", min: 1, max: 720 },
+  reflexTurnHours: { group: "Casino", label: "Gatilho: prazo para jogar a sua vez", unit: "h", min: 1, max: 720 },
   comedyPrize: { group: "Comedy Club", label: "Prémio do palhaço da semana (pago pelo Cofre)", unit: "☕", min: 0, max: MAX },
 } as const satisfies Record<string, RuleDef>;
 

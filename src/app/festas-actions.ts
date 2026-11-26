@@ -133,6 +133,7 @@ export async function setFakeNow(_prev: FormState, form: FormData): Promise<Form
       sql`DELETE FROM duck_races WHERE simulated RETURNING id`,
       sql`DELETE FROM duels WHERE simulated RETURNING id`,
       sql`DELETE FROM pool_games WHERE simulated RETURNING id`,
+      sql`DELETE FROM reflex_games WHERE simulated RETURNING id`,
       sql`DELETE FROM comedy_votes WHERE simulated RETURNING voter_id`,
       sql`DELETE FROM comedy_weeks WHERE simulated RETURNING week_start`,
       sql`DELETE FROM comedy_jokes WHERE simulated RETURNING id`,

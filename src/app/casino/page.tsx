@@ -49,6 +49,7 @@ export default async function CasinoPage() {
           { href: "/casino/patos", icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
           { href: "/casino/duelos", icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
           { href: "/casino/bilhar", icon: "🎱", title: "Bilhar", sub: "8 bolas, por turnos", rot: "rotate-1" },
+          { href: "/casino/gatilho", icon: "⚡", title: "Gatilho", sub: "Quem toca primeiro", rot: "-rotate-1" },
         ].map((g) => (
           <Link
             key={g.href}

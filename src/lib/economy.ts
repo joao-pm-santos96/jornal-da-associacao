@@ -42,6 +42,7 @@ export async function loadEconomy(): Promise<Economy> {
           + coalesce((SELECT sum(d.amount) FROM duck_bets d JOIN duck_races r ON r.id = d.race_id WHERE r.status = 'open'), 0)
           + coalesce((SELECT sum(stake) FROM duels WHERE status = 'pending'), 0)
           + coalesce((SELECT sum(CASE WHEN status = 'active' THEN stake * 2 ELSE stake END) FROM pool_games WHERE status IN ('pending', 'active')), 0)
+          + coalesce((SELECT sum(CASE WHEN status = 'active' THEN stake * 2 ELSE stake END) FROM reflex_games WHERE status IN ('pending', 'active')), 0)
           + coalesce((SELECT sum(reward) FROM commissions WHERE status IN ('open', 'claimed')), 0)
         )::int AS escrow,
         (SELECT coalesce(sum(amount), 0) FROM slush_moves)::int AS slush

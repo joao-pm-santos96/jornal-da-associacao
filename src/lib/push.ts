@@ -12,6 +12,7 @@ import { getNow } from "./seasons";
 import { purgeOldNotices, storeNotice } from "./notifications";
 import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
 import { settlePoolGames } from "./pool-games";
+import { settleReflexGames } from "./reflex-games";
 import { closeDueWeeks, getComedySchedule, openVoting, type ClosedComedy, type ComedySchedule } from "./comedy";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
@@ -204,6 +205,34 @@ async function settlePool(): Promise<void> {
   ]);
 }
 
+async function settleReflex(): Promise<void> {
+  const { expired, timedOut } = await settleReflexGames();
+  await Promise.all([
+    ...expired.map((g) =>
+      pushToUsers([g.challenger_id], {
+        title: "⚡ O teu desafio do Gatilho expirou",
+        body: g.stake > 0 ? `Ninguém aceitou. Os ${g.stake} ☕ voltaram para ti.` : "Ninguém aceitou.",
+        url: "/casino/gatilho",
+        tag: `gatilho-${g.id}`,
+      }),
+    ),
+    ...timedOut.flatMap((g) => [
+      pushToUsers([g.winner_id], {
+        title: "⚡ Ganhaste o Gatilho por falta de comparência",
+        body: g.prize > 0 ? `O adversário não jogou a tempo. +${g.prize} ☕` : "O adversário não jogou a tempo.",
+        url: `/casino/gatilho/${g.id}`,
+        tag: `gatilho-${g.id}`,
+      }),
+      pushToUsers([g.loser_id], {
+        title: "⚡ Perdeste o Gatilho por falta de comparência",
+        body: "Passou o prazo da tua vez.",
+        url: `/casino/gatilho/${g.id}`,
+        tag: `gatilho-${g.id}`,
+      }),
+    ]),
+  ]);
+}
+
 export async function flushDueNotifications(): Promise<void> {
   const R = await getRules();
   await settleEconomy();
@@ -211,6 +240,7 @@ export async function flushDueNotifications(): Promise<void> {
   await purgeOldNotices();
   await settleAssemblies();
   await settlePool();
+  await settleReflex();
   await settleComedy();
   const expired = await expireDuels();
   await Promise.all(
