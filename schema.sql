@@ -582,3 +582,24 @@ CREATE TABLE IF NOT EXISTS assembly_comments (
   simulated boolean NOT NULL DEFAULT jornal_simulating()
 );
 CREATE INDEX IF NOT EXISTS assembly_comments_idx ON assembly_comments (assembly_id, created_at);
+
+CREATE TABLE IF NOT EXISTS pool_games (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  challenger_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  opponent_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stake integer NOT NULL DEFAULT 0 CHECK (stake >= 0),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'finished', 'declined', 'cancelled', 'expired')),
+  state jsonb,
+  turn_id integer REFERENCES users(id) ON DELETE SET NULL,
+  shots integer NOT NULL DEFAULT 0,
+  last_shot jsonb,
+  winner_id integer REFERENCES users(id) ON DELETE SET NULL,
+  finish_reason text,
+  deadline_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  finished_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  CHECK (challenger_id <> opponent_id)
+);
+CREATE INDEX IF NOT EXISTS pool_games_status_idx ON pool_games (status, deadline_at);

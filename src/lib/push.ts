@@ -11,6 +11,7 @@ import { runPrescriptions } from "./slush";
 import { getNow } from "./seasons";
 import { purgeOldNotices, storeNotice } from "./notifications";
 import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
+import { settlePoolGames } from "./pool-games";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
 
@@ -142,12 +143,41 @@ async function settleEconomy(): Promise<void> {
   ]);
 }
 
+async function settlePool(): Promise<void> {
+  const { expired, timedOut } = await settlePoolGames();
+  await Promise.all([
+    ...expired.map((g) =>
+      pushToUsers([g.challenger_id], {
+        title: "🎱 O teu desafio de bilhar expirou",
+        body: g.stake > 0 ? `Ninguém pegou no taco. Os ${g.stake} ☕ voltaram para ti.` : "Ninguém pegou no taco.",
+        url: "/casino/bilhar",
+        tag: `bilhar-${g.id}`,
+      }),
+    ),
+    ...timedOut.flatMap((g) => [
+      pushToUsers([g.winner_id], {
+        title: "🎱 Ganhaste por falta de comparência",
+        body: g.prize > 0 ? `O adversário não jogou a tempo. +${g.prize} ☕` : "O adversário não jogou a tempo.",
+        url: `/casino/bilhar/${g.id}`,
+        tag: `bilhar-${g.id}`,
+      }),
+      pushToUsers([g.loser_id], {
+        title: "🎱 Perdeste por falta de comparência",
+        body: "Passou o prazo da tua jogada.",
+        url: `/casino/bilhar/${g.id}`,
+        tag: `bilhar-${g.id}`,
+      }),
+    ]),
+  ]);
+}
+
 export async function flushDueNotifications(): Promise<void> {
   const R = await getRules();
   await settleEconomy();
   await settleRaces();
   await purgeOldNotices();
   await settleAssemblies();
+  await settlePool();
   const expired = await expireDuels();
   await Promise.all(
     expired.map((d) =>
