@@ -656,3 +656,4 @@ LANGUAGE sql STABLE AS $$
       FROM users u WHERE u.id = uid)
   )
 $$;
+DELETE FROM economy_rules WHERE key IN ('comedyVoteOpensHour', 'comedyVoteClosesHour');

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { deleteJoke, submitJoke, voteJoke } from "./actions";
+import { deleteJoke, setComedySchedule, submitJoke, voteJoke } from "./actions";
 import type { FormState } from "@/lib/form";
 
 function Feedback({ state }: { state: FormState }) {
@@ -54,5 +54,38 @@ export function VoteButton({ jokeId, chosen }: { jokeId: number; chosen: boolean
       </button>
       {state.error && <p className="text-xs font-semibold text-scoop">{state.error}</p>}
     </div>
+  );
+}
+
+export function ScheduleForm({ day, opens, closes, days }: { day: number; opens: number; closes: number; days: readonly string[] }) {
+  const [state, action, pending] = useActionState(setComedySchedule, {});
+  const select = "border-2 border-ink bg-white p-1.5";
+  return (
+    <form action={action} className="space-y-2">
+      <Feedback state={state} />
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label htmlFor="cc-day" className="block text-xs font-semibold">Dia</label>
+          <select id="cc-day" name="day" defaultValue={day} className={select}>
+            {days.map((d, i) => <option key={d} value={i + 1}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="cc-opens" className="block text-xs font-semibold">Abre às</label>
+          <select id="cc-opens" name="opens" defaultValue={opens} className={select}>
+            {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{h}h</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="cc-closes" className="block text-xs font-semibold">Fecha às</label>
+          <select id="cc-closes" name="closes" defaultValue={closes} className={select}>
+            {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h}h</option>)}
+          </select>
+        </div>
+        <button disabled={pending} className="bg-ink px-4 py-2 text-sm font-bold uppercase text-white disabled:opacity-50">
+          👑 Decretar
+        </button>
+      </div>
+    </form>
   );
 }

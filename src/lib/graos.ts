@@ -74,8 +74,6 @@ export const GRAOS = {
   poolAcceptHours: 48,
   poolTurnHours: 48,
   comedyPrize: 10,
-  comedyVoteOpensHour: 14,
-  comedyVoteClosesHour: 20,
   slushPct: 10,
   slushWashCap: 5,
   slushPrescribeWeeks: 8,
