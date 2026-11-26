@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { drawTicket } from "@/lib/scratch";
-import { getRules } from "@/lib/rules";
+import { getRules, scratchPrizes } from "@/lib/rules";
 import { MODULES, isOpen } from "@/lib/modules";
 
 export type Ticket = { id: number; cells: string[]; prize: number; cost: number };
@@ -16,12 +16,13 @@ export async function buyTicket(): Promise<{ ok: true; ticket: Ticket } | { ok: 
     SELECT id FROM scratch_tickets WHERE user_id = ${user.id} AND scratched_at IS NULL LIMIT 1
   `) as { id: number }[];
   if (pending) return { ok: false, error: "Ainda tens um bilhete por raspar." };
-  const { scratchCost: cost } = await getRules();
+  const R = await getRules();
+  const cost = R.scratchCost;
   const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
   if (balance < cost) {
     return { ok: false, error: `O bilhete custa ${cost} ☕ e tens ${balance} ☕.` };
   }
-  const { cells, prize } = drawTicket(cost);
+  const { cells, prize } = drawTicket(cost, scratchPrizes(R));
   const [row] = (await sql`
     WITH t AS (
       INSERT INTO scratch_tickets (user_id, cost, cells, prize)

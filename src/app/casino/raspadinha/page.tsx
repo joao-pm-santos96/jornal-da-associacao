@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { SCRATCH_ODDS_BASE, SCRATCH_PRIZES, scratchReturn, scratchWinChance } from "@/lib/scratch-table";
-import { getRules } from "@/lib/rules";
+import { SCRATCH_ODDS_BASE, scratchReturn, scratchWinChance } from "@/lib/scratch-table";
+import { getRules, scratchPrizes } from "@/lib/rules";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
 import { ScratchCard } from "./ScratchCard";
 import type { Ticket } from "./actions";
 
 export default async function ScratchPage() {
   const user = await requireUser();
-  const { scratchCost } = await getRules();
+  const R = await getRules();
+  const { scratchCost } = R;
+  const prizes = scratchPrizes(R);
   const [pending] = (await sql`
     SELECT id, cells, prize, cost FROM scratch_tickets
     WHERE user_id = ${user.id} AND scratched_at IS NULL
@@ -31,19 +33,19 @@ export default async function ScratchPage() {
           Prémios
         </h2>
         <ul className="mt-2 divide-y divide-[#fff6d6]/20 text-sm">
-          {SCRATCH_PRIZES.map((p) => (
+          {prizes.filter((p) => p.chances > 0).map((p) => (
             <li key={p.emoji} className="flex items-center justify-between py-1.5">
               <span className="text-xl tracking-widest">{p.emoji.repeat(3)}</span>
               <span className="opacity-80">1 em {Math.round(SCRATCH_ODDS_BASE / p.chances)}</span>
               <span className={`font-display text-lg font-black ${gold}`}>
-                {p.multiplier === 1 ? "devolve" : `${scratchCost * p.multiplier} ☕`}
+                {p.multiplier === 0 ? "nada" : p.multiplier === 1 ? "devolve" : `${scratchCost * p.multiplier} ☕`}
               </span>
             </li>
           ))}
         </ul>
         <p className="mt-3 text-center text-xs opacity-80">
-          Sai prémio em {Math.round(scratchWinChance() * 100)}% dos bilhetes. Em média devolve {Math.round(scratchReturn() * 100)}% do que
-          custam; o resto vai para o Cofre.
+          Sai prémio em {Math.round(scratchWinChance(prizes) * 100)}% dos bilhetes. Em média devolve {Math.round(scratchReturn(prizes) * 100)}% do que
+          custam. Prémios e probabilidades são decididos pelo Tesoureiro.
         </p>
       </section>
 

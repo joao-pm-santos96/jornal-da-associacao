@@ -1,18 +1,18 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { SLOT_SYMBOLS, TOTAL_WEIGHT } from "./slot-table";
+import { totalWeight, type SlotPay } from "./slot-table";
 
 export { multiplier } from "./slot-table";
 
-function drawSymbol(): string {
-  let roll = randomInt(TOTAL_WEIGHT);
-  for (const s of SLOT_SYMBOLS) {
+function drawSymbol(pays: readonly SlotPay[]): string {
+  let roll = randomInt(totalWeight(pays));
+  for (const s of pays) {
     if (roll < s.weight) return s.emoji;
     roll -= s.weight;
   }
-  return SLOT_SYMBOLS[0].emoji;
+  return pays[0].emoji;
 }
 
-export function spinReels(): [string, string, string] {
-  return [drawSymbol(), drawSymbol(), drawSymbol()];
+export function spinReels(pays: readonly SlotPay[]): [string, string, string] {
+  return [drawSymbol(pays), drawSymbol(pays), drawSymbol(pays)];
 }

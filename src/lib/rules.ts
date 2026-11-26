@@ -2,8 +2,10 @@ import "server-only";
 import { cache } from "react";
 import { sql } from "./db";
 import { GRAOS } from "./graos";
+import { SLOT_SYMBOLS, totalWeight, type SlotPay } from "./slot-table";
+import { SCRATCH_ODDS_BASE, SCRATCH_SYMBOLS, type ScratchPrize } from "./scratch-table";
 
-export type RuleUnit = "☕" | "%" | "pontos" | "h" | "dias" | "vezes" | "apostadores";
+export type RuleUnit = "☕" | "%" | "×" | "peso" | "em 3000" | "pontos" | "h" | "dias" | "vezes" | "apostadores";
 
 type RuleDef = { group: string; label: string; unit: RuleUnit; min: number; max: number };
 
@@ -39,7 +41,41 @@ export const RULE_DEFS = {
   slotBet1: { group: "Casino", label: "Slot: ficha pequena", unit: "☕", min: 1, max: MAX },
   slotBet2: { group: "Casino", label: "Slot: ficha média", unit: "☕", min: 1, max: MAX },
   slotBet3: { group: "Casino", label: "Slot: ficha grande", unit: "☕", min: 1, max: MAX },
-  scratchCost: { group: "Casino", label: "Raspadinha: preço do bilhete (os prémios são múltiplos)", unit: "☕", min: 1, max: MAX },
+  slotTremocoPeso: { group: "Slot machine", label: "🫘 Tremoço: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotTremoco3: { group: "Slot machine", label: "🫘 Tremoço: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotTremoco2: { group: "Slot machine", label: "🫘 Tremoço: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotImperialPeso: { group: "Slot machine", label: "🍺 Imperial: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotImperial3: { group: "Slot machine", label: "🍺 Imperial: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotImperial2: { group: "Slot machine", label: "🍺 Imperial: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotPatoPeso: { group: "Slot machine", label: "🦆 Pato: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotPato3: { group: "Slot machine", label: "🦆 Pato: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotPato2: { group: "Slot machine", label: "🦆 Pato: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotCaoPeso: { group: "Slot machine", label: "🐕 Cão: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotCao3: { group: "Slot machine", label: "🐕 Cão: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotCao2: { group: "Slot machine", label: "🐕 Cão: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotBacalhauPeso: { group: "Slot machine", label: "🐟 Bacalhau: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotBacalhau3: { group: "Slot machine", label: "🐟 Bacalhau: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotBacalhau2: { group: "Slot machine", label: "🐟 Bacalhau: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotNataPeso: { group: "Slot machine", label: "🥧 Pastel de nata: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotNata3: { group: "Slot machine", label: "🥧 Pastel de nata: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotNata2: { group: "Slot machine", label: "🥧 Pastel de nata: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotCoroaPeso: { group: "Slot machine", label: "👑 Coroa: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotCoroa3: { group: "Slot machine", label: "👑 Coroa: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotCoroa2: { group: "Slot machine", label: "👑 Coroa: dois iguais", unit: "×", min: 0, max: 10_000 },
+  slotCafePeso: { group: "Slot machine", label: "☕ Café: peso em cada rolo", unit: "peso", min: 0, max: 1_000 },
+  slotCafe3: { group: "Slot machine", label: "☕ Café: três iguais", unit: "×", min: 0, max: 10_000 },
+  slotCafe2: { group: "Slot machine", label: "☕ Café: dois iguais", unit: "×", min: 0, max: 10_000 },
+  scratchCost: { group: "Raspadinha", label: "Preço do bilhete (os prémios são múltiplos)", unit: "☕", min: 1, max: MAX },
+  scratchCafeX: { group: "Raspadinha", label: "☕☕☕ Café: prémio", unit: "×", min: 0, max: 10_000 },
+  scratchCafeEm: { group: "Raspadinha", label: "☕☕☕ Café: bilhetes premiados", unit: "em 3000", min: 0, max: 3_000 },
+  scratchCoroaX: { group: "Raspadinha", label: "👑👑👑 Coroa: prémio", unit: "×", min: 0, max: 10_000 },
+  scratchCoroaEm: { group: "Raspadinha", label: "👑👑👑 Coroa: bilhetes premiados", unit: "em 3000", min: 0, max: 3_000 },
+  scratchNataX: { group: "Raspadinha", label: "🥧🥧🥧 Pastel de nata: prémio", unit: "×", min: 0, max: 10_000 },
+  scratchNataEm: { group: "Raspadinha", label: "🥧🥧🥧 Pastel de nata: bilhetes premiados", unit: "em 3000", min: 0, max: 3_000 },
+  scratchPatoX: { group: "Raspadinha", label: "🦆🦆🦆 Pato: prémio", unit: "×", min: 0, max: 10_000 },
+  scratchPatoEm: { group: "Raspadinha", label: "🦆🦆🦆 Pato: bilhetes premiados", unit: "em 3000", min: 0, max: 3_000 },
+  scratchTremocoX: { group: "Raspadinha", label: "🫘🫘🫘 Tremoço: prémio", unit: "×", min: 0, max: 10_000 },
+  scratchTremocoEm: { group: "Raspadinha", label: "🫘🫘🫘 Tremoço: bilhetes premiados", unit: "em 3000", min: 0, max: 3_000 },
   raceHouseCutPct: { group: "Casino", label: "Corrida de patos: parte da casa", unit: "%", min: 0, max: 100 },
   duelHouseCutPct: { group: "Casino", label: "Duelos: parte da casa", unit: "%", min: 0, max: 100 },
   duelMinStake: { group: "Casino", label: "Duelos: aposta mínima", unit: "☕", min: 1, max: MAX },
@@ -74,7 +110,50 @@ export function formatRule(key: RuleKey, value: number): string {
   const unit = RULE_DEFS[key].unit;
   const n = value < 0 ? `−${-value}` : String(value);
   if (unit === "%") return `${n}%`;
+  if (unit === "×") return `×${n}`;
+  if (unit === "peso") return `peso ${n}`;
+  if (unit === "em 3000") return `${n} em 3000`;
   return `${n} ${Math.abs(value) === 1 ? (SINGULAR[unit] ?? unit) : unit}`;
+}
+
+const SLOT_KEYS = {
+  "🫘": ["slotTremocoPeso", "slotTremoco3", "slotTremoco2"],
+  "🍺": ["slotImperialPeso", "slotImperial3", "slotImperial2"],
+  "🦆": ["slotPatoPeso", "slotPato3", "slotPato2"],
+  "🐕": ["slotCaoPeso", "slotCao3", "slotCao2"],
+  "🐟": ["slotBacalhauPeso", "slotBacalhau3", "slotBacalhau2"],
+  "🥧": ["slotNataPeso", "slotNata3", "slotNata2"],
+  "👑": ["slotCoroaPeso", "slotCoroa3", "slotCoroa2"],
+  "☕": ["slotCafePeso", "slotCafe3", "slotCafe2"],
+} as const satisfies Record<string, readonly [RuleKey, RuleKey, RuleKey]>;
+
+export function slotPaytable(rules: Rules): SlotPay[] {
+  return SLOT_SYMBOLS.map((s) => {
+    const keys = SLOT_KEYS[s.emoji as keyof typeof SLOT_KEYS];
+    return { ...s, weight: rules[keys[0]], triple: rules[keys[1]], pair: rules[keys[2]] };
+  });
+}
+
+const SCRATCH_KEYS = {
+  "☕": ["scratchCafeX", "scratchCafeEm"],
+  "👑": ["scratchCoroaX", "scratchCoroaEm"],
+  "🥧": ["scratchNataX", "scratchNataEm"],
+  "🦆": ["scratchPatoX", "scratchPatoEm"],
+  "🫘": ["scratchTremocoX", "scratchTremocoEm"],
+} as const satisfies Record<string, readonly [RuleKey, RuleKey]>;
+
+export function scratchPrizes(rules: Rules): ScratchPrize[] {
+  return SCRATCH_SYMBOLS.map((s) => {
+    const keys = SCRATCH_KEYS[s.emoji as keyof typeof SCRATCH_KEYS];
+    return { ...s, multiplier: rules[keys[0]], chances: rules[keys[1]] };
+  });
+}
+
+export function rulesProblem(rules: Rules): string | null {
+  if (totalWeight(slotPaytable(rules)) < 1) return "A slot precisa de pelo menos um símbolo com peso acima de 0.";
+  const chances = scratchPrizes(rules).reduce((sum, p) => sum + p.chances, 0);
+  if (chances > SCRATCH_ODDS_BASE) return `Os bilhetes premiados da raspadinha somam ${chances} em ${SCRATCH_ODDS_BASE}: não podem passar de ${SCRATCH_ODDS_BASE}.`;
+  return null;
 }
 
 export function slotBets(rules: Rules): number[] {

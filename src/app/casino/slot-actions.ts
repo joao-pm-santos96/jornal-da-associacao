@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { multiplier, spinReels } from "@/lib/slots";
-import { getRules, slotBets } from "@/lib/rules";
+import { getRules, slotBets, slotPaytable } from "@/lib/rules";
 import { MODULES, isOpen } from "@/lib/modules";
 
 export type SpinResult =
@@ -14,13 +14,15 @@ export type SpinResult =
 export async function spinSlot(bet: number): Promise<SpinResult> {
   const user = await requireUser();
   if (!(await isOpen("casino"))) return { ok: false, error: MODULES.casino.closed };
-  if (!slotBets(await getRules()).includes(bet)) return { ok: false, error: "Aposta inválida. As fichas mudaram: recarrega a página." };
+  const R = await getRules();
+  if (!slotBets(R).includes(bet)) return { ok: false, error: "Aposta inválida. As fichas mudaram: recarrega a página." };
   const balance = (await getBalances()).find((b) => b.user_id === user.id)?.balance ?? 0;
   if (balance < bet) {
     return { ok: false, error: `Tens ${balance} ☕ e a jogada custa ${bet} ☕. O crupiê não aceita fiado.` };
   }
-  const reels = spinReels();
-  const payout = bet * multiplier(reels);
+  const pays = slotPaytable(R);
+  const reels = spinReels(pays);
+  const payout = bet * multiplier(reels, pays);
   await sql.transaction([
     sql`INSERT INTO slot_spins (user_id, bet, reels, payout) VALUES (${user.id}, ${bet}, ${reels.join("")}, ${payout})`,
     sql`

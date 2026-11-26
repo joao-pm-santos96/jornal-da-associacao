@@ -21,7 +21,7 @@ function randomSymbol(): string {
   return SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)].emoji;
 }
 
-export function SlotMachine({ initialBalance, bets }: { initialBalance: number; bets: number[] }) {
+export function SlotMachine({ initialBalance, bets, jackpot }: { initialBalance: number; bets: number[]; jackpot: number }) {
   const router = useRouter();
   const [reels, setReels] = useState<string[]>(["☕", "☕", "☕"]);
   const [bet, setBet] = useState(bets[0]);
@@ -102,7 +102,7 @@ export function SlotMachine({ initialBalance, bets }: { initialBalance: number; 
       <div className="rounded-t-[3rem] border-4 border-[#141414] bg-[#e10600] p-4 shadow-[6px_6px_0_#141414]">
         <div className="mb-3 border-[5px] border-dotted border-[#f2c230] bg-[#141414] py-2 text-center">
           <p className="font-display text-3xl font-black uppercase text-[#f2c230] [text-shadow:2px_2px_0_#e10600]">Jackpot</p>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#fff6d6]">☕☕☕ paga ×100</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#fff6d6]">☕☕☕ paga ×{jackpot}</p>
         </div>
         <div className="flex justify-center gap-2 border-4 border-[#141414] bg-[#141414] p-2" aria-live="polite" aria-label={`Rolos: ${reels.join(" ")}`}>
           {reels.map((s, i) => (
