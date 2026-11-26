@@ -9,7 +9,7 @@ import { getBalances } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
 import { getRules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 import { isFree, rack, simulate, type Ball, type Frame, type ShotEvent } from "@/lib/pool";
 import { initialState, judge, type PoolState } from "@/lib/pool-rules";
 import { getPoolGame, poolPrize, type LastShot } from "@/lib/pool-games";
@@ -27,7 +27,8 @@ function refresh(id?: number): void {
 
 export async function challengePool(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
+  const closed = await gameClosed("bilhar");
+  if (closed) return { error: closed };
   const R = await getRules();
   const opponentId = Number(field(form, "opponent_id"));
   const stake = Number(field(form, "stake") || "0");
@@ -97,7 +98,7 @@ export async function respondPool(gameId: number, accept: boolean): Promise<void
     refresh(gameId);
     return;
   }
-  if (!(await isOpen("casino"))) return;
+  if (await gameClosed("bilhar")) return;
   if (game.stake > 0 && (await balanceOf(user.id)) < game.stake) return;
   const state = initialState(rack());
   const [row] = (await sql`

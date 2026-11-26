@@ -10,7 +10,7 @@ import { field, type FormState } from "@/lib/form";
 import { duelPrize, isMove, moveEmoji, outcome, type Move } from "@/lib/duels-table";
 import { getRules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 
 async function balanceOf(userId: number): Promise<number> {
   return (await getBalances()).find((b) => b.user_id === userId)?.balance ?? 0;
@@ -18,7 +18,8 @@ async function balanceOf(userId: number): Promise<number> {
 
 export async function challenge(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
+  const closed = await gameClosed("duelos");
+  if (closed) return { error: closed };
   const R = await getRules();
   const opponentId = Number(field(form, "opponent_id"));
   const stake = Number(field(form, "stake"));

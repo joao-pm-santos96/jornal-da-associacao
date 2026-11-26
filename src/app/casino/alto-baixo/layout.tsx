@@ -1,0 +1,6 @@
+import type { ReactNode } from "react";
+import { GameGate } from "../GameGate";
+
+export default function Layout({ children }: { children: ReactNode }) {
+  return <GameGate game="altobaixo">{children}</GameGate>;
+}

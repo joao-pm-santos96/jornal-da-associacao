@@ -6,11 +6,12 @@ import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { field, type FormState } from "@/lib/form";
 import { DUCKS, duckName } from "@/lib/ducks-table";
-import { MODULES, isOpen } from "@/lib/modules";
+import { gameClosed } from "@/lib/modules";
 
 export async function placeDuckBet(raceId: number, _prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!(await isOpen("casino"))) return { error: MODULES.casino.closed };
+  const closed = await gameClosed("patos");
+  if (closed) return { error: closed };
   const duck = Number(field(form, "duck"));
   const amount = Number(field(form, "amount"));
   if (!DUCKS.some((d) => d.n === duck)) return { error: "Escolhe um pato." };
