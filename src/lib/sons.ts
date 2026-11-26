@@ -201,6 +201,19 @@ export const sons = {
     noise(0.02, 4000, 0.03 + s * 0.12, { type: "highpass" });
   },
   rail: (strength: number) => noise(0.05, 300, 0.04 + Math.min(1, strength) * 0.12),
+  victory: () =>
+    play([
+      ...run([NOTE.G4, NOTE.G4, NOTE.G4], 0.12, 0.1),
+      { freq: NOTE.C5, at: 0.36, dur: 0.45 },
+      ...run([NOTE.E5, NOTE.D5, NOTE.C5], 0.12, 0.1, {}, 0.84),
+      { freq: NOTE.G5, at: 1.2, dur: 0.3 },
+      { freq: NOTE.E5, at: 1.5, dur: 0.15 },
+      { freq: NOTE.G5, at: 1.66, dur: 0.15 },
+      { freq: NOTE.C6, at: 1.82, dur: 0.8, vibrato: 12 },
+      ...run([NOTE.C4, NOTE.G4, NOTE.C5, NOTE.E5], 0.3, 0.26, { wave: "triangle", gain: 0.18 }, 0.36),
+      { freq: NOTE.C4, at: 1.82, dur: 0.8, wave: "triangle", gain: 0.2 },
+      ...coinNotes(10, 2.4),
+    ]),
   pocket: () => {
     noise(0.12, 180, 0.25, { sweepTo: 90 });
     play([{ freq: 140, at: 0.02, dur: 0.18, gain: 0.12, slide: 70, wave: "triangle" }]);
