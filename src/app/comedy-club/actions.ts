@@ -1,15 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { field, type FormState } from "@/lib/form";
-import { getRules } from "@/lib/rules";
 import { getNow } from "@/lib/seasons";
-import { JOKE_MAX, comedyClock } from "@/lib/comedy";
+import { JOKE_MAX, comedyClock, getComedySchedule, onDay, scheduleProblem, type ComedySchedule } from "@/lib/comedy";
+import { holds } from "@/lib/offices";
+import { notifyDecree } from "@/lib/push";
 
 async function clock() {
-  return comedyClock(await getNow(), await getRules());
+  return comedyClock(await getNow(), await getComedySchedule());
 }
 
 export async function submitJoke(_prev: FormState, form: FormData): Promise<FormState> {
@@ -52,4 +54,31 @@ export async function voteJoke(jokeId: number): Promise<FormState> {
   if (!row) return { error: "Não podes votar nessa piada (se é tua, nem penses)." };
   revalidatePath("/comedy-club");
   return { ok: "Voto registado. Podes mudar até a votação fechar." };
+}
+
+function describe(s: ComedySchedule): string {
+  return `${onDay(s.day)}, das ${s.opens}h às ${s.closes}h`;
+}
+
+export async function setComedySchedule(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!(await holds("presidente", user.id))) return { error: "Só o Presidente marca a hora do Comedy Club." };
+  const next: ComedySchedule = { day: Number(field(form, "day")), opens: Number(field(form, "opens")), closes: Number(field(form, "closes")) };
+  const problem = scheduleProblem(next);
+  if (problem) return { error: problem };
+  const current = await getComedySchedule();
+  if (current.day === next.day && current.opens === next.opens && current.closes === next.closes) return { error: "Esse já é o horário em vigor." };
+  const title = `Comedy Club: a votação passa a ser ${describe(next)}`;
+  const body = `Por decreto presidencial, a votação da piada da semana passa a ser ${describe(next)}, com efeito imediato. Até agora era ${describe(current)}.`;
+  await sql.transaction([
+    sql`
+      INSERT INTO settings (key, value)
+      SELECT k, v FROM unnest(ARRAY['comedy_dia', 'comedy_abre', 'comedy_fecha'], ${[String(next.day), String(next.opens), String(next.closes)]}::text[]) AS t(k, v)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+    `,
+    sql`INSERT INTO decrees (author_id, title, body) VALUES (${user.id}, ${title}, ${body})`,
+  ]);
+  after(() => notifyDecree(user.id, title));
+  revalidatePath("/", "layout");
+  return { ok: "Horário decretado. Já está em vigor." };
 }

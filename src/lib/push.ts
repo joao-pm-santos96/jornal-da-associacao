@@ -1,7 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { sql } from "./db";
-import { getRules, type Rules } from "./rules";
+import { getRules } from "./rules";
 import { betResults } from "./bets";
 import { resolveDueRaces, type RaceResult } from "./ducks";
 import { duckName } from "./ducks-table";
@@ -12,7 +12,7 @@ import { getNow } from "./seasons";
 import { purgeOldNotices, storeNotice } from "./notifications";
 import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
 import { settlePoolGames } from "./pool-games";
-import { closeDueWeeks, openVoting, type ClosedComedy } from "./comedy";
+import { closeDueWeeks, getComedySchedule, openVoting, type ClosedComedy, type ComedySchedule } from "./comedy";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
 
@@ -144,13 +144,13 @@ async function settleEconomy(): Promise<void> {
   ]);
 }
 
-export async function notifyComedy(opened: { week: string; jokes: number } | null, closed: ClosedComedy[], R: Rules): Promise<void> {
+export async function notifyComedy(opened: { week: string; jokes: number } | null, closed: ClosedComedy[], schedule: ComedySchedule): Promise<void> {
   await Promise.all([
     ...(opened
       ? [
           pushToAllExcept(0, {
             title: "🎤 Abriu a votação do Comedy Club",
-            body: `${opened.jokes === 1 ? "Há 1 piada" : `Há ${opened.jokes} piadas`} a concurso. Vota na melhor até às ${R.comedyVoteClosesHour}h.`,
+            body: `${opened.jokes === 1 ? "Há 1 piada" : `Há ${opened.jokes} piadas`} a concurso. Vota na melhor até às ${schedule.closes}h.`,
             url: "/comedy-club",
             tag: `comedy-${opened.week}`,
           }),
@@ -170,10 +170,10 @@ export async function notifyComedy(opened: { week: string; jokes: number } | nul
 }
 
 async function settleComedy(): Promise<void> {
-  const [now, R] = await Promise.all([getNow(), getRules()]);
-  const closed = await closeDueWeeks(now, R);
-  const opened = await openVoting(now, R);
-  await notifyComedy(opened, closed, R);
+  const [now, R, schedule] = await Promise.all([getNow(), getRules(), getComedySchedule()]);
+  const closed = await closeDueWeeks(now, R, schedule);
+  const opened = await openVoting(now, schedule);
+  await notifyComedy(opened, closed, schedule);
 }
 
 async function settlePool(): Promise<void> {

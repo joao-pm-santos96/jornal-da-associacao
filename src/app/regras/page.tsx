@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
 import { getRules, scratchPrizes, slotBets, slotPaytable } from "@/lib/rules";
+import { getComedySchedule, onDay } from "@/lib/comedy";
 import { scratchReturn, scratchWinChance } from "@/lib/scratch-table";
 import { expectedReturn } from "@/lib/slot-table";
 import { grains } from "@/lib/grains";
@@ -24,6 +25,7 @@ export default async function RulesPage() {
   const treasurer = offices.tesoureiro?.name ?? "cargo vago";
   const bookie = offices.apostas?.name ?? "cargo vago";
   const t = await getRules();
+  const comedy = await getComedySchedule();
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -191,7 +193,7 @@ export default async function RulesPage() {
         <p>No <Link href="/comedy-club" className="underline hover:text-scoop">Comedy Club</Link> escolhe-se, todas as semanas, a melhor piada da Associação. Participar e votar é opcional e de borla.</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>Cada sócio entrega no máximo <strong>uma piada por semana</strong>. Até abrir a votação pode mudá-la ou retirá-la, e ninguém a vê.</li>
-          <li>A votação é à <strong>sexta-feira, das {t.comedyVoteOpensHour}h às {t.comedyVoteClosesHour}h</strong>. As piadas aparecem sem nome; cada sócio vota numa (na sua não pode) e pode mudar o voto até fechar.</li>
+          <li>A votação é <strong>{onDay(comedy.day)}, das {comedy.opens}h às {comedy.closes}h</strong>, num dia e horário decididos pelo Presidente. As piadas aparecem sem nome; cada sócio vota numa (na sua não pode) e pode mudar o voto até fechar.</li>
           <li>Ganha a piada mais votada; em caso de empate, a que foi entregue primeiro. Se ninguém votar, não há vencedor.</li>
           <li>O vencedor recebe <strong>{t.comedyPrize} ☕</strong> do Cofre (ou o que houver disponível) e o título de <strong>palhaço da semana 🤡</strong>, que aparece junto ao nome durante uma semana.</li>
           <li>Piadas entregues depois de a votação fechar contam para a semana seguinte.</li>

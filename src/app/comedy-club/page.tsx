@@ -5,17 +5,19 @@ import { formatSchedule } from "@/lib/dates";
 import { shortDate } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { getNow, seededRandom } from "@/lib/seasons";
-import { JOKE_MAX, closeDueWeeks, comedyClock, jokesFor, myVote, openVoting, pastResults } from "@/lib/comedy";
+import { DAY_NAMES, JOKE_MAX, closeDueWeeks, comedyClock, getComedySchedule, jokesFor, myVote, onDay, openVoting, pastResults } from "@/lib/comedy";
+import { getOffices } from "@/lib/offices";
 import { notifyComedy } from "@/lib/push";
-import { JokeForm, VoteButton } from "./ComedyForms";
+import { JokeForm, ScheduleForm, VoteButton } from "./ComedyForms";
 
 export default async function ComedyClubPage() {
   const user = await requireUser();
-  const [R, now] = await Promise.all([getRules(), getNow()]);
-  const closed = await closeDueWeeks(now, R);
-  const opened = await openVoting(now, R);
-  if (closed.length > 0 || opened) after(() => notifyComedy(opened, closed, R));
-  const clock = comedyClock(now, R);
+  const [R, now, schedule, offices] = await Promise.all([getRules(), getNow(), getComedySchedule(), getOffices()]);
+  const closed = await closeDueWeeks(now, R, schedule);
+  const opened = await openVoting(now, schedule);
+  if (closed.length > 0 || opened) after(() => notifyComedy(opened, closed, schedule));
+  const clock = comedyClock(now, schedule);
+  const isPresident = offices.presidente?.user_id === user.id;
   const [jokes, vote, results] = await Promise.all([jokesFor(clock.week), myVote(clock.week, user.id), pastResults()]);
   const mine = jokes.find((j) => j.author_id === user.id) ?? null;
   const random = seededRandom(`comedy-${clock.week}`);
@@ -27,14 +29,24 @@ export default async function ComedyClubPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <header className="border-b-4 border-double border-ink pb-3 text-center">
-        <p className="text-xs font-black uppercase tracking-widest text-scoop">Todas as sextas, ao vivo (mais ou menos)</p>
+        <p className="text-xs font-black uppercase tracking-widest text-scoop">Todas as semanas, ao vivo (mais ou menos)</p>
         <h1 className="font-display text-5xl font-black">🎤 Comedy Club</h1>
         <p className="mt-1 text-sm text-muted">
-          Uma piada por sócio por semana, de borla. À sexta, das {R.comedyVoteOpensHour}h às {R.comedyVoteClosesHour}h, vota-se na melhor. Quem ganhar leva{" "}
+          Uma piada por sócio por semana, de borla. {onDay(schedule.day).replace(/^./, (c) => c.toUpperCase())}, das {schedule.opens}h às {schedule.closes}h, vota-se na melhor. Quem ganhar leva{" "}
           <strong>{R.comedyPrize} ☕</strong> do Cofre e o título de <strong>palhaço da semana 🤡</strong>.{" "}
           <Link href="/regras#comedy" className="underline hover:text-scoop">Regras</Link>
         </p>
       </header>
+
+      {isPresident && (
+        <section className="space-y-2 border-2 border-ink bg-white p-4">
+          <h2 className="font-display text-xl font-black">👑 Horário da votação</h2>
+          <p className="text-sm text-muted">
+            Escolhe o dia e as horas da votação. Entra em vigor logo e sai num Decreto Presidencial, com aviso a todos.
+          </p>
+          <ScheduleForm day={schedule.day} opens={schedule.opens} closes={schedule.closes} days={DAY_NAMES} />
+        </section>
+      )}
 
       {reigning && (
         <section className="border-4 border-ink bg-flash p-4 text-center">
