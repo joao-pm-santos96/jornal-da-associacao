@@ -9,6 +9,7 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { Disclaimer, Marquee, felt } from "../../Decor";
 import { forfeitPool } from "../actions";
 import { BallChip, PoolTable } from "../PoolTable";
+import { Celebration } from "../Celebration";
 
 const GROUP_BALLS: Record<Group, number[]> = { lisas: [1, 2, 3, 4, 5, 6, 7], riscadas: [9, 10, 11, 12, 13, 14, 15] };
 
@@ -28,6 +29,23 @@ export default async function PoolGamePage({ params }: { params: Promise<{ id: s
   const myTurn = active && game.turn_id === user.id;
   const turnName = players.find((p) => p.id === game.turn_id)?.name ?? "";
   const winnerName = players.find((p) => p.id === game.winner_id)?.name ?? "";
+  const seat = me >= 0 ? (me as Seat) : null;
+  const myGroup = seat === null ? null : state.groups[seat];
+  const legal =
+    seat === null || !state.broken
+      ? null
+      : myGroup === null
+        ? state.balls.filter((b) => b.id !== 0 && b.id !== 8 && !b.pocketed).map((b) => b.id)
+        : onTheEight(state, seat)
+          ? [8]
+          : remaining(state.balls, myGroup);
+  const goal = !state.broken
+    ? "Abertura: acerta no triângulo"
+    : myGroup === null
+      ? "Mesa aberta: bate primeiro em qualquer bola menos a preta"
+      : seat !== null && onTheEight(state, seat)
+        ? "Só te falta a preta: bate primeiro nela"
+        : `Jogas às ${myGroup}: bate primeiro numa delas`;
   const lastBy = players.find((p) => p.id === game.last_shot?.by)?.name;
   const recap = game.last_shot && lastBy ? `${lastBy}: ${game.last_shot.summary} ` : "";
   const prompt = recap + (!active
@@ -82,6 +100,21 @@ export default async function PoolGamePage({ params }: { params: Promise<{ id: s
         })}
       </div>
 
+      {!active && game.winner_id !== null && (
+        <Celebration
+          gameId={game.id}
+          finalShot={game.shots}
+          winner={winnerName}
+          line={
+            game.winner_id === user.id
+              ? `Ganhaste ${FINISH_LABEL[game.finish_reason ?? ""] ?? ""}${game.stake > 0 ? ` e levas ${poolPrize(game.stake, R.poolHouseCutPct)} ☕` : ""}!`
+              : me >= 0
+                ? "Para a próxima, afia o taco."
+                : `Ganhou ${FINISH_LABEL[game.finish_reason ?? ""] ?? ""}.`
+          }
+        />
+      )}
+
       <PoolTable
         key={game.shots}
         match={{
@@ -93,6 +126,8 @@ export default async function PoolGamePage({ params }: { params: Promise<{ id: s
           active,
           prompt,
           replay: game.last_shot,
+          legal,
+          goal,
         }}
       />
 

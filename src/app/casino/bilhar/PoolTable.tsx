@@ -9,7 +9,9 @@ import { shootPool } from "./actions";
 const RAIL = 42;
 const FULL_W = TABLE.width + RAIL * 2;
 const FULL_H = TABLE.height + RAIL * 2;
-const FINE_STEP = Math.PI / 720;
+const FINE_STEP = Math.PI / 3600;
+const HOLD_DELAY_MS = 350;
+const HOLD_REPEAT_MS = 40;
 const POLL_MS = 15_000;
 
 export type Replay = { n: number; frameMs: number; frames: Frame[]; events: ShotEvent[]; summary: string };
@@ -23,6 +25,8 @@ export type MatchProps = {
   active: boolean;
   prompt: string;
   replay: Replay | null;
+  legal: number[] | null;
+  goal: string;
 };
 
 type Clip = { frameMs: number; frames: Frame[]; events: ShotEvent[] };
@@ -31,7 +35,7 @@ function seenKey(gameId: number): string {
   return `jornal:bilhar:${gameId}`;
 }
 
-function seenShot(gameId: number): number {
+export function seenShot(gameId: number): number {
   try {
     return Number(localStorage.getItem(seenKey(gameId)) ?? "0");
   } catch {
@@ -119,7 +123,7 @@ export function PoolTable({ match }: { match?: MatchProps }) {
     const cue = match?.balls.find((b) => b.id === 0);
     if (!cue || !match) return 0;
     const near = match.balls
-      .filter((b) => b.id !== 0 && b.id !== 8 && !b.pocketed)
+      .filter((b) => b.id !== 0 && !b.pocketed && (match.legal ? match.legal.includes(b.id) : b.id !== 8))
       .sort((a, b) => Math.hypot(a.x - cue.x, a.y - cue.y) - Math.hypot(b.x - cue.x, b.y - cue.y))[0];
     return near ? Math.atan2(near.y - cue.y, near.x - cue.x) : 0;
   });
@@ -128,6 +132,9 @@ export function PoolTable({ match }: { match?: MatchProps }) {
   const [potted, setPotted] = useState<number[]>([]);
   const [shots, setShots] = useState(0);
   const [height, setHeight] = useState(0);
+  const replayed = useRef(false);
+  const legal = match?.legal ?? null;
+  const drawRef = useRef<() => void>(() => undefined);
 
   const draw = useCallback(() => {
     const c = canvas.current;
@@ -183,8 +190,9 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       const guide = aimGuide(list, angle);
       const cb = list[cue];
       if (guide) {
+        const foul = legal !== null && (!guide.target || !legal.includes(guide.target.id));
         ctx.setLineDash([8, 8]);
-        ctx.strokeStyle = "rgba(255,255,255,0.75)";
+        ctx.strokeStyle = foul ? "rgba(225,6,0,0.95)" : "rgba(255,255,255,0.75)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(cb.x, cb.y);
@@ -194,7 +202,18 @@ export function PoolTable({ match }: { match?: MatchProps }) {
         ctx.beginPath();
         ctx.arc(guide.cueEnd.x, guide.cueEnd.y, BALL_R, 0, Math.PI * 2);
         ctx.stroke();
-        if (guide.target) {
+        if (guide.target && foul) {
+          const { x, y } = guide.target;
+          ctx.strokeStyle = "#e10600";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(x, y, BALL_R + 4, 0, Math.PI * 2);
+          ctx.moveTo(x - BALL_R, y - BALL_R);
+          ctx.lineTo(x + BALL_R, y + BALL_R);
+          ctx.moveTo(x + BALL_R, y - BALL_R);
+          ctx.lineTo(x - BALL_R, y + BALL_R);
+          ctx.stroke();
+        } else if (guide.target) {
           ctx.strokeStyle = "rgba(242,194,48,0.9)";
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -272,7 +291,11 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-  }, [angle, phase, power]);
+  }, [angle, phase, power, legal]);
+
+  useEffect(() => {
+    drawRef.current = draw;
+  }, [draw]);
 
   useEffect(() => {
     const el = wrap.current;
@@ -356,8 +379,8 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       const started = performance.now();
       let nextEvent = 0;
       let lastClack = -100;
-      const tick = (now: number) => {
-        const elapsed = Math.max(0, now - started);
+      const tick = () => {
+        const elapsed = Math.max(0, performance.now() - started);
         while (nextEvent < clip.events.length && clip.events[nextEvent].t <= elapsed) {
           const ev = clip.events[nextEvent++];
           if (ev.kind === "pocket") sons.pocket();
@@ -368,7 +391,7 @@ export function PoolTable({ match }: { match?: MatchProps }) {
           }
         }
         shown.current = framePositions(clip, elapsed);
-        draw();
+        drawRef.current();
         if (elapsed < duration) {
           requestAnimationFrame(tick);
           return;
@@ -378,7 +401,7 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       };
       requestAnimationFrame(tick);
     },
-    [draw],
+    [],
   );
 
   async function shoot() {
@@ -415,10 +438,11 @@ export function PoolTable({ match }: { match?: MatchProps }) {
   }
 
   useEffect(() => {
-    if (!match?.replay || match.replay.n <= seenShot(match.gameId)) return;
+    if (replayed.current || !match?.replay || match.replay.n <= seenShot(match.gameId)) return;
     const replay = match.replay;
     const final = balls.current;
     const id = requestAnimationFrame(() => {
+      replayed.current = true;
       setPhase("rolling");
       setMessage("A ver a última tacada…");
       animate(replay, () => {
@@ -478,6 +502,11 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       </div>
 
       <p className="min-h-6 text-center text-sm font-bold" aria-live="polite">{message}</p>
+      {match?.active && match.myTurn && (
+        <p className="text-center text-xs font-bold uppercase tracking-wider text-[#f2c230]">
+          🎯 {match.goal}{match.legal ? " · a mira fica vermelha se a primeira bola for falta" : ""}
+        </p>
+      )}
 
       {(!match || (match.active && match.myTurn)) && (
       <div className="mx-auto flex max-w-sm flex-col items-stretch gap-2">
@@ -488,14 +517,12 @@ export function PoolTable({ match }: { match?: MatchProps }) {
           <span className="w-10 text-right tabular-nums">{Math.round(power * 100)}%</span>
         </label>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setAngle((a) => a - FINE_STEP)} disabled={phase !== "aim"}
-            className="border-2 border-[#141414] bg-[#fff6d6] px-4 py-2 font-black text-[#141414] disabled:opacity-40" aria-label="Rodar a mira um pouco para um lado">↺</button>
+          <RotateButton label="↺" ariaLabel="Rodar a mira um pouco para um lado" disabled={phase !== "aim"} onStep={() => setAngle((a) => a - FINE_STEP)} />
           <button type="button" onClick={shoot} disabled={phase !== "aim"}
             className="flex-1 border-4 border-[#141414] bg-[#e10600] py-2 font-display text-xl font-black uppercase text-[#f2c230] shadow-[4px_4px_0_#141414] active:translate-y-0.5 disabled:opacity-50">
             🎱 Tacar
           </button>
-          <button type="button" onClick={() => setAngle((a) => a + FINE_STEP)} disabled={phase !== "aim"}
-            className="border-2 border-[#141414] bg-[#fff6d6] px-4 py-2 font-black text-[#141414] disabled:opacity-40" aria-label="Rodar a mira um pouco para o outro lado">↻</button>
+          <RotateButton label="↻" ariaLabel="Rodar a mira um pouco para o outro lado" disabled={phase !== "aim"} onStep={() => setAngle((a) => a + FINE_STEP)} />
         </div>
       </div>
       )}
@@ -537,5 +564,47 @@ export function BallChip({ id, faded = false }: { id: number; faded?: boolean })
     >
       {id}
     </span>
+  );
+}
+
+function RotateButton({ label, ariaLabel, disabled, onStep }: { label: string; ariaLabel: string; disabled: boolean; onStep: () => void }) {
+  const timers = useRef<{ delay: number | null; repeat: number | null }>({ delay: null, repeat: null });
+
+  const stop = () => {
+    if (timers.current.delay !== null) clearTimeout(timers.current.delay);
+    if (timers.current.repeat !== null) clearInterval(timers.current.repeat);
+    timers.current = { delay: null, repeat: null };
+  };
+
+  useEffect(() => stop, []);
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onPointerDown={(e) => {
+        stop();
+        onStep();
+        timers.current.delay = window.setTimeout(() => {
+          timers.current.repeat = window.setInterval(onStep, HOLD_REPEAT_MS);
+        }, HOLD_DELAY_MS);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
+      }}
+      onPointerUp={stop}
+      onPointerCancel={stop}
+      onLostPointerCapture={stop}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onStep();
+        }
+      }}
+      className="touch-none select-none border-2 border-[#141414] bg-[#fff6d6] px-4 py-2 font-black text-[#141414] disabled:opacity-40"
+    >
+      {label}
+    </button>
   );
 }

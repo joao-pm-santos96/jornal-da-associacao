@@ -219,7 +219,6 @@ export async function shootPool(
       }),
     );
   }
-  refresh(gameId);
   return {
     ok: true,
     finished: winnerId !== null,

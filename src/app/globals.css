@@ -78,6 +78,15 @@ body {
   .jornal-falling { display: none; }
 }
 
+@keyframes jornal-confetti {
+  from { transform: translate3d(0, -10vh, 0) rotateZ(0deg) rotateX(0deg); }
+  to { transform: translate3d(var(--drift), 110vh, 0) rotateZ(720deg) rotateX(540deg); }
+}
+.jornal-confetti { position: absolute; top: 0; width: 8px; height: 14px; animation-name: jornal-confetti; animation-timing-function: cubic-bezier(0.3, 0.2, 0.7, 1); animation-fill-mode: both; }
+@media (prefers-reduced-motion: reduce) {
+  .jornal-confetti { display: none; }
+}
+
 :root[data-tema="natal"] { --color-scoop: #b3001b; --color-flash: #ffd166; }
 :root[data-tema="anonovo"] { --color-scoop: #8a6d1f; --color-flash: #ffe066; --color-paper: #fbf8ef; }
 :root[data-tema="carnaval"], :root[data-tema="cinzas"] { --color-scoop: #7b2cbf; --color-flash: #ffb3ff; }
