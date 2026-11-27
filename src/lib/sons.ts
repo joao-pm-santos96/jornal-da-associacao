@@ -218,6 +218,21 @@ export const sons = {
     noise(0.12, 180, 0.25, { sweepTo: 90 });
     play([{ freq: 140, at: 0.02, dur: 0.18, gain: 0.12, slide: 70, wave: "triangle" }]);
   },
+  armed: () => {
+    noise(0.03, 2500, 0.12, { type: "highpass" });
+    play([{ freq: 180, at: 0.05, dur: 0.06, gain: 0.08, wave: "triangle" }]);
+    noise(0.025, 1800, 0.1, { at: 0.08, type: "highpass" });
+  },
+  shot: (ms: number) => {
+    const speed = Math.max(0, Math.min(1, (600 - ms) / 450));
+    noise(0.12, 900 + speed * 2500, 0.3, { sweepTo: 200 });
+    play([{ freq: 500 + speed * 1300, at: 0, dur: 0.18, gain: 0.08, slide: 120, wave: "square" }]);
+  },
+  foul: () =>
+    play([
+      { freq: 150, at: 0, dur: 0.18, wave: "sawtooth", gain: 0.1 },
+      { freq: 140, at: 0.2, dur: 0.3, wave: "sawtooth", gain: 0.1 },
+    ]),
   quack: () => {
     for (const at of [0, 0.15]) {
       play([
