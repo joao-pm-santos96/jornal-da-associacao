@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { formatSchedule } from "@/lib/dates";
 import { getRules } from "@/lib/rules";
-import { ATTEMPTS, average, reflexPrize } from "@/lib/reflex";
+import { ATTEMPTS, average, formatMs, reflexPrize } from "@/lib/reflex";
 import { REFLEX_FINISH_LABEL, getReflexGame, timesOf } from "@/lib/reflex-games";
 import { Disclaimer, Marquee, felt, gold } from "../../Decor";
 import { ReflexPad } from "../ReflexPad";
@@ -17,7 +17,7 @@ function Times({ name, times, winner }: { name: string; times: number[]; winner:
           <li key={i} className="flex-1 border-2 border-[#141414] bg-white p-1 text-center">{times[i] === undefined ? "—" : `${times[i]} ms`}</li>
         ))}
       </ol>
-      <p className="mt-1 text-sm">Média: <strong>{times.length === ATTEMPTS ? `${average(times)} ms` : "—"}</strong></p>
+      <p className="mt-1 text-sm">Média: <strong>{times.length === ATTEMPTS ? formatMs(average(times)) : "—"}</strong></p>
     </div>
   );
 }
