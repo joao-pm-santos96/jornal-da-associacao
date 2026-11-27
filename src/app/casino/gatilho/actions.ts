@@ -10,7 +10,7 @@ import { field, type FormState } from "@/lib/form";
 import { getRules, type Rules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
 import { gameClosed } from "@/lib/modules";
-import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, formatMs, reflexPrize, total } from "@/lib/reflex";
+import { ATTEMPTS, CLOCK_SLACK_MS, MAX_DELAY_MS, MAX_NETWORK_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, formatMs, reflexPrize, total } from "@/lib/reflex";
 import { getReflexGame, timesOf, type ReflexGame } from "@/lib/reflex-games";
 
 async function balanceOf(userId: number): Promise<number> {
@@ -262,14 +262,15 @@ export async function startAttempt(gameId: number): Promise<StartResult> {
 }
 
 export async function finishAttempt(gameId: number, reported: number | null): Promise<AttemptResult> {
-  const user = await requireUser();
-  const R = await getRules();
-  const game = await myActiveGame(gameId, user.id);
-  if (typeof game === "string") return { ok: false, error: game };
+  // Timed before auth and lookups so server work does not count against the player.
   const [timing] = (await sql`
     SELECT (extract(epoch FROM clock_timestamp() - attempt_issued_at) * 1000)::int AS elapsed, attempt_delay_ms AS delay
     FROM reflex_games WHERE id = ${gameId} AND attempt_issued_at IS NOT NULL
   `) as { elapsed: number; delay: number }[];
+  const user = await requireUser();
+  const R = await getRules();
+  const game = await myActiveGame(gameId, user.id);
+  if (typeof game === "string") return { ok: false, error: game };
   if (!timing) return { ok: false, error: "Não há nenhuma tentativa a decorrer." };
 
   let ms: number;
@@ -283,8 +284,13 @@ export async function finishAttempt(gameId: number, reported: number | null): Pr
   } else if (timing.elapsed < timing.delay) {
     ms = PENALTY_MS;
     note = "Tocaste antes do verde.";
+  } else if (reported > timing.elapsed - timing.delay + CLOCK_SLACK_MS) {
+    // The pad cannot measure more time than the server saw pass.
+    ms = PENALTY_MS;
+    note = "Resultado inválido. Conta como 1 segundo.";
   } else {
-    ms = Math.min(Math.round(reported), PENALTY_MS);
+    const serverMs = timing.elapsed - timing.delay;
+    ms = Math.min(Math.max(Math.round(reported), serverMs - MAX_NETWORK_MS), PENALTY_MS);
     if (ms === PENALTY_MS) note = "Demasiado lento: conta como 1 segundo.";
   }
 
