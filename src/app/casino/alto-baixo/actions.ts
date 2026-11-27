@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { getBalances } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
 import { gameClosed } from "@/lib/modules";
-import { DECK_SIZE, beats, compound, hiloPayout, stepMultiplier, type Guess } from "@/lib/hilo";
+import { DECK_SIZE, beats, compound, hiloPayout, hits, sameRank, stepMultiplier, type Guess } from "@/lib/hilo";
 import { activeHilo, toState, type HiloRow, type HiloState } from "@/lib/hilo-games";
 
 export type HiloResult = { ok: true; game: HiloState; balance: number } | { ok: false; error: string };
@@ -71,13 +71,15 @@ export async function guessHilo(gameId: number, guess: Guess): Promise<HiloResul
   const step = stepMultiplier(current, guess, R.hiloEdgePct);
   if (step === 0) return { ok: false, error: guess === "alto" ? "Não há carta mais alta do que um Rei." : "Não há carta mais baixa do que um Ás." };
   const next = randomInt(DECK_SIZE);
-  const won = beats(current, next, guess);
+  const tie = sameRank(current, next);
+  const won = !tie && beats(current, next, guess);
+  const alive = tie || won;
   const multiplier = won ? Math.min(compound(game.multiplier, step), R.hiloMaxMult) : game.multiplier;
   const [row] = (await sql`
     UPDATE hilo_games
     SET cards = cards || ${next}::int, multiplier = ${multiplier},
-      status = CASE WHEN ${won}::boolean THEN 'active' ELSE 'lost' END,
-      finished_at = CASE WHEN ${won}::boolean THEN NULL ELSE now() END
+      status = CASE WHEN ${alive}::boolean THEN 'active' ELSE 'lost' END,
+      finished_at = CASE WHEN ${alive}::boolean THEN NULL ELSE now() END
     WHERE id = ${gameId} AND user_id = ${user.id} AND status = 'active' AND cardinality(cards) = ${game.cards.length}
     RETURNING id, stake, cards, multiplier, status, payout
   `) as HiloRow[];
@@ -91,7 +93,7 @@ export async function cashHilo(gameId: number): Promise<HiloResult> {
   const user = await requireUser();
   const game = await activeHilo(user.id);
   if (!game || game.id !== gameId) return { ok: false, error: "Esta mão já acabou. Recarrega a página." };
-  if (game.cards.length < 2) return { ok: false, error: "Tens de acertar pelo menos uma carta antes de recolher." };
+  if (hits(game.cards, false) < 1) return { ok: false, error: "Tens de acertar pelo menos uma carta antes de recolher." };
   const state = await cashOut(user.id, game);
   if (!state) return { ok: false, error: "A mesa mudou entretanto. Recarrega a página." };
   return { ok: true, game: state, balance: await balanceOf(user.id) };

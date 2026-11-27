@@ -18,13 +18,23 @@ export function label(card: number): string {
 
 export function winChance(current: number, guess: Guess): number {
   const r = rank(current);
-  return guess === "alto" ? (13 - r) / 13 : (r - 1) / 13;
+  return guess === "alto" ? (13 - r) / 12 : (r - 1) / 12;
 }
 
 export function stepMultiplier(current: number, guess: Guess, edgePct: number): number {
   const p = winChance(current, guess);
   if (p === 0) return 0;
-  return Math.floor(((1 - edgePct / 100) / p) * 100) / 100;
+  return Math.max(1, Math.floor(((1 - edgePct / 100) / p) * 100) / 100);
+}
+
+export function sameRank(a: number, b: number): boolean {
+  return rank(a) === rank(b);
+}
+
+export function hits(cards: readonly number[], lost: boolean): number {
+  let n = 0;
+  for (let i = 1; i < cards.length; i++) if (!sameRank(cards[i - 1], cards[i])) n++;
+  return lost ? n - 1 : n;
 }
 
 export function beats(current: number, next: number, guess: Guess): boolean {

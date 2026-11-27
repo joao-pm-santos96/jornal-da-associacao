@@ -27,7 +27,7 @@ export default async function HiloPage() {
         <h2 className={`border-b-2 border-dashed border-[#f2c230] pb-1 font-display text-xl font-black uppercase ${gold}`}>Como se joga</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>Apostas e sai uma carta. Dizes se a próxima é mais alta ou mais baixa. O Ás é a mais baixa e o Rei a mais alta.</li>
-          <li>Cada acerto multiplica o que tens em jogo: quanto menos provável, mais paga (o valor está em cada botão). Uma carta igual conta como errada.</li>
+          <li>Cada acerto multiplica o que tens em jogo: quanto menos provável, mais paga (o valor está em cada botão). Uma carta igual não conta: segue para a próxima sem mexer no multiplicador.</li>
           <li>Depois do primeiro acerto podes recolher quando quiseres. Se errares, perdes a aposta.</li>
           <li>O baralho é baralhado a cada carta, por isso contar cartas não serve de nada. A casa fica com {R.hiloEdgePct}% em cada palpite e paga no máximo ×{R.hiloMaxMult}.</li>
           <li>Se saíres a meio, a mão fica à tua espera.</li>

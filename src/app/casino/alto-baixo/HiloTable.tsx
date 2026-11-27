@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { sons } from "@/lib/sons";
-import { RANKS, hiloPayout, rank, stepMultiplier, suit, type Guess } from "@/lib/hilo";
+import { RANKS, hiloPayout, hits, rank, sameRank, stepMultiplier, suit, type Guess } from "@/lib/hilo";
 import type { HiloState } from "@/lib/hilo-games";
 import { cashHilo, guessHilo, startHilo, type HiloResult } from "./actions";
 
@@ -56,7 +56,8 @@ export function HiloTable({
   const active = game?.status === "active";
   const current = game ? game.cards[game.cards.length - 1] : null;
   const history = game ? game.cards.slice(0, -1) : [];
-  const correct = game ? game.cards.length - 1 - (game.status === "lost" ? 1 : 0) : 0;
+  const correct = game ? hits(game.cards, game.status === "lost") : 0;
+  const tied = active && game.cards.length > 1 && sameRank(game.cards[game.cards.length - 2], game.cards[game.cards.length - 1]);
   const potential = game ? hiloPayout(game.stake, game.multiplier) : 0;
 
   function apply(res: HiloResult, sound: (g: HiloState, prev: HiloState | null) => void): void {
@@ -79,7 +80,9 @@ export function HiloTable({
     if (!game) return;
     start(async () =>
       apply(await guessHilo(game.id, g), (next) => {
+        const n = next.cards.length;
         if (next.status === "lost") sons.lose();
+        else if (n > 1 && sameRank(next.cards[n - 2], next.cards[n - 1])) sons.tie();
         else if (next.status === "cashed") sons.jackpot();
         else sons.coin();
       }),
@@ -126,6 +129,8 @@ export function HiloTable({
         </div>
       )}
 
+      {tied && <p className="border-2 border-[#141414] bg-[#fff6d6] p-2 text-center text-sm font-bold text-[#141414]">🤝 Carta igual! Segue para a próxima, sem ganhar nem perder.</p>}
+
       {error && <p className="border-2 border-[#e10600] bg-white p-2 text-sm font-semibold text-[#e10600]">{error}</p>}
 
       {active && current !== null ? (
@@ -149,14 +154,14 @@ export function HiloTable({
           </div>
           <button
             type="button"
-            disabled={pending || game.cards.length < 2}
+            disabled={pending || correct < 1}
             onClick={cash}
             className="w-full border-4 border-[#141414] bg-[#f2c230] px-3 py-2 font-display text-xl font-black uppercase text-[#141414] shadow-[4px_4px_0_#141414] disabled:opacity-40"
           >
             💰 Recolher {potential} ☕
           </button>
           <p className="text-center text-xs opacity-80">
-            {game.cards.length < 2 ? "Acerta pelo menos uma carta para poderes recolher." : "Uma carta igual conta como errada."} Ao chegar a ×{maxMult} recolhes sozinho.
+            {correct < 1 ? "Acerta pelo menos uma carta para poderes recolher." : "Uma carta igual não conta: segue sem mexer no multiplicador."} Ao chegar a ×{maxMult} recolhes sozinho.
           </p>
         </div>
       ) : (
