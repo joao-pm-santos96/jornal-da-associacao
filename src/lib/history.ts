@@ -23,6 +23,7 @@ async function ledgerLines(userId: number | null): Promise<LedgerLine[]> {
         WHEN l.bet_id IS NOT NULL THEN '/casino/' || l.bet_id
         WHEN l.kind IN ('slot') THEN '/casino/slot'
         WHEN l.kind = 'altobaixo' THEN '/casino/alto-baixo'
+        WHEN l.kind = 'emprestimo' THEN '/cofre/emprestimos'
         WHEN l.kind IN ('raspadinha') THEN '/casino/raspadinha'
         WHEN l.kind = 'encomenda' THEN '/cofre/encomendas'
       END AS href
@@ -105,7 +106,7 @@ export async function treasuryStatement(): Promise<StatementLine[]> {
     if (delta === 0) continue;
     cofre += delta;
     const prev = lines.at(-1);
-    if (l.kind === "oferta" && prev?.kind === "oferta" && prev.at.getTime() === l.at.getTime()) {
+    if ((l.kind === "oferta" || l.kind === "emprestimo") && prev?.kind === l.kind && prev.at.getTime() === l.at.getTime()) {
       prev.amount += delta;
       prev.balance = cofre;
       if (prev.amount === 0) lines.pop();

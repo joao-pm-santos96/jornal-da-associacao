@@ -13,6 +13,7 @@ import { purgeOldNotices, storeNotice } from "./notifications";
 import { closeDueAssemblies, dueReminders, outcomeLabel, type ClosedAssembly } from "./assembly";
 import { settlePoolGames } from "./pool-games";
 import { settleReflexGames } from "./reflex-games";
+import { settleLoans } from "./loans";
 import { closeDueWeeks, getComedySchedule, openVoting, type ClosedComedy, type ComedySchedule } from "./comedy";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string; inbox?: boolean };
@@ -233,6 +234,37 @@ async function settleReflex(): Promise<void> {
   ]);
 }
 
+async function settleLoanEvents(): Promise<void> {
+  const url = "/cofre/emprestimos";
+  const events = await settleLoans();
+  await Promise.all(
+    events.flatMap((e) => {
+      const l = e.loan;
+      const tag = `emprestimo-${l.id}`;
+      const left = l.total - l.repaid;
+      if (e.kind === "expired") {
+        return [pushToUsers([l.lender_id], { title: "🤝 A tua proposta de empréstimo expirou", body: `${l.borrower} não respondeu. Os grãos nunca saíram.`, url, tag })];
+      }
+      if (e.kind === "reminder") {
+        return [pushToUsers([l.borrower_id], { title: "🤝 O teu empréstimo vence amanhã", body: `Tens de devolver ${left} ☕ a ${l.lender}. Se não houver saldo, fica em incumprimento.`, url, tag })];
+      }
+      if (l.status === "repaid") {
+        return [
+          pushToUsers([l.lender_id], { title: `🤝 ${l.borrower} pagou o empréstimo`, body: `Recebeste ${e.paid} ☕ e o empréstimo está saldado.`, url, tag }),
+          pushToUsers([l.borrower_id], { title: "🤝 Empréstimo saldado", body: `O Cofre cobrou ${e.paid} ☕ para ${l.lender}. Já não deves nada.`, url, tag }),
+        ];
+      }
+      if (e.due) {
+        return [
+          pushToUsers([l.borrower_id], { title: "🚨 Empréstimo em incumprimento", body: `${e.paid > 0 ? `O Cofre cobrou ${e.paid} ☕. ` : ""}Faltam ${left} ☕ a ${l.lender}, cobrados sempre que entrarem grãos na tua conta.`, url, tag }),
+          pushToUsers([l.lender_id], { title: `🚨 ${l.borrower} não pagou tudo a tempo`, body: `${e.paid > 0 ? `Recebeste ${e.paid} ☕. ` : ""}Faltam ${left} ☕, que vão sendo cobrados automaticamente.`, url, tag }),
+        ];
+      }
+      return [pushToUsers([l.lender_id], { title: `🤝 Cobrados ${e.paid} ☕ a ${l.borrower}`, body: `Faltam ${left} ☕.`, url, tag })];
+    }),
+  );
+}
+
 export async function flushDueNotifications(): Promise<void> {
   const R = await getRules();
   await settleEconomy();
@@ -241,6 +273,7 @@ export async function flushDueNotifications(): Promise<void> {
   await settleAssemblies();
   await settlePool();
   await settleReflex();
+  await settleLoanEvents();
   await settleComedy();
   const expired = await expireDuels();
   await Promise.all(
