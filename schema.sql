@@ -640,6 +640,26 @@ CREATE TABLE IF NOT EXISTS hilo_games (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS hilo_games_active_idx ON hilo_games (user_id) WHERE status = 'active';
 
+CREATE TABLE IF NOT EXISTS loans (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  lender_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  borrower_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  principal integer NOT NULL CHECK (principal > 0),
+  rate_pct integer NOT NULL CHECK (rate_pct BETWEEN 0 AND 100),
+  term_days integer NOT NULL CHECK (term_days BETWEEN 1 AND 30),
+  total integer NOT NULL CHECK (total >= principal),
+  repaid integer NOT NULL DEFAULT 0 CHECK (repaid >= 0),
+  status text NOT NULL DEFAULT 'offered' CHECK (status IN ('offered', 'active', 'defaulted', 'repaid', 'declined', 'cancelled', 'expired')),
+  due_at timestamptz,
+  reminded boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  accepted_at timestamptz,
+  settled_at timestamptz,
+  simulated boolean NOT NULL DEFAULT jornal_simulating(),
+  CHECK (lender_id <> borrower_id)
+);
+CREATE INDEX IF NOT EXISTS loans_status_idx ON loans (status, due_at);
+
 CREATE TABLE IF NOT EXISTS comedy_jokes (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   week_start date NOT NULL,

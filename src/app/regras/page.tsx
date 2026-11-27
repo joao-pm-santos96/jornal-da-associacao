@@ -123,6 +123,7 @@ export default async function RulesPage() {
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Gorjetas:</strong> «pagar um café» a um post ou comentário de que gostaste, com {t.tipVatPct}% de IVA para o Cofre.</li>
           <li><strong>Ofertas:</strong> dar grãos a outro sócio, no Cofre, com um motivo à escolha. Não há IVA nem taxas, e fica nos extratos dos dois.</li>
+          <li><strong>Empréstimos:</strong> emprestar grãos a outro sócio, com o juro e o prazo (até 30 dias) que quem empresta escolher. No fim do prazo o Cofre cobra sozinho; se não houver saldo, cobra o que houver e o resto fica em incumprimento, cobrado sempre que entrarem grãos na conta de quem deve.</li>
           <li><strong>Encomendas:</strong> oferecer grãos a quem escrever sobre um tema. Ficam retidos até alguém entregar; se ninguém pegar até ao prazo, voltam.</li>
           <li><strong>Loja do Cofre:</strong> destacar um post na primeira página durante {t.highlightHours} h ({t.highlight} ☕), indulto da escala ({t.pardon} ☕, na tua semana, antes de publicares) e alcunha durante {t.nicknameDays} dias ({t.nickname} ☕).</li>
           <li>E o <Link href="/casino" className="underline hover:text-scoop">Casino</Link>, claro.</li>

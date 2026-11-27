@@ -102,6 +102,9 @@ export default async function TreasuryPage() {
               <Link href="/cofre/encomendas" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
                 ✍️ Encomendas de posts
               </Link>
+              <Link href="/cofre/emprestimos" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
+                🤝 Empréstimos
+              </Link>
               <Link href="/cofre/tabela" className="border-2 border-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider hover:bg-ink hover:text-white">
                 📋 Preços e taxas
               </Link>

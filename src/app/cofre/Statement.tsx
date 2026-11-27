@@ -14,6 +14,7 @@ const ICON: Record<string, string> = {
   estorno: "↩️",
   gorjeta: "☕",
   oferta: "💸",
+  emprestimo: "🤝",
   loja: "🛒",
   encomenda: "✍️",
   slot: "🎰",
