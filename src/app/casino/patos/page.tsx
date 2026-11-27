@@ -4,12 +4,15 @@ import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { getBalances } from "@/lib/economy";
 import { formatDateTime, formatSchedule } from "@/lib/dates";
-import { ensureOpenRace, finishedRaces, raceBoard, raceWagers, resolveDueRaces } from "@/lib/ducks";
+import { describeRace, ensureOpenRace, finishedRaces, getRaceSchedule, raceBoard, raceWagers, resolveDueRaces } from "@/lib/ducks";
+import { DAY_NAMES } from "@/lib/comedy";
+import { getOffices } from "@/lib/offices";
 import { DUCKS, duckName } from "@/lib/ducks-table";
 import { getRules } from "@/lib/rules";
 import { notifyRaceResults } from "@/lib/push";
 import { Disclaimer, Marquee, Sticker, felt, gold } from "../Decor";
 import { DuckBetForm } from "./DuckBetForm";
+import { RaceScheduleForm } from "./RaceScheduleForm";
 import { RaceTrack } from "./RaceTrack";
 
 const odds = new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -20,12 +23,15 @@ export default async function DuckRacePage() {
   const settled = await resolveDueRaces();
   if (settled.length > 0) after(() => notifyRaceResults(settled));
   const race = await ensureOpenRace();
-  const [board, balances, past, mine] = await Promise.all([
+  const [board, balances, past, mine, schedule, offices] = await Promise.all([
     raceBoard(race.id),
     getBalances(),
     finishedRaces(6),
     sql`SELECT duck, sum(amount)::int AS amount FROM duck_bets WHERE race_id = ${race.id} AND user_id = ${user.id} GROUP BY duck`,
+    getRaceSchedule(),
+    getOffices(),
   ]);
+  const isPresident = offices.presidente?.user_id === user.id;
   const balance = balances.find((b) => b.user_id === user.id)?.balance ?? 0;
   const pot = board.reduce((sum, o) => sum + o.total, 0);
   const net = pot - Math.ceil((pot * raceHouseCutPct) / 100);
@@ -42,7 +48,7 @@ export default async function DuckRacePage() {
 
       <header className="text-center">
         <h1 className={`font-display text-4xl font-black uppercase ${gold}`}>🦆 Corrida de Patos</h1>
-        <p className="text-sm">Todos os domingos às 21h · apostas mútuas · a casa fica com {raceHouseCutPct}%</p>
+        <p className="text-sm">Todas as semanas, {describeRace(schedule)} · apostas mútuas · a casa fica com {raceHouseCutPct}%</p>
       </header>
 
       <section className="relative mx-auto max-w-2xl border-2 border-dashed border-[#141414] bg-[#fff6d6] p-4 text-[#141414] outline outline-4 outline-[#fff6d6]">
@@ -119,6 +125,14 @@ export default async function DuckRacePage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {isPresident && (
+        <section className="mx-auto max-w-2xl space-y-2 border-2 border-[#141414] bg-[#fff6d6] p-4 text-[#141414]">
+          <h2 className="font-display text-xl font-black">👑 Horário da corrida</h2>
+          <p className="text-sm">Escolhe o dia e a hora da corrida semanal. A corrida em aberto muda logo para o novo horário, com as apostas que já tem, e sai um Decreto Presidencial com aviso a todos.</p>
+          <RaceScheduleForm day={schedule.day} hour={schedule.hour} days={DAY_NAMES} />
         </section>
       )}
 

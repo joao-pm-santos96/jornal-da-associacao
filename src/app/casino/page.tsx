@@ -5,14 +5,17 @@ import { formatSchedule } from "@/lib/dates";
 import { getRules, slotPaytable } from "@/lib/rules";
 import { getOffices } from "@/lib/offices";
 import { getClosedModules, type CasinoGame } from "@/lib/modules";
+import { describeRace, getRaceSchedule } from "@/lib/ducks";
 import { NewBetForm } from "./BetForms";
 import { Disclaimer, Marquee, felt, gold } from "./Decor";
 
 export default async function CasinoPage() {
   const R = await getRules();
   const user = await requireUser();
-  const [bets, offices, closedModules] = await Promise.all([listBets(), getOffices(), getClosedModules()]);
+  const [bets, offices, closedModules, raceSchedule] = await Promise.all([listBets(), getOffices(), getClosedModules(), getRaceSchedule()]);
   const bookie = offices.apostas;
+  const raceWhen = describeRace(raceSchedule);
+  const raceSub = raceWhen.charAt(0).toUpperCase() + raceWhen.slice(1);
   const open = bets.filter((b) => b.status === "open" || b.status === "closed");
   const past = bets.filter((b) => b.status === "resolved" || b.status === "void");
 
@@ -47,7 +50,7 @@ export default async function CasinoPage() {
         {[
           { href: "/casino/slot", game: "slot" as CasinoGame, icon: "🦆☕🐕", title: "Slot machine", sub: `Jackpot ×${slotPaytable(R).find((s) => s.emoji === "☕")?.triple ?? 0}`, rot: "-rotate-1" },
           { href: "/casino/raspadinha", game: "raspadinha" as CasinoGame, icon: "🎟️", title: "Raspadinha", sub: `Raspa o Bacalhau · ${R.scratchCost} ☕`, rot: "rotate-1" },
-          { href: "/casino/patos", game: "patos" as CasinoGame, icon: "🦆🏁", title: "Corrida de Patos", sub: "Domingos às 21h", rot: "rotate-1" },
+          { href: "/casino/patos", game: "patos" as CasinoGame, icon: "🦆🏁", title: "Corrida de Patos", sub: raceSub, rot: "rotate-1" },
           { href: "/casino/duelos", game: "duelos" as CasinoGame, icon: "⚔️", title: "Duelos", sub: "Pedra, papel, tesoura", rot: "-rotate-1" },
           { href: "/casino/bilhar", game: "bilhar" as CasinoGame, icon: "🎱", title: "Bilhar", sub: "8 bolas, por turnos", rot: "rotate-1" },
           { href: "/casino/gatilho", game: "gatilho" as CasinoGame, icon: "⚡", title: "Gatilho", sub: "Quem toca primeiro", rot: "-rotate-1" },
