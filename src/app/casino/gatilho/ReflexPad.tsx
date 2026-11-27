@@ -70,9 +70,7 @@ export function ReflexPad(props: ReflexPadProps) {
     };
   }, []);
 
-  // Native listener (not React's onPointerDown): the handler is not reachable from the DOM,
-  // so a script cannot call it with a fake event; and events made by scripts
-  // (dispatchEvent) have isTrusted === false, so they are ignored.
+  // Native listener keeps the handler out of reach of __reactProps; scripted events are untrusted.
   const tapRef = useRef<(e: PointerEvent) => void>(() => {});
   useEffect(() => {
     const el = pad.current;

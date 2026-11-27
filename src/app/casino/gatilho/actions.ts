@@ -262,14 +262,15 @@ export async function startAttempt(gameId: number): Promise<StartResult> {
 }
 
 export async function finishAttempt(gameId: number, reported: number | null): Promise<AttemptResult> {
-  const user = await requireUser();
-  const R = await getRules();
-  const game = await myActiveGame(gameId, user.id);
-  if (typeof game === "string") return { ok: false, error: game };
+  // Timed before auth and lookups so server work does not count against the player.
   const [timing] = (await sql`
     SELECT (extract(epoch FROM clock_timestamp() - attempt_issued_at) * 1000)::int AS elapsed, attempt_delay_ms AS delay
     FROM reflex_games WHERE id = ${gameId} AND attempt_issued_at IS NOT NULL
   `) as { elapsed: number; delay: number }[];
+  const user = await requireUser();
+  const R = await getRules();
+  const game = await myActiveGame(gameId, user.id);
+  if (typeof game === "string") return { ok: false, error: game };
   if (!timing) return { ok: false, error: "Não há nenhuma tentativa a decorrer." };
 
   let ms: number;
@@ -284,11 +285,10 @@ export async function finishAttempt(gameId: number, reported: number | null): Pr
     ms = PENALTY_MS;
     note = "Tocaste antes do verde.";
   } else if (reported > timing.elapsed - timing.delay + CLOCK_SLACK_MS) {
-    // The client cannot measure more time than the server saw: the result was not made by this pad.
+    // The pad cannot measure more time than the server saw pass.
     ms = PENALTY_MS;
     note = "Resultado inválido. Conta como 1 segundo.";
   } else {
-    // Do not trust the client value alone: it can be lower than the server time only by the network allowance.
     const serverMs = timing.elapsed - timing.delay;
     ms = Math.min(Math.max(Math.round(reported), serverMs - MAX_NETWORK_MS), PENALTY_MS);
     if (ms === PENALTY_MS) note = "Demasiado lento: conta como 1 segundo.";
