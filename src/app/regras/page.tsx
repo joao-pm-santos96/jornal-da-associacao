@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOffices } from "@/lib/offices";
 import { getRules, scratchPrizes, slotBets, slotPaytable } from "@/lib/rules";
+import { describeRace, getRaceSchedule } from "@/lib/ducks";
 import { getComedySchedule, onDay } from "@/lib/comedy";
 import { scratchReturn, scratchWinChance } from "@/lib/scratch-table";
 import { expectedReturn } from "@/lib/slot-table";
@@ -24,7 +25,7 @@ export default async function RulesPage() {
   const president = offices.presidente?.name ?? "cargo vago";
   const treasurer = offices.tesoureiro?.name ?? "cargo vago";
   const bookie = offices.apostas?.name ?? "cargo vago";
-  const t = await getRules();
+  const [t, raceSchedule] = await Promise.all([getRules(), getRaceSchedule()]);
   const comedy = await getComedySchedule();
 
   return (
@@ -168,7 +169,7 @@ export default async function RulesPage() {
           <li>A <Link href="/casino/slot" className="underline hover:text-scoop">slot machine</Link> aceita jogadas de {slotBets(t).join(", ").replace(/, (\d+)$/, " ou $1")} ☕. Paga até ×{Math.max(...slotPaytable(t).map((s) => s.triple))}, com multiplicadores e probabilidades decididos pelo Tesoureiro, e devolve em média {Math.round(expectedReturn(slotPaytable(t)) * 100)}% do que recebe. A diferença é do Cofre.</li>
           <li>A <Link href="/casino/raspadinha" className="underline hover:text-scoop">Raspadinha</Link> custa {t.scratchCost} ☕ por bilhete; três símbolos iguais ganham. Sai prémio em {Math.round(scratchWinChance(scratchPrizes(t)) * 100)}% dos bilhetes e, em média, devolve {Math.round(scratchReturn(scratchPrizes(t)) * 100)}% do que custa.</li>
           <li>No <Link href="/casino/alto-baixo" className="underline hover:text-scoop">Alto ou Baixo</Link> aposta-se entre {t.hiloMinBet} e {t.hiloMaxBet} ☕ e adivinha-se se a próxima carta é mais alta ou mais baixa. Cada acerto multiplica a aposta conforme a probabilidade, menos {t.hiloEdgePct}% para a casa; uma carta igual não conta e segue para a próxima. Pode-se recolher depois do primeiro acerto, e aos ×{t.hiloMaxMult} recolhe-se sozinho.</li>
-          <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é todos os domingos às 21h. As apostas são mútuas, a casa fica com {t.raceHouseCutPct}% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
+          <li>A <Link href="/casino/patos" className="underline hover:text-scoop">Corrida de Patos</Link> é uma vez por semana, {describeRace(raceSchedule)}; o dia e a hora são decididos pelo Presidente. As apostas são mútuas, a casa fica com {t.raceHouseCutPct}% e o vencedor é sorteado: todos os patos têm as mesmas hipóteses.</li>
           <li>Nos <Link href="/casino/duelos" className="underline hover:text-scoop">Duelos</Link> desafia-se outro sócio para pedra, papel ou tesoura. Quem ganha leva o pote menos {t.duelHouseCutPct}%; em caso de empate, cada um fica com o seu. O mínimo é {t.duelMinStake} ☕ e um desafio sem resposta em {t.duelExpiryHours}h expira e os grãos voltam.</li>
           <li>
             No <Link href="/casino/bilhar" className="underline hover:text-scoop">Bilhar</Link> joga-se 8 bolas contra outro sócio, por turnos. Quem desafia abre. A mesa fica aberta até alguém meter uma bola sem falta, abertura incluída: fica com esse grupo (lisas ou riscadas) e o outro fica com o resto. Quem mete uma bola sua continua a jogar.

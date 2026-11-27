@@ -3,17 +3,40 @@ import { randomBytes, randomInt } from "node:crypto";
 import { sql } from "./db";
 import { DUCKS, duckName } from "./ducks-table";
 import { getRules } from "./rules";
+import { onDay } from "./comedy";
 
 export type Race = { id: number; race_at: Date; status: "open" | "finished"; winner: number | null; seed: string | null };
 
 export type RaceResult = { id: number; winner: number; payouts: { user_id: number; staked: number; prize: number }[] };
 
+export type RaceSchedule = { day: number; hour: number };
+
+export const DEFAULT_RACE_SCHEDULE: RaceSchedule = { day: 7, hour: 21 };
+
+export function raceScheduleProblem(s: RaceSchedule): string | null {
+  if (!Number.isInteger(s.day) || s.day < 1 || s.day > 7) return "Escolhe um dia da semana.";
+  if (!Number.isInteger(s.hour) || s.hour < 0 || s.hour > 23) return "A hora vai das 0h às 23h.";
+  return null;
+}
+
+export function describeRace(s: RaceSchedule): string {
+  return `${onDay(s.day)} às ${s.hour}h`;
+}
+
+export async function getRaceSchedule(): Promise<RaceSchedule> {
+  const rows = (await sql`SELECT key, value FROM settings WHERE key IN ('patos_dia', 'patos_hora')`) as { key: string; value: string }[];
+  const get = (key: string) => rows.find((r) => r.key === key)?.value;
+  const schedule = { day: Number(get("patos_dia") ?? DEFAULT_RACE_SCHEDULE.day), hour: Number(get("patos_hora") ?? DEFAULT_RACE_SCHEDULE.hour) };
+  return raceScheduleProblem(schedule) ? DEFAULT_RACE_SCHEDULE : schedule;
+}
+
 export async function ensureOpenRace(): Promise<Race> {
+  const { day, hour } = await getRaceSchedule();
   await sql`
     WITH s AS (
-      SELECT ((date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + interval '6 days 21 hours') AT TIME ZONE 'Europe/Lisbon') AS sunday
+      SELECT ((date_trunc('week', now() AT TIME ZONE 'Europe/Lisbon') + make_interval(days => ${day - 1}, hours => ${hour})) AT TIME ZONE 'Europe/Lisbon') AS slot
     ),
-    t AS (SELECT CASE WHEN sunday > now() THEN sunday ELSE sunday + interval '7 days' END AS race_at FROM s)
+    t AS (SELECT CASE WHEN slot > now() THEN slot ELSE slot + interval '7 days' END AS race_at FROM s)
     INSERT INTO duck_races (race_at, simulated)
     SELECT t.race_at, false FROM t
     WHERE NOT EXISTS (SELECT 1 FROM duck_races r WHERE r.race_at = t.race_at)
