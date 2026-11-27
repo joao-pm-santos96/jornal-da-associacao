@@ -24,8 +24,8 @@ export default async function ReflexPracticePage() {
       <section className="mx-auto max-w-xl space-y-1 text-sm">
         <h2 className={`border-b-2 border-dashed border-[#f2c230] pb-1 font-display text-xl font-black uppercase ${gold}`}>Como se joga</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Toca no quadrado: fica vermelho e, entre {MIN_DELAY_MS / 1000} e {MAX_DELAY_MS / 1000} segundos depois, fica verde.</li>
-          <li>Toca assim que ficar verde. Conta o tempo entre o verde e o teu toque.</li>
+          <li>Carrega em «Começar»: o quadrado fica vermelho e, entre {MIN_DELAY_MS / 1000} e {MAX_DELAY_MS / 1000} segundos depois, fica verde.</li>
+          <li>Toca no quadrado assim que ficar verde. Conta o tempo entre o verde e o teu toque.</li>
           <li>Tocar antes do verde conta como 1 segundo. Mais lento do que 1 segundo também.</li>
           <li>São {ATTEMPTS} tentativas e conta a média. O recorde fica guardado só neste telemóvel.</li>
         </ul>
