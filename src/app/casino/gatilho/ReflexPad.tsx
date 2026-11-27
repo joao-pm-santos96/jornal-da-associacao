@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, formatMs } from "@/lib/reflex";
+import { sons } from "@/lib/sons";
 import { finishAttempt, startAttempt, type ReflexOutcome } from "./actions";
 
 type Phase = "idle" | "arming" | "waiting" | "go" | "sending" | "result" | "done";
@@ -87,6 +88,7 @@ export function ReflexPad(props: ReflexPadProps) {
 
   function arm(delayMs: number): void {
     go("waiting");
+    sons.armed();
     timer.current = setTimeout(() => {
       if (phaseRef.current !== "waiting") return;
       phaseRef.current = "go";
@@ -97,6 +99,7 @@ export function ReflexPad(props: ReflexPadProps) {
   }
 
   async function begin(): Promise<void> {
+    sons.unlock();
     setLast(null);
     setMessage(null);
     if (props.mode === "practice") {
@@ -117,7 +120,13 @@ export function ReflexPad(props: ReflexPadProps) {
     arm(res.delayMs);
   }
 
+  function hitSound(ms: number, note: string | null): void {
+    if (note === null) sons.shot(ms);
+    else sons.foul();
+  }
+
   function practiceResult(ms: number, note: string | null): void {
+    hitSound(ms, note);
     const next = [...times, ms];
     setTimes(next);
     setLast({ ms, note });
@@ -127,7 +136,10 @@ export function ReflexPad(props: ReflexPadProps) {
       const avg = average(next);
       if (r.bestAvg === null || avg < r.bestAvg) r = { ...r, bestAvg: avg };
     }
-    if (r !== record) saveRecord(r);
+    if (r !== record) {
+      saveRecord(r);
+      setTimeout(() => sons.win(3), 350);
+    }
     go(next.length === ATTEMPTS ? "done" : "result");
   }
 
@@ -147,6 +159,11 @@ export function ReflexPad(props: ReflexPadProps) {
       setMessage(res.error);
       go("idle");
       return;
+    }
+    hitSound(res.ms, res.note);
+    if (res.outcome) {
+      const o = res.outcome;
+      setTimeout(() => (o.winnerId === null ? sons.tie() : o.myAvg < o.rivalAvg ? sons.victory() : sons.lose()), 450);
     }
     setTimes(res.times);
     setLast({ ms: res.ms, note: res.note });
