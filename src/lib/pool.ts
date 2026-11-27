@@ -1,13 +1,19 @@
 export const TABLE = { width: 1000, height: 500 } as const;
 export const BALL_R = 11.25;
+export const CORNER_JAW = 42;
+export const CORNER_RECEDE = 22;
 export const POCKETS: readonly { x: number; y: number; r: number }[] = [
-  { x: 0, y: 0, r: 22 },
-  { x: TABLE.width / 2, y: -4, r: 19 },
-  { x: TABLE.width, y: 0, r: 22 },
-  { x: 0, y: TABLE.height, r: 22 },
-  { x: TABLE.width / 2, y: TABLE.height + 4, r: 19 },
-  { x: TABLE.width, y: TABLE.height, r: 22 },
+  { x: -6, y: -6, r: 28 },
+  { x: TABLE.width / 2, y: -10, r: 26 },
+  { x: TABLE.width + 6, y: -6, r: 28 },
+  { x: -6, y: TABLE.height + 6, r: 28 },
+  { x: TABLE.width / 2, y: TABLE.height + 10, r: 26 },
+  { x: TABLE.width + 6, y: TABLE.height + 6, r: 28 },
 ];
+
+export function cushionInset(along: number): number {
+  return along < CORNER_JAW ? CORNER_RECEDE * (1 - along / CORNER_JAW) : 0;
+}
 export const HEAD_SPOT = { x: TABLE.width * 0.25, y: TABLE.height / 2 };
 export const FOOT_SPOT = { x: TABLE.width * 0.73, y: TABLE.height / 2 };
 export const MAX_SPEED = 3.4;
@@ -183,24 +189,30 @@ export function simulate(start: readonly Ball[], shot: Shot, frameMs: number = F
     for (const b of balls) {
       if (b.pocketed) continue;
       let hit = 0;
-      if (b.x < BALL_R) {
-        b.x = BALL_R + (BALL_R - b.x);
+      const sideIn = cushionInset(Math.min(b.y, TABLE.height - b.y));
+      const endIn = cushionInset(Math.min(b.x, TABLE.width - b.x));
+      const left = BALL_R - sideIn;
+      const right = TABLE.width - BALL_R + sideIn;
+      const top = BALL_R - endIn;
+      const bottom = TABLE.height - BALL_R + endIn;
+      if (b.x < left) {
+        b.x = left + (left - b.x);
         hit = Math.abs(b.vx);
         b.vx = Math.abs(b.vx) * CUSHION_RESTITUTION;
         b.vy *= CUSHION_RESTITUTION;
-      } else if (b.x > TABLE.width - BALL_R) {
-        b.x = TABLE.width - BALL_R - (b.x - (TABLE.width - BALL_R));
+      } else if (b.x > right) {
+        b.x = right - (b.x - right);
         hit = Math.abs(b.vx);
         b.vx = -Math.abs(b.vx) * CUSHION_RESTITUTION;
         b.vy *= CUSHION_RESTITUTION;
       }
-      if (b.y < BALL_R) {
-        b.y = BALL_R + (BALL_R - b.y);
+      if (b.y < top) {
+        b.y = top + (top - b.y);
         hit = Math.max(hit, Math.abs(b.vy));
         b.vy = Math.abs(b.vy) * CUSHION_RESTITUTION;
         b.vx *= CUSHION_RESTITUTION;
-      } else if (b.y > TABLE.height - BALL_R) {
-        b.y = TABLE.height - BALL_R - (b.y - (TABLE.height - BALL_R));
+      } else if (b.y > bottom) {
+        b.y = bottom - (b.y - bottom);
         hit = Math.max(hit, Math.abs(b.vy));
         b.vy = -Math.abs(b.vy) * CUSHION_RESTITUTION;
         b.vx *= CUSHION_RESTITUTION;
