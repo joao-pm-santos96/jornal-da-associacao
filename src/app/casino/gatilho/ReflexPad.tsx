@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average } from "@/lib/reflex";
 import { finishAttempt, startAttempt, type ReflexOutcome } from "./actions";
@@ -68,6 +68,18 @@ export function ReflexPad(props: ReflexPadProps) {
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
+  }, []);
+
+  // Native listener (not React's onPointerDown): the handler is not reachable from the DOM,
+  // so a script cannot call it with a fake event; and events made by scripts
+  // (dispatchEvent) have isTrusted === false, so they are ignored.
+  const tapRef = useRef<(e: PointerEvent) => void>(() => {});
+  useEffect(() => {
+    const el = pad.current;
+    if (!el) return;
+    const onDown = (e: PointerEvent) => tapRef.current(e);
+    el.addEventListener("pointerdown", onDown);
+    return () => el.removeEventListener("pointerdown", onDown);
   }, []);
 
   function go(next: Phase): void {
@@ -144,8 +156,9 @@ export function ReflexPad(props: ReflexPadProps) {
     go(res.turnDone ? "done" : "result");
   }
 
-  function tap(e: PointerEvent<HTMLButtonElement>): void {
+  function tap(e: PointerEvent): void {
     e.preventDefault();
+    if (!e.isTrusted) return;
     const p = phaseRef.current;
     if (p === "waiting") {
       if (timer.current) clearTimeout(timer.current);
@@ -157,6 +170,10 @@ export function ReflexPad(props: ReflexPadProps) {
     }
   }
 
+  useEffect(() => {
+    tapRef.current = tap;
+  });
+
   const attemptNo = Math.min(times.length + (phase === "result" || phase === "done" ? 0 : 1), ATTEMPTS);
   const matchDone = props.mode === "match" && phase === "done";
 
@@ -165,7 +182,6 @@ export function ReflexPad(props: ReflexPadProps) {
       <button
         ref={pad}
         type="button"
-        onPointerDown={tap}
         onContextMenu={(e) => e.preventDefault()}
         disabled={matchDone || phase === "arming" || phase === "sending"}
         className={`flex h-72 w-full touch-none select-none flex-col items-center justify-center border-4 border-[#141414] p-4 text-center shadow-[6px_6px_0_#141414] ${LOOK[phase]}`}
