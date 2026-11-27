@@ -63,7 +63,7 @@ export function ReflexPad(props: ReflexPadProps) {
   const phaseRef = useRef<Phase>("idle");
   const goAt = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pad = useRef<HTMLButtonElement>(null);
+  const pad = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => {
@@ -180,8 +180,6 @@ export function ReflexPad(props: ReflexPadProps) {
       void report(null);
     } else if (p === "go") {
       void report(e.timeStamp - goAt.current);
-    } else if (p === "idle" || p === "result" || (p === "done" && props.mode === "practice")) {
-      void begin();
     }
   }
 
@@ -191,21 +189,24 @@ export function ReflexPad(props: ReflexPadProps) {
 
   const attemptNo = Math.min(times.length + (phase === "result" || phase === "done" ? 0 : 1), ATTEMPTS);
   const matchDone = props.mode === "match" && phase === "done";
+  const canStart = phase === "idle" || phase === "result" || (phase === "done" && props.mode === "practice");
+  const live = phase === "waiting" || phase === "go";
+  const startLabel = phase === "done" ? "↻ Recomeçar" : phase === "result" ? `▶ Próxima tentativa (${attemptNo + 1} de ${ATTEMPTS})` : `▶ Começar tentativa ${attemptNo} de ${ATTEMPTS}`;
 
   return (
     <div className="space-y-3">
-      <button
+      <div
         ref={pad}
-        type="button"
+        role="status"
+        aria-live="assertive"
         onContextMenu={(e) => e.preventDefault()}
-        disabled={matchDone || phase === "arming" || phase === "sending"}
-        className={`flex h-72 w-full touch-none select-none flex-col items-center justify-center border-4 border-[#141414] p-4 text-center shadow-[6px_6px_0_#141414] ${LOOK[phase]}`}
+        className={`flex h-72 w-full select-none flex-col items-center justify-center border-4 border-[#141414] p-4 text-center shadow-[6px_6px_0_#141414] ${live ? "touch-none" : ""} ${LOOK[phase]}`}
       >
         {phase === "idle" && (
           <>
             <span className="text-5xl" aria-hidden="true">⚡</span>
-            <span className="mt-2 font-display text-3xl font-black uppercase">Toca para começar</span>
-            <span className="mt-1 text-sm font-bold">Tentativa {attemptNo} de {ATTEMPTS}. Espera pelo verde e toca logo.</span>
+            <span className="mt-2 font-display text-3xl font-black uppercase">Pronto?</span>
+            <span className="mt-1 text-sm font-bold">Carrega em «Começar» por baixo. Depois espera pelo verde e toca aqui logo.</span>
           </>
         )}
         {(phase === "arming" || phase === "sending") && <span className="font-display text-2xl font-black uppercase">…</span>}
@@ -221,11 +222,21 @@ export function ReflexPad(props: ReflexPadProps) {
             <span className={`font-display text-6xl font-black ${last.note ? "text-[#e10600]" : ""}`}>{last.ms} ms</span>
             {last.note && <span className="mt-1 text-sm font-bold text-[#e10600]">{last.note}</span>}
             <span className="mt-3 text-sm font-bold">
-              {phase === "result" ? "Toca para a próxima tentativa." : props.mode === "practice" ? `Média: ${formatMs(average(times))}. Toca para recomeçar.` : `A tua média: ${formatMs(average(times))}.`}
+              {phase === "result" ? "Carrega em «Próxima tentativa» quando estiveres pronto." : `${props.mode === "practice" ? "Média" : "A tua média"}: ${formatMs(average(times))}.`}
             </span>
           </>
         )}
-      </button>
+      </div>
+
+      {canStart && (
+        <button
+          type="button"
+          onClick={() => void begin()}
+          className="w-full border-4 border-[#141414] bg-[#f2c230] px-4 py-3 font-display text-xl font-black uppercase text-[#141414] shadow-[4px_4px_0_#141414]"
+        >
+          {startLabel}
+        </button>
+      )}
 
       {message && <p className="border-2 border-[#e10600] bg-white p-2 text-sm font-semibold text-[#e10600]">{message}</p>}
 
