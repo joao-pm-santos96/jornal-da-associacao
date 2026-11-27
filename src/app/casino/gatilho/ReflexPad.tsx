@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average } from "@/lib/reflex";
+import { ATTEMPTS, MAX_DELAY_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, formatMs } from "@/lib/reflex";
 import { finishAttempt, startAttempt, type ReflexOutcome } from "./actions";
 
 type Phase = "idle" | "arming" | "waiting" | "go" | "sending" | "result" | "done";
@@ -206,7 +206,7 @@ export function ReflexPad(props: ReflexPadProps) {
             <span className={`font-display text-6xl font-black ${last.note ? "text-[#e10600]" : ""}`}>{last.ms} ms</span>
             {last.note && <span className="mt-1 text-sm font-bold text-[#e10600]">{last.note}</span>}
             <span className="mt-3 text-sm font-bold">
-              {phase === "result" ? "Toca para a próxima tentativa." : props.mode === "practice" ? `Média: ${average(times)} ms. Toca para recomeçar.` : `A tua média: ${average(times)} ms.`}
+              {phase === "result" ? "Toca para a próxima tentativa." : props.mode === "practice" ? `Média: ${formatMs(average(times))}. Toca para recomeçar.` : `A tua média: ${formatMs(average(times))}.`}
             </span>
           </>
         )}
@@ -225,7 +225,7 @@ export function ReflexPad(props: ReflexPadProps) {
       {props.mode === "practice" && (
         <p className="text-center text-sm">
           Recorde neste telemóvel: melhor toque <strong>{record.bestShot ?? "—"}{record.bestShot !== null && " ms"}</strong> · melhor média{" "}
-          <strong>{record.bestAvg ?? "—"}{record.bestAvg !== null && " ms"}</strong>
+          <strong>{record.bestAvg === null ? "—" : formatMs(record.bestAvg)}</strong>
         </p>
       )}
 

@@ -10,7 +10,7 @@ import { field, type FormState } from "@/lib/form";
 import { getRules, type Rules } from "@/lib/rules";
 import { pushToUsers } from "@/lib/push";
 import { gameClosed } from "@/lib/modules";
-import { ATTEMPTS, CLOCK_SLACK_MS, MAX_DELAY_MS, MAX_NETWORK_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, reflexPrize } from "@/lib/reflex";
+import { ATTEMPTS, CLOCK_SLACK_MS, MAX_DELAY_MS, MAX_NETWORK_MS, MIN_DELAY_MS, MIN_HUMAN_MS, PENALTY_MS, average, formatMs, reflexPrize, total } from "@/lib/reflex";
 import { getReflexGame, timesOf, type ReflexGame } from "@/lib/reflex-games";
 
 async function balanceOf(userId: number): Promise<number> {
@@ -150,7 +150,9 @@ export type StartResult =
 async function finishGame(game: ReflexGame, R: Rules): Promise<ReflexOutcome | null> {
   const cAvg = average(game.challenger_times);
   const oAvg = average(game.opponent_times);
-  const winnerId = cAvg === oAvg ? null : cAvg < oAvg ? game.challenger_id : game.opponent_id;
+  const cTotal = total(game.challenger_times);
+  const oTotal = total(game.opponent_times);
+  const winnerId = cTotal === oTotal ? null : cTotal < oTotal ? game.challenger_id : game.opponent_id;
   const prize = reflexPrize(game.stake, R.reflexHouseCutPct);
   const [row] = (await sql`
     WITH g AS (
@@ -212,7 +214,7 @@ async function recordTime(user: User, game: ReflexGame, ms: number, R: Rules): P
   const outcome = await finishGame(updated, R);
   if (outcome) {
     const rivalId = updated.challenger_id;
-    const line = `${updated.challenger} ${average(updated.challenger_times)} ms · ${updated.opponent} ${average(updated.opponent_times)} ms`;
+    const line = `${updated.challenger} ${formatMs(average(updated.challenger_times))} · ${updated.opponent} ${formatMs(average(updated.opponent_times))}`;
     const prizeText = updated.stake > 0 ? ` +${outcome.prize} ☕` : "";
     after(() =>
       pushToUsers([rivalId], {

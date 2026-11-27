@@ -8,12 +8,16 @@ export const MIN_HUMAN_MS = 100;
 export const MAX_NETWORK_MS = 250;
 export const CLOCK_SLACK_MS = 50;
 
+export function total(times: readonly number[]): number {
+  return times.reduce((a, b) => a + b, 0);
+}
+
 export function average(times: readonly number[]): number {
-  return times.length === 0 ? 0 : Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+  return times.length === 0 ? 0 : Math.round((total(times) / times.length) * 10) / 10;
 }
 
 export function formatMs(ms: number): string {
-  return `${ms} ms`;
+  return `${String(ms).replace(".", ",")} ms`;
 }
 
 export function reflexPrize(stake: number, cutPct: number): number {
