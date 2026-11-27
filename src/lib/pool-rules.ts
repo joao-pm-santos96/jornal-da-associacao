@@ -84,7 +84,7 @@ export function judge(before: PoolState, result: ShotResult): Verdict {
     parts.push("A preta entrou na abertura e voltou à mesa.");
   }
 
-  if (before.broken && mine === null && foul === null) {
+  if (mine === null && foul === null) {
     const first = objects.find((id) => groupOf(id) !== null);
     const group = first === undefined ? null : groupOf(first);
     if (group) {
