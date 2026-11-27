@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BALL_R, FRAME_MS, HEAD_SPOT, POCKETS, TABLE, aimGuide, canPlaceCue, isStripe, rack, simulate, type Ball, type Frame, type ShotEvent, type ShotResult } from "@/lib/pool";
+import { BALL_R, CORNER_JAW, CORNER_RECEDE, FRAME_MS, HEAD_SPOT, POCKETS, TABLE, aimGuide, canPlaceCue, isStripe, rack, simulate, type Ball, type Frame, type ShotEvent, type ShotResult } from "@/lib/pool";
 import { sons } from "@/lib/sons";
 import { shootPool } from "./actions";
 
@@ -153,6 +153,18 @@ export function PoolTable({ match }: { match?: MatchProps }) {
     ctx.fill();
     ctx.fillStyle = "#0b6b3a";
     ctx.fillRect(0, 0, TABLE.width, TABLE.height);
+    for (const [cx, sx] of [[0, 1], [TABLE.width, -1]] as const) {
+      for (const [cy, sy] of [[0, 1], [TABLE.height, -1]] as const) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + sy * CORNER_JAW);
+        ctx.lineTo(cx - sx * CORNER_RECEDE, cy);
+        ctx.lineTo(cx - sx * CORNER_RECEDE, cy - sy * CORNER_RECEDE);
+        ctx.lineTo(cx, cy - sy * CORNER_RECEDE);
+        ctx.lineTo(cx + sx * CORNER_JAW, cy);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
     ctx.fillStyle = "#f2c230";
     for (let i = 1; i < 8; i++) {
       if (i === 4) continue;
@@ -509,7 +521,7 @@ export function PoolTable({ match }: { match?: MatchProps }) {
       )}
 
       {(!match || (match.active && match.myTurn)) && (
-      <div className="mx-auto flex max-w-sm flex-col items-stretch gap-2">
+      <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 mr-16 flex max-w-sm flex-col items-stretch gap-2 border-2 border-[#141414] bg-[#08502b]/90 p-2 text-[#fff6d6] shadow-[3px_3px_0_#141414] backdrop-blur-sm sm:mx-auto md:bottom-3">
         <label className="flex items-center gap-2 text-sm font-bold">
           Força
           <input type="range" min={5} max={100} value={Math.round(power * 100)} onChange={(e) => setPower(Number(e.target.value) / 100)}
