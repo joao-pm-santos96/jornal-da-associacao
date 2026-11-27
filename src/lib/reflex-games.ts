@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "./db";
 import { getRules } from "./rules";
+import { ATTEMPTS, PENALTY_MS } from "./reflex";
 
 export type ReflexStatus = "pending" | "active" | "finished" | "declined" | "cancelled" | "expired";
 
@@ -89,4 +90,41 @@ export async function settleReflexGames(): Promise<{ expired: ExpiredReflex[]; t
     `,
   ]);
   return { expired: expired as ExpiredReflex[], timedOut: timedOut as TimedOutReflex[] };
+}
+
+export type ReflexRecord = { user_id: number; name: string; ms: number; game_id: number; at: Date };
+
+export async function reflexRecords(limit = 10): Promise<{ since: Date; shots: ReflexRecord[]; averages: ReflexRecord[] }> {
+  const [row] = (await sql`
+    SELECT coalesce((SELECT value::timestamptz FROM settings WHERE key = 'gatilho_recordes_desde'), now()) AS since
+  `) as { since: Date }[];
+  const since = new Date(row.since);
+  const [shots, averages] = await Promise.all([
+    sql`
+      WITH t AS (
+        SELECT challenger_id AS user_id, unnest(challenger_times) AS ms, id AS game_id, finished_at AS at FROM reflex_games WHERE status = 'finished' AND finished_at >= ${since}
+        UNION ALL
+        SELECT opponent_id, unnest(opponent_times), id, finished_at FROM reflex_games WHERE status = 'finished' AND finished_at >= ${since}
+      ),
+      best AS (
+        SELECT DISTINCT ON (user_id) user_id, ms, game_id, at FROM t WHERE ms < ${PENALTY_MS} ORDER BY user_id, ms, at
+      )
+      SELECT user_id, member_label(user_id) AS name, ms, game_id, at FROM best ORDER BY ms, at LIMIT ${limit}
+    `,
+    sql`
+      WITH t AS (
+        SELECT challenger_id AS user_id, challenger_times AS times, id AS game_id, finished_at AS at FROM reflex_games WHERE status = 'finished' AND finished_at >= ${since}
+        UNION ALL
+        SELECT opponent_id, opponent_times, id, finished_at FROM reflex_games WHERE status = 'finished' AND finished_at >= ${since}
+      ),
+      avgs AS (
+        SELECT user_id, (SELECT round(avg(x), 1)::float8 FROM unnest(times) x) AS ms, game_id, at FROM t WHERE cardinality(times) = ${ATTEMPTS}
+      ),
+      best AS (
+        SELECT DISTINCT ON (user_id) user_id, ms, game_id, at FROM avgs ORDER BY user_id, ms, at
+      )
+      SELECT user_id, member_label(user_id) AS name, ms, game_id, at FROM best ORDER BY ms, at LIMIT ${limit}
+    `,
+  ]);
+  return { since, shots: shots as ReflexRecord[], averages: averages as ReflexRecord[] };
 }

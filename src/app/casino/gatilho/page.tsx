@@ -4,8 +4,8 @@ import { sql } from "@/lib/db";
 import { formatSchedule } from "@/lib/dates";
 import { getBalances } from "@/lib/economy";
 import { getRules } from "@/lib/rules";
-import { ATTEMPTS, average, reflexPrize } from "@/lib/reflex";
-import { REFLEX_FINISH_LABEL, listReflexGames, type ReflexGame } from "@/lib/reflex-games";
+import { ATTEMPTS, average, formatMs, reflexPrize } from "@/lib/reflex";
+import { REFLEX_FINISH_LABEL, listReflexGames, reflexRecords, type ReflexGame, type ReflexRecord } from "@/lib/reflex-games";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { Disclaimer, Marquee, felt, gold } from "../Decor";
 import { cancelReflex, respondReflex } from "./actions";
@@ -17,9 +17,35 @@ function stakeLine(g: ReflexGame, cut: number): string {
   return g.stake > 0 ? `${g.stake} ☕ cada · prémio ${reflexPrize(g.stake, cut)} ☕` : "amigável";
 }
 
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+function RecordList({ title, hint, rows, userId }: { title: string; hint: string; rows: ReflexRecord[]; userId: number }) {
+  return (
+    <div className="border-4 border-[#141414] bg-[#fff6d6] p-3 text-[#141414]">
+      <h3 className="font-display text-xl font-black">{title}</h3>
+      <p className="text-xs opacity-70">{hint}</p>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm italic">Ainda ninguém. O lugar está à espera.</p>
+      ) : (
+        <ol className="mt-2 divide-y divide-[#141414]/15 text-sm">
+          {rows.map((r, i) => (
+            <li key={r.user_id} className={`flex items-baseline justify-between gap-2 py-1 ${r.user_id === userId ? "font-black" : ""}`}>
+              <span>
+                <span className="inline-block w-7">{MEDALS[i] ?? `${i + 1}.`}</span>
+                {r.name}
+              </span>
+              <Link href={`/casino/gatilho/${r.game_id}`} className="font-bold underline decoration-dotted">{formatMs(r.ms)}</Link>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function resultLine(g: ReflexGame): string {
   if (g.finish_reason === "tempo") return `ganhou ${g.winner_id === g.challenger_id ? g.challenger : g.opponent} ${REFLEX_FINISH_LABEL.tempo}`;
-  const score = `${average(g.challenger_times)} ms vs ${average(g.opponent_times)} ms`;
+  const score = `${formatMs(average(g.challenger_times))} vs ${formatMs(average(g.opponent_times))}`;
   if (g.winner_id === null) return `empate · ${score}`;
   return `ganhou ${g.winner_id === g.challenger_id ? g.challenger : g.opponent} · ${score}`;
 }
@@ -27,10 +53,11 @@ function resultLine(g: ReflexGame): string {
 export default async function ReflexLobbyPage() {
   const user = await requireUser();
   const R = await getRules();
-  const [games, memberRows, balances] = await Promise.all([
+  const [games, memberRows, balances, records] = await Promise.all([
     listReflexGames(),
     sql`SELECT id, name FROM users WHERE id <> ${user.id} ORDER BY name`,
     getBalances(),
+    reflexRecords(),
   ]);
   const members = memberRows as { id: number; name: string }[];
   const balance = balances.find((b) => b.user_id === user.id)?.balance ?? 0;
@@ -126,6 +153,15 @@ export default async function ReflexLobbyPage() {
             );
           })}
         </ul>
+      </section>
+
+      <section className="mx-auto max-w-2xl space-y-2">
+        <h2 className={`font-display text-2xl font-black ${gold}`}>🏆 Recordes</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <RecordList title="Melhor toque" hint="O toque mais rápido de cada sócio, sem contar falhas." rows={records.shots} userId={user.id} />
+          <RecordList title={`Melhor média`} hint={`A melhor média de ${ATTEMPTS} tentativas de cada sócio.`} rows={records.averages} userId={user.id} />
+        </div>
+        <p className="text-xs opacity-80">Só contam partidas a sério acabadas desde {formatSchedule(records.since)}. O treino fica de fora.</p>
       </section>
 
       {finished.length > 0 && (
